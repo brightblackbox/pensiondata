@@ -2,3 +2,6 @@ django==1.11
 gunicorn==19.4.3
 gevent==1.1a2
 whitenoise==3.3
+
+django-nested-admin (3.0.20)
+django-debug-toolbar (1.8)
