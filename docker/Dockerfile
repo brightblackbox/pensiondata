@@ -57,6 +57,7 @@ ADD mysite.tar      /var/projects/mysite
 WORKDIR /var/projects/mysite
 RUN pip install -r requirements.txt
 RUN pip3 install psycopg2
+RUN pip3 install django-nested-admin
 
 ##############################################################################
 # Run start.sh script when the container starts.
