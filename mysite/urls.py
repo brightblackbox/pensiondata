@@ -23,6 +23,8 @@ from django.conf.urls import url, include
 from django.contrib import admin
 import django.contrib.auth.views
 
+from django.conf import settings
+
 import mysite.forms as forms
 import mysite.pensiondata.views as views
 
@@ -60,6 +62,12 @@ urlpatterns = [
 ]
 
 urlpatterns += [url(r'^nested_admin/', include('nested_admin.urls'))]
+
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns = [
+        url(r'^__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns
 
 
 

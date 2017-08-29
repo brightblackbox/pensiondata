@@ -29,6 +29,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', '192.168.99.101', '0.0.0.0', 'pensiondata-dev.us-east-1.elasticbeanstalk.com']
 
+INTERNAL_IPS = ['127.0.0.1']
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -53,16 +55,21 @@ INSTALLED_APPS = [
 
 INSTALLED_APPS += ['nested_admin']
 
+INSTALLED_APPS += ['debug_toolbar']
+
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# MIDDLEWARE_CLASSES += ['debug_toolbar.middleware.DebugToolbarMiddleware']
 
 ROOT_URLCONF = 'mysite.urls'
 
