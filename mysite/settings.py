@@ -24,12 +24,13 @@ PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 SECRET_KEY = '+tb*r29ojm&cd4t!q*=&62q-n$9@lid!ct5xf-vq=n8o#q(s-l'
 
 # SECURITY WARNING: don't run with debug turned on in production!
+# DEBUG = False
 DEBUG = True
 
 
 ALLOWED_HOSTS = ['127.0.0.1', '192.168.99.101', '0.0.0.0', 'pensiondata-dev.us-east-1.elasticbeanstalk.com']
 
-INTERNAL_IPS = ['127.0.0.1']
+INTERNAL_IPS = ['127.0.0.1', '0.0.0.0']
 
 # Application definition
 
@@ -56,6 +57,14 @@ INSTALLED_APPS = [
 INSTALLED_APPS += ['nested_admin']
 
 INSTALLED_APPS += ['debug_toolbar']
+
+DEBUG_TOOLBAR_CONFIG = {
+    # Add in this line to disable the panel
+    'DISABLE_PANELS': {
+        'debug_toolbar.panels.redirects.RedirectsPanel',
+        'debug_toolbar.panels.templates.TemplatesPanel'
+    },
+}
 
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
