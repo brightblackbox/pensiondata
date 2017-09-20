@@ -68,7 +68,7 @@ class PlanAdmin(admin.ModelAdmin):
     def state(self, obj):
         return obj.admin_gov.state
 
-    inlines = [PlanAnnualAttributeInline]
+    # inlines = [PlanAnnualAttributeInline]
 
     class Media:
         css = { "all" : ("app/content/planadmin.css",) }

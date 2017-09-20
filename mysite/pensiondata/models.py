@@ -255,6 +255,13 @@ class State(models.Model):
 ################################################################################################################################################################
 ################################################################################################################################################################
 
+attrs = {
+    'name': models.CharField(max_length=32),
+    '__module__': 'pensiondata.models',
+    '__app_label__': 'pensiondata'
+}
+CensusPlanAnnualAttribute = type("CensusPlanAnnualAttribute", (models.Model,), attrs)
+
 # class CensusPlanAnnualAttribute(models.Model):
 #     id = models.BigAutoField(primary_key=True)
 #     plan_annual = models.OneToOneField('PlanAnnual', models.DO_NOTHING)
