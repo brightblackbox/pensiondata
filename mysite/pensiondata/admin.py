@@ -9,7 +9,7 @@ import copy
 from mysite.pensiondata.models import Plan, County, Government, County, State, GovernmentType, PlanAttribute, PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory
 
 ### THESE ARE STILL UNDER CONSTRUCTION
-# from mysite.pensiondata.models import CensusPlanAnnualAttribute, PPDPlanAnnualAttribute, PlanAnnualAttribute
+from mysite.pensiondata.models import CensusAnnualAttribute, PPDAnnualAttribute  ##, PlanAnnualAttribute
 
 ### MIXIN TO REDUCE EXTRANEOUS QUERIES IN INLINE
 class ForeignKeyCacheMixin(object):
@@ -29,6 +29,18 @@ class ForeignKeyCacheMixin(object):
             request.db_field_cache = cache
             request.db_field_cache[db_field.name] = formfield.choices
         return formfield
+
+### CENSUS PLAN ANNUAL ATTRIBUTES
+class CensusAnnualAttributeInline(admin.TabularInline):
+
+    model = CensusAnnualAttribute
+    extra = 0
+
+### CENSUS PLAN ANNUAL ATTRIBUTES
+class PPDAnnualAttributeInline(admin.TabularInline):
+
+    model = PPDAnnualAttribute
+    extra = 0
 
 ### PLAN ANNUAL ATTRIBUTES
 class PlanAnnualAttributeInline(ForeignKeyCacheMixin, admin.TabularInline):
@@ -68,15 +80,15 @@ class PlanAdmin(admin.ModelAdmin):
     def state(self, obj):
         return obj.admin_gov.state
 
-    inlines = [PlanAnnualAttributeInline]
+    # inlines = [PPDAnnualAttributeInline]
 
     class Media:
         css = { "all" : ("app/content/planadmin.css",) }
 
-    def get_formsets_with_inlines(self, request, obj=None):
-        for inline in self.get_inline_instances(request, obj):            
-            inline.cached_plan_attributes = [(i.pk, str(i)) for i in PlanAttribute.objects.all()]
-            yield inline.get_formset(request, obj), inline
+    # def get_formsets_with_inlines(self, request, obj=None):
+    #     for inline in self.get_inline_instances(request, obj):            
+    #         inline.cached_plan_attributes = [(i.pk, str(i)) for i in PlanAttribute.objects.all()]
+    #         yield inline.get_formset(request, obj), inline
 
 admin.site.register(Plan, PlanAdmin)
 
