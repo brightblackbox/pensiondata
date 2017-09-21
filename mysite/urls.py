@@ -26,7 +26,7 @@ import django.contrib.auth.views
 from django.conf import settings
 
 import mysite.forms as forms
-import mysite.pensiondata.views as views
+import mysite.views as views
 
 admin.autodiscover()
 
