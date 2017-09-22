@@ -1,0 +1,52 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pension Data</title>
+
+    <link rel="stylesheet" type="text/css" href="{% static 'css/libs/bootstrap.min.css' %}" />
+    <link rel="stylesheet" type="text/css" href="{% static 'css/site.css' %}" />
+    <script src="{% static 'js/libs/modernizr-2.6.2.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/libs/jquery-1.10.2.min.js' %}"></script>
+    <script src="{% static 'js/libs/bootstrap.min.js' %}"></script>
+    <script src="{% static 'js/libs/respond.min.js' %}"></script>
+</head>
+
+<body>
+  <div class="container">
+    <div id="topnav">
+      <ul>
+        <li class="text"><a href="http://reason.org">reason.org</a></li>
+        <li class="text"><a href="http://reason.com">reason.com</a></li>
+        <li class="text"><a href="http://reason.tv">reason.tv</a></li>
+        <li class="text"><a href="https://www.reason.com/donatenow/donate.php">donate</a></li>
+        <li class="icon twitter"><a href="http://twitter.com/reason"></a></li>
+        <li class="icon facebook"><a href="http://www.facebook.com/Reason.Magazine"></a></li>
+        <li class="icon youtube"><a href="http://www.youtube.com/user/ReasonTV"></a></li>
+        <li class="icon gplus"><a href="https://plus.google.com/102760186866297506637/posts"></a></li>
+        <li class="icon iphone"><a href="http://reason.com/iphoneapp"></a></li>
+        <li class="icon rss"><a href="http://reason.org/rss/"></a></li>
+      </ul>
+    </div>
+
+    <div id="header">
+      <a href="/" class="home-link"></a>
+{#      <div class="navbar-collapse collapse navbarnew">#}
+{#          {% include 'app/loginpartial.html' %}#}
+{#      </div>#}
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <footer>
+        <hr>
+        <p>&copy; 2017 - Pension Data</p>
+    </footer>
+  </div>
+
+  {% block extra-scripts %}{% endblock %}
+
+</body>
+</html>
