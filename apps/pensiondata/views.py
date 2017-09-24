@@ -4,8 +4,8 @@ from django.views.generic.list import ListView
 from django_tables2 import RequestConfig
 from django.shortcuts import get_object_or_404
 
-from .models import Plan, PlanAnnualAttribute
-from .tables import PlanTable, PlanAnnualAttrTable
+from .models import Plan, PlanAnnualAttribute, CensusAnnualAttribute
+from .tables import PlanTable, PlanAnnualAttrTable, CensusAnnualAttrTable
 
 
 class HomeView(TemplateView):
@@ -29,7 +29,7 @@ class PlanListView(ListView):
     def get_context_data(self, **kwargs):
         context = super(PlanListView, self).get_context_data(**kwargs)
         context['nav_plan'] = True
-        table = PlanTable(Plan.objects.all().order_by('-pk'))
+        table = PlanTable(Plan.objects.all().order_by('display_name'))
         RequestConfig(self.request, paginate={'per_page': 10}).configure(table)
         context['table'] = table
         return context
@@ -51,8 +51,8 @@ class PlanDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super(PlanDetailView, self).get_context_data(**kwargs)
 
-        table = PlanAnnualAttrTable(PlanAnnualAttribute.objects.filter(plan=self.object).order_by('-year'))
-        RequestConfig(self.request, paginate={'per_page': 10}).configure(table)
+        table = CensusAnnualAttrTable(CensusAnnualAttribute.objects.filter(plan=self.object).order_by('-year'))
+        RequestConfig(self.request, paginate={'per_page': 30}).configure(table)
         context['table'] = table
         return context
 

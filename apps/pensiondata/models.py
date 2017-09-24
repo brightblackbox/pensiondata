@@ -103,6 +103,7 @@ class Plan(models.Model):
     id = models.BigAutoField(primary_key=True)
     census_plan_id = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
+    display_name = models.CharField(max_length=255)
     year_of_inception = models.IntegerField(blank=True, null=True)
     benefit_tier = models.IntegerField(blank=True, null=True)
     year_closed = models.IntegerField(blank=True, null=True)
@@ -356,7 +357,7 @@ class CensusAnnualAttribute(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'census_annual_attribute'
+        db_table = 'census_annual_attribute_mv'
 
 class PPDAnnualAttribute(models.Model):
 
