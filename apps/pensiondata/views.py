@@ -29,7 +29,7 @@ class PlanListView(ListView):
     def get_context_data(self, **kwargs):
         context = super(PlanListView, self).get_context_data(**kwargs)
         context['nav_plan'] = True
-        table = PlanTable(Plan.objects.all().order_by('-pk'))
+        table = PlanTable(Plan.objects.all().order_by('display_name'))
         RequestConfig(self.request, paginate={'per_page': 10}).configure(table)
         context['table'] = table
         return context

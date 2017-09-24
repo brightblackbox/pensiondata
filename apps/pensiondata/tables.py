@@ -12,7 +12,6 @@ class PlanTable(tables.Table):
         fields = ('census_plan_id', 'display_name',
                   'year_of_inception', 'year_closed', 'web_site',
                   'state_gov_role')
-        ordering = ('display_name',)
         attrs = {"class": "table-striped table-bordered"}
         empty_text = "There are no plans matching the search criteria..."
 
@@ -31,6 +30,5 @@ class CensusAnnualAttrTable(tables.Table):
     class Meta:
         model = CensusAnnualAttribute
         exclude = ('id', 'plan')
-        ordering = ('year',)
         attrs = {"class": "table-striped table-bordered"}
         empty_text = "There are no records."
