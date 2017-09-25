@@ -9,9 +9,7 @@ class PlanTable(tables.Table):
 
     class Meta:
         model = Plan
-        fields = ('census_plan_id', 'display_name',
-                  'year_of_inception', 'year_closed', 'web_site',
-                  'state_gov_role')
+        fields = ('census_plan_id', 'display_name')
         attrs = {"class": "table-striped table-bordered"}
         empty_text = "There are no plans matching the search criteria..."
 
