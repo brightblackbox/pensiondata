@@ -126,3 +126,11 @@ table th a {
 table td a {
 	color: inherit;
 }
+
+table td {
+    text-align: right;
+}
+
+table td[class="year"] {
+    text-align: left;
+}

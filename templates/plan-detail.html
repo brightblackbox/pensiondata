@@ -3,6 +3,7 @@
 {% load querystring from django_tables2 %}
 {% load title from django_tables2 %}
 {% load trans blocktrans from i18n %}
+{% load humanize %}
 
 {% block content %}
 <div id="content">
@@ -62,7 +63,13 @@
             {% block table.tbody.row %}
             <tr class="{% cycle "odd" "even" %}">
                 {% for column, cell in row.items %}
-                    <td {{ column.attrs.td.as_html }}>{{ cell }}</td>
+                    <td {{ column.attrs.td.as_html }}>
+                    {% if column.header == 'Year' %}
+                      {{ cell }}
+                    {% else %}
+                      {{ cell | intcomma }}
+                    {% endif %}
+                    </td>
                 {% endfor %}
             </tr>
             {% endblock table.tbody.row %}
