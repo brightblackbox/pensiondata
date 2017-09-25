@@ -79,7 +79,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'pension',
         'USER': 'pensionadmin',
-        'PASSWORD': 'pensionadmin',
+        'PASSWORD': '8905b23fd2b43f3b8511f5bd7ab4a0a6',
         'HOST': 'pension.copnrfzzns9f.us-east-1.rds.amazonaws.com',
         'PORT': '5432',
     }
