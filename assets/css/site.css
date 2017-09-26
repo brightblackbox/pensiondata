@@ -113,6 +113,14 @@ div#header{
 }
 
 /*=================================================*/
+/*               SEACRH FORM                       */
+/*=================================================*/
+
+#search_form_id {
+    margin-right: 5px;
+}
+
+/*=================================================*/
 /*                   Table                         */
 /*=================================================*/
 table a:hover {
@@ -128,9 +136,14 @@ table td a {
 }
 
 table td {
-    text-align: right;
-}
-
-table td[class="year"] {
     text-align: left;
 }
+
+.plan-attributes td {
+    text-align: right;
+} 
+
+.plan-attributes td[class="year"] {
+    text-align: left;    
+}
+
