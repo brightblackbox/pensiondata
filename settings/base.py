@@ -14,6 +14,8 @@ SECRET_KEY = '+tb*r29ojm&cd4t!q*=&62q-n$9@lid!ct5xf-vq=n8o#q(s-l'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
+ALLOWED_HOSTS = ['pensiondata-dev.us-east-1.elasticbeanstalk.com']
+
 INTERNAL_IPS = ['0.0.0.0']
 
 # Application definition
@@ -47,6 +49,8 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 
@@ -124,7 +128,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 # STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
 
 # Extra places for collectstatic to find static files.
