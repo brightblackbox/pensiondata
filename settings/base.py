@@ -14,6 +14,8 @@ SECRET_KEY = '+tb*r29ojm&cd4t!q*=&62q-n$9@lid!ct5xf-vq=n8o#q(s-l'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
+ALLOWED_HOSTS = ['pensiondata-dev.us-east-1.elasticbeanstalk.com']
+
 INTERNAL_IPS = ['0.0.0.0']
 
 # Application definition
