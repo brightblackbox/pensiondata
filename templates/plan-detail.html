@@ -4,6 +4,25 @@
 {% load title from django_tables2 %}
 {% load trans blocktrans from i18n %}
 {% load humanize %}
+{% load static %}
+
+{% block extra-styles %}
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/jquery.dataTables.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/colReorder.dataTables.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/fixedColumns.dataTables.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/buttons.dataTables.min.css' %}" />
+
+  <style>
+    button.dt-button, div.dt-button, a.dt-button {
+      white-space: normal;
+    }
+    div.dt-button-collection.fixed.four-column {
+      width: 700px;
+      height: 80%;
+      overflow: auto;
+    }
+  </style>
+{% endblock %}
 
 {% block content %}
 <div id="content">
@@ -30,7 +49,7 @@
 
   {% block table %}
     <div class="table-responsive">
-      <table class="table table-hover table-bordered table-striped"{% if table.attrs %} {{ table.attrs.as_html }}{% endif %}>
+      <table id="plan-attr-table" class="table table-hover table-bordered table-striped" width="100%" {% if table.attrs %} {{ table.attrs.as_html }}{% endif %}>
         {% block table.thead %}
         <thead>
         
@@ -99,4 +118,36 @@
   {% endif %}
 
 </div>
+{% endblock %}
+
+{% block extra-scripts %}
+  <script src="{% static 'js/libs/jquery.dataTables.min.js' %}"></script>
+  <script src="{% static 'js/libs/dataTables.colReorder.min.js' %}"></script>
+  <script src="{% static 'js/libs/dataTables.fixedColumns.min.js' %}"></script>
+  <script src="{% static 'js/libs/dataTables.buttons.min.js' %}"></script>
+  <script src="{% static 'js/libs/buttons.colVis.min.js' %}"></script>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('#plan-attr-table').DataTable( {
+          colReorder: true,
+          scrollX: true,
+          paging: false,
+          info: false,
+          searching: false,
+          fixedColumns: {
+              leftColumns:1
+          },
+          dom: 'Bfrtip',
+          buttons:[
+              {
+                extend: 'colvis',
+                collectionLayout: 'fixed four-column',
+{#                columnText: function (dt, idx, title) {#}
+{#                    return (idx+1)+': '+ title;#}
+{#                }#}
+              }
+          ]
+      } );
+    } );
+  </script>
 {% endblock %}
