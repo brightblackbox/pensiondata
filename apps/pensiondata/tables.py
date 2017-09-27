@@ -30,3 +30,4 @@ class CensusAnnualAttrTable(tables.Table):
         exclude = ('id', 'plan')
         attrs = {"class": "table-striped table-bordered"}
         empty_text = "There are no records."
+

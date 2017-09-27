@@ -8,6 +8,9 @@
 
     <link rel="stylesheet" type="text/css" href="{% static 'css/libs/bootstrap.min.css' %}" />
     <link rel="stylesheet" type="text/css" href="{% static 'css/site.css' %}" />
+
+    {% block extra-styles %}{% endblock %}
+
     <script src="{% static 'js/libs/modernizr-2.6.2.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/libs/jquery-1.10.2.min.js' %}"></script>
     <script src="{% static 'js/libs/bootstrap.min.js' %}"></script>
