@@ -25,7 +25,7 @@
 								<form method="get" class="form-inline form-search">
 									{% csrf_token %}
 										<div>
-											<input id="plan-search-form" name="search" type="text" class="form-control col-md-3" placeholder="Plan Name, State, Country"{% if search %} value="{{ search }}"{% endif %}>
+											<input id="plan-search-form" name="search" type="text" class="form-control col-md-3" placeholder="Plan Name"{% if search %} value="{{ search }}"{% endif %}>
 											<button type="submit" class="btn btn-small btn-dark btn-primary"><i class="fa fa-search"></i> Search</button>
 										</div>              
 								</form>

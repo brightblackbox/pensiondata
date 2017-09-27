@@ -27,6 +27,14 @@
 {% block content %}
 <div id="content">
   <!-- Plan Details -->
+  
+  <div id="breadcrumbs">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/">Plans</a></li>
+      <li class="breadcrumb-item active">{{plan.display_name }}</li>
+    </ol>
+  </div>
+
   <h3>Plan Details</h3>
   <table class="table table-hover table-bordered table-striped">
     <tr>
