@@ -8,6 +8,7 @@ admin.autodiscover()
 urlpatterns = [
     url(r'^', include('common.urls')),
     url(r'^$',  PlanListView.as_view(), name='home'),
+    url(r'^/pension/', include('pensiondata.urls')),
     url(r'^plan-detail/(?P<PlanID>\d+)$', PlanDetailView.as_view(), name='plan-detail'),
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),

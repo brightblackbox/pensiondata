@@ -127,6 +127,9 @@ class Plan(models.Model):
         managed = False
         db_table = 'plan'
 
+    def __str__(self):
+        return self.name
+
     # @property
     # def gov_state(self):
     # #     # return 'CO'
@@ -157,6 +160,14 @@ class PlanAnnualAttribute(models.Model):
     class Meta:
         managed = False
         db_table = 'plan_annual_attribute'
+
+    @property
+    def data_source(self):
+        return self.plan_attribute.data_source.name
+
+    @property
+    def category(self):
+        return self.plan_attribute.plan_attribute_category.name
 
 
 class PlanAttributeCategory(models.Model):
