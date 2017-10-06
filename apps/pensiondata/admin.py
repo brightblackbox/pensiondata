@@ -2,10 +2,10 @@ from django.contrib import admin
 from django.db.models import F
 import json
 
-from .models import Plan, County, Government, County, State, GovernmentType, PlanAttribute, \
+from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, \
     PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory, PlanAnnual
 
-from .models import CensusAnnualAttribute, PPDAnnualAttribute  ##, PlanAnnualAttribute
+from .models import CensusAnnualAttribute
 
 
 class ForeignKeyCacheMixin(object):
@@ -35,11 +35,11 @@ class CensusAnnualAttributeInline(admin.TabularInline):
     readonly_fields = ('year',)
 
 
-class PPDAnnualAttributeInline(admin.TabularInline):
-    model = PPDAnnualAttribute
-    extra = 0
-    exclude = ('id', )
-    readonly_fields = ('year',)
+# class PPDAnnualAttributeInline(admin.TabularInline):
+#     model = PPDAnnualAttribute
+#     extra = 0
+#     exclude = ('id', )
+#     readonly_fields = ('year',)
 
 
 class PlanAnnualAttributeInline(ForeignKeyCacheMixin, admin.TabularInline):
@@ -248,3 +248,9 @@ class PlanAnnualAdmin(admin.ModelAdmin):
 
 admin.site.register(PlanAnnual, PlanAnnualAdmin)
 
+
+class PlanAnnualAttributeAdmin(admin.ModelAdmin):
+    list_display = ['plan', 'year', 'plan_attribute', 'attribute_value']
+
+
+admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
