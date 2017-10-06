@@ -161,7 +161,7 @@ class PlanAnnualAttribute(models.Model):
     attribute_value = models.CharField(max_length=256)
 
     class Meta:
-        managed = True
+        managed = False
         db_table = 'plan_annual_attribute'
 
     @property
