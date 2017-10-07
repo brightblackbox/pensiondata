@@ -206,10 +206,10 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         (None, {'fields': [field.name for field in PlanAttribute._meta.fields if field.name != 'id']})
     ]
 
-    list_display = ['id', 'data_source', 'name', 'datatype', 'plan_attribute_category', 'display_order',
-                    'attribute_column_name', 'multiplier', 'plan_attribute_master']
+    list_display = ['name', 'data_source', 'datatype', 'plan_attribute_category', 'display_order',
+                    'attribute_column_name', 'multiplier', 'attribute_type', ]
     list_select_related = True
-    list_filter = ['data_source', 'plan_attribute_category']
+    list_filter = ['data_source', 'plan_attribute_category', 'attribute_type']
     list_per_page = 50
     search_fields = ['name']
 
