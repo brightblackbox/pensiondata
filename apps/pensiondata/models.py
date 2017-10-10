@@ -158,7 +158,7 @@ class PlanAnnualAttribute(models.Model):
     plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
     year = models.CharField(max_length=4)
     plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True)
-    attribute_value = models.TextField()
+    attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
     class Meta:
         # unique_together = ('plan', 'year', 'plan_attribute',)
@@ -263,10 +263,18 @@ class PlanAttribute(models.Model):
         return self.name
 
     def get_rule_readable(self):
-        # e.g. (#1# + #2#) * #3#
+        # e.g. #1# #+# #2# #*# #3# = 1+2*3
+        if self.is_static:
+            return ''
+
         readable_rule = self.calculated_rule
         id_list = re.findall(r'#(\d+)#', self.calculated_rule)
         id_list = list(set(id_list))  # remove duplicates
+
+        operator_list = re.findall(r'#([\+\-\*\/\(\)])#', self.calculated_rule)
+
+        for operator in operator_list:
+            readable_rule = readable_rule.replace('#' + operator + '#', operator)
 
         for pk in id_list:
             try:
@@ -276,7 +284,7 @@ class PlanAttribute(models.Model):
             except PlanAttribute.MultipleObjectsReturned:
                 attr_name = 'duplicated attribute'
 
-            readable_rule = readable_rule.replace('#'+pk+'#', attr_name)
+            readable_rule = readable_rule.replace('#' + pk + '#', attr_name)
 
         return readable_rule
 

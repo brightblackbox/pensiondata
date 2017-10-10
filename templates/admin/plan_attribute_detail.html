@@ -1,0 +1,284 @@
+
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+  {{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}
+  {{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <div class="breadcrumbs">
+      <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+      &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+      &rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+      &rsaquo; {% if add %}{% blocktrans with name=opts.verbose_name %}Add {{ name }}{% endblocktrans %}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+    </div>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div id="content-main">
+  {% block object-tools %}
+  {% if change %}
+    {% if not is_popup %}
+      <ul class="object-tools">
+      {% block object-tools-items %}
+        <li>
+          {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+          <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+        </li>
+
+        {% if has_absolute_url %}
+          <li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>
+        {% endif %}
+      {% endblock %}
+      </ul>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+<form action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}
+  <div>
+    {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
+    {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
+    {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+    {% if errors %}
+        <p class="errornote">
+        {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+        </p>
+        {{ adminform.form.non_field_errors }}
+    {% endif %}
+
+    {% block field_sets %}
+      {% for fieldset in adminform %}
+        {% include "admin/includes/fieldset.html" %}
+      {% endfor %}
+    {% endblock %}
+
+    {% block after_field_sets %}{% endblock %}
+
+    {% block inline_field_sets %}
+      {% for inline_admin_formset in inline_admin_formsets %}
+          {% include inline_admin_formset.opts.template %}
+      {% endfor %}
+    {% endblock %}
+
+    {% block after_related_objects %}{% endblock %}
+
+    {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+    {% block admin_change_form_document_ready %}
+        <script type="text/javascript"
+                id="django-admin-form-add-constants"
+                src="{% static 'admin/js/change_form.js' %}"
+                {% if adminform and add %}
+                    data-model-name="{{ opts.model_name }}"
+                {% endif %}>
+        </script>
+    {% endblock %}
+
+    {# JavaScript for prepopulated fields #}
+    {% prepopulated_fields_js %}
+
+  </div>
+</form>
+
+</div>
+<div style="display: none">
+  <div class="insert-me">
+    <span class="calc-rule-container">
+      <ul class="calc-rendered">
+        <li class="calc-input-inline">
+          <input class="calc-input__field" type="text">
+        </li>
+      </ul>
+    </span>
+    <div class="validation-result"></div>
+  </div>
+</div>
+
+  <link rel="stylesheet" type="text/css" href="{% static 'js/libs/jquery-ui/jquery-ui.min.css' %}" />
+  <script type="text/javascript" src="{% static 'js/libs/jquery-1.10.2.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/libs/jquery-ui/jquery-ui.min.js' %}"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function (e) {
+      // Django -> JS
+      var availableOperators = ['+', '-', '*', '/', '(', ')'];
+      var static_attr_list = "{{ static_attr_list }}";
+      static_attr_list = JSON.parse(static_attr_list.replace(/&quot;/g, '"'));
+
+      $('#id_attribute_type').change(function () {
+        if($(this).val() == 'static'){
+          $('.calc-rule-container').hide();
+          $('#id_calculated_rule').prop("disabled", true).css("visibility", "visible").val('');
+        }else{
+          $('.calc-rule-container').show();
+          $('#id_calculated_rule').prop("disabled", false).css("visibility", "hidden");
+        }
+      }).change();
+
+      // add new key 'value' for autocomplete
+      $.each(static_attr_list, function (i, attr) {
+          attr['value'] = attr['name']
+      })
+
+      // hide calculcated-rule, insert new UI element
+      $('.insert-me').insertBefore('#id_calculated_rule');
+      $('#id_calculated_rule').attr("rows", "1");
+
+      // show formated rule
+      var old_calc_rule = $('#id_calculated_rule').val();
+      var old_calc_items = old_calc_rule.split(/#([\+\-\*\/\(\)]|\d+)#/)
+
+      for(var i=0, len=old_calc_items.length; i < len; i++){
+        if( old_calc_items[i].length <= 0){
+            continue;
+        }
+
+        static_value = old_calc_items[i].match(/%(.+)%/);
+
+        if ( $.inArray(old_calc_items[i], availableOperators) >= 0) {
+          $('<li class="calc-item calc-operator">'+ old_calc_items[i] +'</li>').insertBefore(".calc-input-inline");
+        }
+        else if(static_value != null){
+          $('<li class="calc-item calc-static">'+ static_value[1] +'</li>').insertBefore(".calc-input-inline");
+        }
+        else{
+          id = old_calc_items[i];
+          name = get_name_by_id(id);
+          $('<li class="calc-item calc-operand" data-id="'+ id +'">'+ name +'</li>').insertBefore(".calc-input-inline");
+        }
+      }
+
+      // add autocomplete
+      $( ".calc-input__field" )
+        .on( "keydown", function( event ) {
+          // don't navigate away from the field on tab when selecting an item
+          if ( event.keyCode === $.ui.keyCode.TAB &&
+            $( this ).autocomplete( "instance" ).menu.active ) {
+            event.preventDefault();
+          }
+          // if BACKSPACE, delete prev element and edit inputbox
+		      if ( event.keyCode === $.ui.keyCode.BACKSPACE && !$(this).val()) {
+			      $(this).val( $(".calc-input-inline").prev().text() );
+			      $('.calc-input-inline').prev("li").remove();
+	          //event.preventDefault();
+          }
+        })
+        .blur(function(){
+          var inputVal = $(this).val();
+          if ( $.isNumeric( inputVal ) )
+          {
+            $('<li class="calc-item calc-static">'+ inputVal +'</li>').insertBefore(".calc-input-inline");
+          }
+          $(this).val('');
+          extract_rule();
+        })
+        .autocomplete({
+          minLength: 1,
+          source: function( request, response ) {
+
+			      var term_string = request.term
+			      var term_length = request.term.length;
+			      var lastChar = term_string[term_length-1];
+			      var sliced_string = term_string.slice(0, -1)
+
+            if ($.inArray(lastChar, availableOperators) >= 0 )// lastChar is in [+, -, *, /, (, )]
+            {
+              if(term_length == 1){
+                $('<li class="calc-item calc-operator">'+ lastChar +'</li>').insertBefore(".calc-input-inline");
+
+                $('.calc-input__field').val('');
+              }else if($.isNumeric( sliced_string )) {
+                $('<li class="calc-item calc-static">'+ sliced_string +'</li><li class="calc-item calc-operator">'+ lastChar +'</li>').insertBefore(".calc-input-inline");
+
+                $('.calc-input__field').val('');
+              }
+            }
+
+			      response( $.ui.autocomplete.filter(	static_attr_list, request.term ) );
+          },
+          focus: function() {
+            // prevent value inserted on focus
+            return false;
+          },
+          select: function( event, ui ) {
+			      $('<li class="calc-item calc-operand" data-id="'+ ui.item.id +'">'+ ui.item.value +'</li>').insertBefore(".calc-input-inline");
+            this.value = '';
+            return false;
+          }
+        });
+
+      function get_name_by_id(id) {
+        var name = '';
+        $.each(static_attr_list, function (i, attr) {
+          if(attr.id == id){
+            name = attr.name;
+            return false;
+          }
+        })
+        return name;
+      }
+
+	    function is_valid_rule(rule){
+        try{
+          eval( rule );
+          $('.validation-result').html('');
+          return true;
+        }
+        catch(err) {
+          //$('.validation-result').html(err.message);
+          $('.validation-result').html('Invalid rule');
+          return false;
+        }
+      }
+
+	    function extract_rule(){
+        var rule_for_validating = '';
+	      var	rule_for_storing = '';
+
+        $('li.calc-item').each(function() {
+          if ( $(this).hasClass("calc-operand") )
+          {
+            rule_for_validating += '1';
+            rule_for_storing += '#' + $(this).data("id") + '#';
+
+          }else if($(this).hasClass("calc-operator")){
+
+            rule_for_validating += $(this).text();
+            rule_for_storing += '#' + $(this).text() + '#';
+
+          }else if($(this).hasClass("calc-static")){
+
+            rule_for_validating += $(this).text();
+            rule_for_storing += '#%'+$(this).text()+'%#';
+          }
+        })
+
+        if(is_valid_rule(rule_for_validating)){
+          $('#id_calculated_rule').val(rule_for_storing);
+          return true;
+        }else{
+          $('#id_calculated_rule').val('');
+          return false;
+        }
+      }
+
+    });
+  </script>
+{% endblock %}

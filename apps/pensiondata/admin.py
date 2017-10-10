@@ -102,7 +102,7 @@ class PlanAdmin(admin.ModelAdmin):
         return obj.admin_gov.state
 
     class Media:
-        css = {"all": ("css/planadmin.css",)}
+        css = {"all": ("css/admin.css",)}
 
     # def get_formsets_with_inlines(self, request, obj=None):
     #     for inline in self.get_inline_instances(request, obj):
@@ -200,7 +200,6 @@ class GovernmentAdmin(admin.ModelAdmin):
 admin.site.register(Government, GovernmentAdmin)
 
 
-#### PLAN ATTRIBUTE
 class PlanAttributeAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': [field.name for field in PlanAttribute._meta.fields if field.name != 'id']})
@@ -212,6 +211,30 @@ class PlanAttributeAdmin(admin.ModelAdmin):
     list_filter = ['data_source', 'plan_attribute_category', 'attribute_type']
     list_per_page = 50
     search_fields = ['name']
+
+    change_form_template = 'admin/plan_attribute_detail.html'
+    add_form_template = 'admin/plan_attribute_detail.html'
+
+    class Media:
+        css = {"all": ("css/admin.css",)}
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+
+        static_attr_list = PlanAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+
+        extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+
+        return super(PlanAttributeAdmin, self).change_view(request, object_id, form_url, extra_context)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+
+        static_attr_list = PlanAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+
+        extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+
+        return super(PlanAttributeAdmin, self).add_view(request, form_url, extra_context)
 
 
 admin.site.register(PlanAttribute, PlanAttributeAdmin)
