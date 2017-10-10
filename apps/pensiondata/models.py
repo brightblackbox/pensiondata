@@ -20,7 +20,7 @@ class CensusData(models.Model):
     state_contribution_for_local_employees = models.DecimalField(max_digits=10, decimal_places=6)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'census_data'
 
 
@@ -29,7 +29,7 @@ class County(models.Model):
     name = models.CharField(max_length=255)
     retirement_census_county_code = models.CharField(max_length=3)
     retirement_census_state_code = models.CharField(max_length=2)
-    state = models.ForeignKey('State', models.DO_NOTHING, null=False)
+    state = models.ForeignKey('State', models.DO_NOTHING, null=True, blank=True)
 
     class Meta:
         db_table = 'county'
@@ -44,7 +44,7 @@ class DataSource(models.Model):
     trust_level = models.IntegerField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'data_source'
 
     def __str__(self):
@@ -54,9 +54,9 @@ class DataSource(models.Model):
 class Government(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    state = models.ForeignKey('State', models.DO_NOTHING, null=False)
-    government_type = models.ForeignKey('GovernmentType', models.DO_NOTHING)
-    county = models.ForeignKey(County, models.DO_NOTHING)
+    state = models.ForeignKey('State', models.DO_NOTHING, null=True, blank=True)
+    government_type = models.ForeignKey('GovernmentType', models.DO_NOTHING, null=True, blank=True)
+    county = models.ForeignKey(County, models.DO_NOTHING, null=True, blank=True)
 
     class Meta:
         db_table = 'government'
@@ -67,12 +67,12 @@ class Government(models.Model):
 
 class GovernmentAnnual(models.Model):
     id = models.BigAutoField(primary_key=True)
-    government = models.ForeignKey(Government, models.DO_NOTHING)
-    government_attribute = models.ForeignKey('GovernmentAttribute', models.DO_NOTHING)
+    government = models.ForeignKey(Government, models.DO_NOTHING, null=True, blank=True)
+    government_attribute = models.ForeignKey('GovernmentAttribute', models.DO_NOTHING, null=True, blank=True)
     attribute_value = models.TextField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'government_annual'
 
 
@@ -83,7 +83,7 @@ class GovernmentAttribute(models.Model):
     attribute_category = models.IntegerField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'government_attribute'
 
 
@@ -92,7 +92,7 @@ class GovernmentType(models.Model):
     level = models.CharField(max_length=255)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'government_type'
 
     def __str__(self):
@@ -108,7 +108,7 @@ class Plan(models.Model):
     benefit_tier = models.IntegerField(blank=True, null=True)
     year_closed = models.IntegerField(blank=True, null=True)
     web_site = models.CharField(max_length=255, blank=True, null=True)
-    admin_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=False)
+    admin_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True)
     soc_sec_coverage = models.NullBooleanField()
     soc_sec_coverage_notes = models.CharField(max_length=255, blank=True, null=True)
     includes_state_employees = models.NullBooleanField()
@@ -124,39 +124,53 @@ class Plan(models.Model):
     notes = models.TextField(blank=True, null=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'plan'
+
+    def __str__(self):
+        return self.name
 
     # @property
     # def gov_state(self):
     # #     # return 'CO'
     #     return State.objects.values_list('state_abbreviation').first()
-    # #     # return 
+    # #     # return
 
 
 class PlanAnnual(models.Model):
     id = models.BigAutoField(primary_key=True)
-    plan = models.ForeignKey('Plan', models.DO_NOTHING)
+    plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
     year = models.CharField(max_length=4)
     government_id = models.BigIntegerField()
-    # census_plan_annual = models.OneToOneField('CensusPlanAnnualAttribute', models.DO_NOTHING)
+    # census_plan_annual = models.OneToOneField('CensusPlanAnnualAttribute', models.DO_NOTHING, null=True, blank=True)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'plan_annual'
+
+    def __str__(self):
+        return "%s - %d" % (self.year, self.government_id)
 
 
 class PlanAnnualAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
-    plan_annual = models.ForeignKey('PlanAnnual', models.DO_NOTHING, null=False)
-    plan = models.ForeignKey('Plan', models.DO_NOTHING, null=False)
+    # plan_annual = models.ForeignKey('PlanAnnual', models.DO_NOTHING, null=True, blank=True)
+    plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
     year = models.CharField(max_length=4)
-    plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=False)
+    plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True)
     attribute_value = models.CharField(max_length=256)
 
     class Meta:
         managed = False
         db_table = 'plan_annual_attribute'
+
+    @property
+    def data_source(self):
+        return self.plan_attribute.data_source.name
+
+    @property
+    def category(self):
+        return self.plan_attribute.plan_attribute_category.name
 
 
 class PlanAttributeCategory(models.Model):
@@ -177,7 +191,7 @@ class PlanAttributeMaster(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256)
     datatype = models.CharField(max_length=256)
-    plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=False)
+    plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=True, blank=True)
     display_order = models.IntegerField()
     attribute_column_name = models.CharField(max_length=256)
 
@@ -185,24 +199,24 @@ class PlanAttributeMaster(models.Model):
         managed = True
         verbose_name = 'Master attribute'
         verbose_name_plural = 'Master attributes'
-        db_table = 'plan_attribute_master'  
+        db_table = 'plan_attribute_master'
 
     def __str__(self):
-        return self.name  
+        return self.name
 
 
 class PlanAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=256)
-    datatype = models.CharField(max_length=256)
-    plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=False)
+    name = models.CharField(max_length=256, null=True, blank=True)
+    datatype = models.CharField(max_length=256, null=True, blank=True)
+    plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=True, blank=True)
     line_item_code = models.CharField(max_length=256)
-    display_order = models.IntegerField()
-    attribute_column_name = models.CharField(max_length=256)
-    multiplier = models.DecimalField(max_digits=30, decimal_places=6)
-    weight = models.IntegerField()
-    plan_attribute_master = models.ForeignKey('PlanAttributeMaster', models.DO_NOTHING, null=False)
-    data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=False)
+    display_order = models.IntegerField(null=True, blank=True)
+    attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
+    multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
+    weight = models.IntegerField(null=True, blank=True)
+    plan_attribute_master = models.ForeignKey('PlanAttributeMaster', models.DO_NOTHING, null=True, blank=True)
+    data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
 
     class Meta:
         managed = True
@@ -220,7 +234,7 @@ class PlanInheritance(models.Model):
     level = models.IntegerField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'plan_inheritance'
 
 
@@ -243,7 +257,7 @@ class PlanProvisions(models.Model):
     deferred_retirement_option_program = models.NullBooleanField()
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'plan_provisions'
 
 
@@ -269,7 +283,7 @@ class State(models.Model):
 class CensusAnnualAttribute(models.Model):
 
     id = models.BigIntegerField(primary_key=True)
-    plan = models.ForeignKey('Plan', on_delete=models.DO_NOTHING,null=False)
+    plan = models.ForeignKey('Plan', on_delete=models.DO_NOTHING,null=True, blank=True)
     year = models.CharField(max_length=4)
 
     other_investment_earnings = models.BigIntegerField()
@@ -356,13 +370,13 @@ class CensusAnnualAttribute(models.Model):
     #         locals()[col.attribute_column_name] = models.CharField(max_length=256)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'census_annual_attribute_mv'
 
 class PPDAnnualAttribute(models.Model):
 
     id = models.BigIntegerField(primary_key=True)
-    plan = models.ForeignKey('Plan', on_delete=models.DO_NOTHING,null=False)
+    plan = models.ForeignKey('Plan', on_delete=models.DO_NOTHING,null=True, blank=True)
     year = models.CharField(max_length=4)
 
     uppercorridor=models.DecimalField(max_digits=19, decimal_places=6, blank=True, null=True)
@@ -641,7 +655,7 @@ class PPDAnnualAttribute(models.Model):
     beneficiaries_dependentsurvivors=models.CharField(max_length=256)
 
     class Meta:
-        managed = False
+        managed = True
         db_table = 'ppd_annual_attribute'
 
 # class ReasonData(models.Model):
@@ -726,7 +740,7 @@ class PPDAnnualAttribute(models.Model):
 #     total_percentage_of_investments_in_real_estate = models.DecimalField(max_digits=10, decimal_places=6, blank=True, null=True)
 
 #     class Meta:
-#         managed = False
+#         managed = True
 #         db_table = 'reason_data'
 
 # class SleppData(models.Model):
@@ -737,7 +751,7 @@ class PPDAnnualAttribute(models.Model):
 #     source = models.TextField()
 
 #     class Meta:
-#         managed = False
+#         managed = True
 #         db_table = 'slepp_data'
 
 
@@ -746,3 +760,4 @@ class PPDAnnualAttribute(models.Model):
 
 
         
+

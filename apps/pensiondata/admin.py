@@ -1,18 +1,13 @@
 from django.contrib import admin
-from django.contrib.admin.options import InlineModelAdmin
-from django import forms
-from nested_admin import NestedTabularInline, NestedStackedInline, NestedModelAdmin
-import copy
+from django.db.models import F
+import json
 
-#### MODELS
-from .models import Plan, County, Government, County, State, GovernmentType, PlanAttribute, \
-    PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory
+from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, \
+    PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory, PlanAnnual
 
-### THESE ARE STILL UNDER CONSTRUCTION
-from .models import CensusAnnualAttribute, PPDAnnualAttribute  ##, PlanAnnualAttribute
+from .models import CensusAnnualAttribute
 
 
-### MIXIN TO REDUCE EXTRANEOUS QUERIES IN INLINE
 class ForeignKeyCacheMixin(object):
     """
     Cache foreignkey choices in the request object to prevent unnecessary queries.
@@ -33,28 +28,28 @@ class ForeignKeyCacheMixin(object):
         return formfield
 
 
-### CENSUS PLAN ANNUAL ATTRIBUTES
 class CensusAnnualAttributeInline(admin.TabularInline):
     model = CensusAnnualAttribute
     extra = 0
+    exclude = ('id', )
+    readonly_fields = ('year',)
 
 
-### CENSUS PLAN ANNUAL ATTRIBUTES
-class PPDAnnualAttributeInline(admin.TabularInline):
-    model = PPDAnnualAttribute
-    extra = 0
+# class PPDAnnualAttributeInline(admin.TabularInline):
+#     model = PPDAnnualAttribute
+#     extra = 0
+#     exclude = ('id', )
+#     readonly_fields = ('year',)
 
 
-### PLAN ANNUAL ATTRIBUTES
 class PlanAnnualAttributeInline(ForeignKeyCacheMixin, admin.TabularInline):
+
     model = PlanAnnualAttribute
     extra = 0
 
-    readonly_fields = ['year', 'source', 'attribute', 'attribute_value']
-    fields = ['year', 'source', 'attribute', 'attribute_value']
+    readonly_fields = ['year', 'source', 'category', 'attribute']
+    fields = ['year', 'source', 'category', 'attribute', 'attribute_value']
     ordering = ['-year']
-
-    # template = "admin/pivot.html"
 
     def attribute(self, obj):
         return obj.plan_attribute.attribute
@@ -62,13 +57,20 @@ class PlanAnnualAttributeInline(ForeignKeyCacheMixin, admin.TabularInline):
     def source(self, obj):
         return obj.plan_attribute.data_source.name
 
+    def category(self, obj):
+        return obj.plan_attribute.plan_attribute_category.name
+
+    # template = "admin/plan-detail.html"
+
     def get_queryset(self, request):
-        print(request)
-        qs = PlanAnnualAttribute.objects.select_related('plan_attribute', 'plan_attribute__data_source')
+        qs = PlanAnnualAttribute.objects.select_related(
+                                            'plan_attribute',
+                                            'plan_attribute__data_source',
+                                            'plan_attribute__plan_attribute_category'
+        )
         return qs
 
 
-### PLAN
 class PlanAdmin(admin.ModelAdmin):
     model = Plan
 
@@ -78,26 +80,68 @@ class PlanAdmin(admin.ModelAdmin):
     ordering = ['admin_gov__state__id']
     search_fields = ['name']
 
+    # fieldsets = (
+    #     (None, {
+    #         'fields': (
+    #             'census_plan_id', 'name', 'display_name',
+    #             ('year_of_inception', 'benefit_tier', 'year_closed'),
+    #             'web_site', 'admin_gov',
+    #             ('soc_sec_coverage', 'soc_sec_coverage_notes', ),
+    #             ('includes_state_employees', 'includes_local_employees', 'includes_safety_employees', 'includes_general_employees', 'includes_teachers'),
+    #             ('intra_period_data_entity_id', 'intra_period_data_period_end_date'),
+    #             'intra_period_data_period_type', 'gasb_68_type', 'state_gov_role', 'notes'
+    #         )
+    #     }),
+    # )
+
     list_select_related = True
+
+    # inlines = [PlanAnnualAttributeInline, ]
 
     def state(self, obj):
         return obj.admin_gov.state
 
-    # inlines = [PPDAnnualAttributeInline]
-
     class Media:
         css = {"all": ("css/planadmin.css",)}
 
-        # def get_formsets_with_inlines(self, request, obj=None):
-        #     for inline in self.get_inline_instances(request, obj):
-        #         inline.cached_plan_attributes = [(i.pk, str(i)) for i in PlanAttribute.objects.all()]
-        #         yield inline.get_formset(request, obj), inline
+    # def get_formsets_with_inlines(self, request, obj=None):
+    #     for inline in self.get_inline_instances(request, obj):
+    #         inline.cached_plan_attributes = [(i.pk, str(i)) for i in PlanAttribute.objects.all()]
+    #         yield inline.get_formset(request, obj), inline
+
+    # customized change view:
+    change_form_template = 'admin/plan-detail.html'
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+
+        categories = PlanAttributeCategory.objects.values('id', 'name').order_by("name")
+        plan_annual_attrs \
+            = PlanAnnualAttribute.objects.filter(plan__id=object_id)\
+            .values('id',
+                    'year',
+                    'plan_attribute__name',
+                    'plan_attribute__data_source__name',
+                    'plan_attribute__plan_attribute_category__id',
+                    'plan_attribute__plan_attribute_category__name',
+                    'attribute_value') \
+            .annotate(
+                        attribute=F('plan_attribute__name'),
+                        data_source=F('plan_attribute__data_source__name'),
+                        category_id=F('plan_attribute__plan_attribute_category__id'),
+                        category_name=F('plan_attribute__plan_attribute_category__name'))\
+            .order_by('category_name', '-year')
+
+        extra_context['categories_queryset'] = categories
+        extra_context['categories_json'] = json.dumps(list(categories))
+        extra_context['plan_annual_attrs'] = json.dumps(list(plan_annual_attrs))
+
+        return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
 
 
 admin.site.register(Plan, PlanAdmin)
 
 
-#### COUNTY
 class CountyAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': [field.name for field in County._meta.fields if field.name != 'id']})
@@ -197,3 +241,16 @@ class PlanAttributeCategoryAdmin(admin.ModelAdmin):
 
 admin.site.register(PlanAttributeCategory, PlanAttributeCategoryAdmin)
 
+
+class PlanAnnualAdmin(admin.ModelAdmin):
+    list_display = ['plan', 'year', 'government_id']
+
+
+admin.site.register(PlanAnnual, PlanAnnualAdmin)
+
+
+class PlanAnnualAttributeAdmin(admin.ModelAdmin):
+    list_display = ['plan', 'year', 'plan_attribute', 'attribute_value']
+
+
+admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
