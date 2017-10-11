@@ -180,23 +180,36 @@ class PlanAnnualAttribute(models.Model):
         if self.plan_attribute.is_static:
             return self.attribute_value
         else:
-            rule = self.plan_attribute.calculated_rule
-            id_list = re.findall(r'#(\d+)#', rule)
-            id_list = list(set(id_list))  # remove duplicates
+            stored_rule = self.plan_attribute.calculated_rule
+            calculated_rule = ''
+            calc_items = re.split(r'#([\+\-\*\/\(\)]|\d+)#', stored_rule)
 
-            for pk in id_list:
-                try:
-                    item_val = PlanAnnualAttribute.objects.get(
-                        plan=self.plan,
-                        year=self.year,
-                        plan_attribute__id=int(pk)  # NOTE: pk is string
-                    ).attribute_value
-                except PlanAnnualAttribute.DoesNotExist:
-                    return None  # ?
+            for item in calc_items:
+                if item == '':
+                    continue
+                if '%' in item:
+                    static_value = re.findall(r'%(.+)%', item)[0]
+                    calculated_rule += static_value
+                elif item in ['+', '-', '*', '/', '(', ')']:
+                    calculated_rule += item
+                else:  # NOTE: pk should be integer
+                    pk = int(item)
 
-                rule = rule.replace('#' + pk + '#', item_val)
+                    try:
+                        item_val = PlanAnnualAttribute.objects.get(
+                            plan=self.plan,
+                            year=self.year,
+                            plan_attribute__id=pk
+                        ).attribute_value
 
-            return str(eval(rule))
+                        calculated_rule += item_val
+                    except PlanAnnualAttribute.DoesNotExist:
+                        return False
+            try:
+                value = eval(calculated_rule)
+                return str(value)
+            except:
+                return False
 
 
 class PlanAttributeCategory(models.Model):
@@ -267,26 +280,26 @@ class PlanAttribute(models.Model):
         if self.is_static:
             return ''
 
-        readable_rule = self.calculated_rule
-        id_list = re.findall(r'#(\d+)#', self.calculated_rule)
-        id_list = list(set(id_list))  # remove duplicates
+        stored_rule = self.calculated_rule
+        readable_rule = ''
+        calc_items = re.split(r'#([\+\-\*\/\(\)]|\d+)#', stored_rule)
 
-        operator_list = re.findall(r'#([\+\-\*\/\(\)])#', self.calculated_rule)
+        for item in calc_items:
+            if item == '':
+                continue
+            if '%' in item:
+                static_value = re.findall(r'%(.+)%', item)[0]
+                readable_rule += static_value
+            elif item in ['+', '-', '*', '/', '(', ')']:
+                readable_rule += item
+            else:  # NOTE: pk should be integer
+                pk = int(item)
 
-        for operator in operator_list:
-            readable_rule = readable_rule.replace('#' + operator + '#', operator)
-
-        for pk in id_list:
-            try:
-                attr_name = PlanAttribute.objects.get(id=int(pk)).name  # NOTE: pk is string
-            except PlanAttribute.DoesNotExist:
-                attr_name = 'removed attribute'
-            except PlanAttribute.MultipleObjectsReturned:
-                attr_name = 'duplicated attribute'
-
-            readable_rule = readable_rule.replace('#' + pk + '#', attr_name)
-
-        return readable_rule
+                try:
+                    attr_name = PlanAttribute.objects.get(id=int(pk)).name  # NOTE: pk is string
+                    readable_rule += attr_name
+                except PlanAttribute.DoesNotExist:
+                    return False
 
 
 ### THIS MODEL IS A WORK IN PROGRESS -- DO NOT USE FOR NOW
