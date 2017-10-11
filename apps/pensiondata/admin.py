@@ -80,34 +80,13 @@ class PlanAdmin(admin.ModelAdmin):
     ordering = ['admin_gov__state__id']
     search_fields = ['name']
 
-    # fieldsets = (
-    #     (None, {
-    #         'fields': (
-    #             'census_plan_id', 'name', 'display_name',
-    #             ('year_of_inception', 'benefit_tier', 'year_closed'),
-    #             'web_site', 'admin_gov',
-    #             ('soc_sec_coverage', 'soc_sec_coverage_notes', ),
-    #             ('includes_state_employees', 'includes_local_employees', 'includes_safety_employees', 'includes_general_employees', 'includes_teachers'),
-    #             ('intra_period_data_entity_id', 'intra_period_data_period_end_date'),
-    #             'intra_period_data_period_type', 'gasb_68_type', 'state_gov_role', 'notes'
-    #         )
-    #     }),
-    # )
-
-    list_select_related = True
-
-    # inlines = [PlanAnnualAttributeInline, ]
+    list_select_related = ('admin_gov', 'admin_gov__state',)
 
     def state(self, obj):
         return obj.admin_gov.state
 
     class Media:
         css = {"all": ("css/admin.css",)}
-
-    # def get_formsets_with_inlines(self, request, obj=None):
-    #     for inline in self.get_inline_instances(request, obj):
-    #         inline.cached_plan_attributes = [(i.pk, str(i)) for i in PlanAttribute.objects.all()]
-    #         yield inline.get_formset(request, obj), inline
 
     # customized change view:
     change_form_template = 'admin/plan-detail.html'
