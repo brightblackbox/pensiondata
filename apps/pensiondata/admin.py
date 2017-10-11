@@ -207,7 +207,7 @@ class PlanAttributeAdmin(admin.ModelAdmin):
 
     list_display = ['name', 'data_source', 'datatype', 'plan_attribute_category', 'display_order',
                     'attribute_column_name', 'multiplier', 'attribute_type', ]
-    list_select_related = True
+    list_select_related = ('plan_attribute_category', 'data_source')
     list_filter = ['data_source', 'plan_attribute_category', 'attribute_type']
     list_per_page = 50
     search_fields = ['name']

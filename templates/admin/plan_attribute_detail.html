@@ -122,13 +122,17 @@
       var static_attr_list = "{{ static_attr_list }}";
       static_attr_list = JSON.parse(static_attr_list.replace(/&quot;/g, '"'));
 
+      $('#id_calculated_rule').css("visibility", "hidden");
+
       $('#id_attribute_type').change(function () {
         if($(this).val() == 'static'){
-          $('.calc-rule-container').hide();
-          $('#id_calculated_rule').prop("disabled", true).css("visibility", "visible").val('');
+
+          $('.field-calculated_rule').css("visibility", "hidden");
+          $('#id_calculated_rule').prop("disabled", true).val('');
         }else{
-          $('.calc-rule-container').show();
-          $('#id_calculated_rule').prop("disabled", false).css("visibility", "hidden");
+
+          $('.field-calculated_rule').css("visibility", "visible");
+          $('#id_calculated_rule').prop("disabled", false);
         }
       }).change();
 
