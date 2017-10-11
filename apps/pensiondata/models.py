@@ -269,6 +269,7 @@ class PlanAttribute(models.Model):
         managed = True
         db_table = 'plan_attribute'
 
+    @property
     def is_static(self):
         return self.attribute_type == 'static'
 
@@ -300,6 +301,7 @@ class PlanAttribute(models.Model):
                     readable_rule += attr_name
                 except PlanAttribute.DoesNotExist:
                     return False
+        return readable_rule
 
 
 ### THIS MODEL IS A WORK IN PROGRESS -- DO NOT USE FOR NOW
