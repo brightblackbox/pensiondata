@@ -90,6 +90,21 @@ def add_plan_annual_attr(request):
     try:
         plan_attr_obj = PlanAttribute.objects.get(id=attr_id)
         plan_obj = Plan.objects.get(id=plan_id)
+
+        try:
+            # check if already exists
+            old_obj = PlanAnnualAttribute.objects.get(
+                plan=plan_obj,
+                year=year,
+                plan_attribute=plan_attr_obj
+            )
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
+        except PlanAnnualAttribute.DoesNotExist:
+            pass
+        except PlanAnnualAttribute.MultipleObjectsReturned:
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
         new_plan_annual_attr_obj = PlanAnnualAttribute(
             plan=plan_obj,
             year=year,

@@ -1,4 +1,5 @@
 from django.core.urlresolvers import reverse
+import json
 
 from .utils import BaseTestCase as TestCase
 from .models import PlanAnnualAttribute, PlanAttribute
@@ -51,11 +52,35 @@ class PensionTest(TestCase):
                          '2')
 
         # check signal
-
         static_value1 = 111
         static_value2 = 2
         self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value,
                          str(static_value1*100-(200/3)+static_value2))
 
+    def test_add_planannualattr(self):
+        print('Add test---------------')
+        self.login_admin()
+        url = reverse('pensiondata:add_plan_annual_attr')
 
+        # already exists
+        response = self.client.post(url, {'attr_id': self.plan_static_attr1.id,
+                                          'plan_id': self.plan.id,
+                                          'year': '2017',
+                                          'value': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.content)
+        self.assertEqual(response['result'], 'fail')
+
+        # add new obj with static attr
+        response = self.client.post(url, {'attr_id': self.plan_static_attr1.id,
+                                          'plan_id': self.plan.id,
+                                          'year': '2016',
+                                          'value': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.content)
+        self.assertEqual(response['result'], 'success')
+        self.assertTrue(PlanAnnualAttribute.objects.filter(plan=self.plan, year='2016', plan_attribute=self.plan_static_attr1).exists())
