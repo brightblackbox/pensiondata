@@ -245,17 +245,3 @@ class PlanAttributeCategoryAdmin(admin.ModelAdmin):
 
 
 admin.site.register(PlanAttributeCategory, PlanAttributeCategoryAdmin)
-
-
-class PlanAnnualAdmin(admin.ModelAdmin):
-    list_display = ['plan', 'year', 'government_id']
-
-
-admin.site.register(PlanAnnual, PlanAnnualAdmin)
-
-
-class PlanAnnualAttributeAdmin(admin.ModelAdmin):
-    list_display = ['plan', 'year', 'plan_attribute', 'attribute_value']
-    list_select_related = ('plan', 'plan_attribute')
-
-admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)

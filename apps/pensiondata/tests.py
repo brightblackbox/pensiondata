@@ -9,8 +9,9 @@ class PensionTest(TestCase):
         self.create_init_data()
 
     def test_del_planannualattr(self):
+        print('Delete test---------------')
         self.login_admin()
-        url = reverse('pensiondata:delete_plan_attr')
+        url = reverse('pensiondata:delete_plan_annual_attr')
 
         # ajax post
         response = self.client.post(url, {'attr_id': self.plan_annual_attr.pk}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -19,17 +20,42 @@ class PensionTest(TestCase):
         self.assertFalse(PlanAnnualAttribute.objects.filter(id=self.plan_annual_attr.pk).exists())
 
     def test_read_calc_rule(self):
-
+        print('Readable function test---------------')
         self.assertEqual(
             self.plan_calculated_attr.get_rule_readable(), 'test-static-attr1*100-(200/3)+test-static-attr2'
         )
 
     def test_value_with_calc_rule(self):
+        print('Value function test---------------')
         calc_value = float(self.plan_annual_attr_with_calc_rule.value)
-        static_value1 = int(self.plan_annual_attr_with_static1.value)
-        static_value2 = int(self.plan_annual_attr_with_static2.value)
+        static_value1 = int(self.plan_annual_attr_with_static1.attribute_value)
+        static_value2 = int(self.plan_annual_attr_with_static2.attribute_value)
 
         self.assertEqual(
             calc_value,
             static_value1*100-(200/3)+static_value2
         )
+
+    def test_edit_planannualattr(self):
+        print('Edit test---------------')
+        self.login_admin()
+        url = reverse('pensiondata:edit_plan_annual_attr')
+
+        # ajax post
+        # plan_annual_attr_with_static2 old_val = 222
+        response = self.client.post(url, {'attr_id': self.plan_annual_attr_with_static2.id, 'new_val': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        # print('Response: {}'.format(response.__dict__))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_static2.id).attribute_value,
+                         '2')
+
+        # check signal
+
+        static_value1 = 111
+        static_value2 = 2
+        self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value,
+                         str(static_value1*100-(200/3)+static_value2))
+
+
+

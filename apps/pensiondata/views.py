@@ -105,6 +105,7 @@ def add_plan_annual_attr(request):
                 new_plan_annual_attr_obj.attribute_value = calculated_value
 
         new_plan_annual_attr_obj.save()
+
         return JsonResponse({'result': 'success'})
     except Exception as e:
         print(e)

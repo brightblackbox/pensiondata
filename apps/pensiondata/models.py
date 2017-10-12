@@ -179,39 +179,39 @@ class PlanAnnualAttribute(models.Model):
         """
         if self.plan_attribute.is_static:
             return self.attribute_value
-        else:
-            stored_rule = self.plan_attribute.calculated_rule
-            calculated_rule = ''
-            calc_items = re.split(r'#([\+\-\*\/\(\)]|\d+)#', stored_rule)
 
-            for item in calc_items:
-                if item == '':
-                    continue
-                if '%' in item:
-                    static_value = re.findall(r'%(.+)%', item)[0]
-                    calculated_rule += static_value
-                elif item in ['+', '-', '*', '/', '(', ')']:
-                    calculated_rule += item
-                else:  # NOTE: pk should be integer
-                    pk = int(item)
+        stored_rule = self.plan_attribute.calculated_rule
+        calculated_rule = ''
+        calc_items = re.split(r'#([\+\-\*\/\(\)]|\d+)#', stored_rule)
 
-                    try:
-                        item_val = PlanAnnualAttribute.objects.get(
-                            plan=self.plan,
-                            year=self.year,
-                            plan_attribute__id=pk
-                        ).attribute_value
+        for item in calc_items:
+            if item == '':
+                continue
+            if '%' in item:
+                static_value = re.findall(r'%(.+)%', item)[0]
+                calculated_rule += static_value
+            elif item in ['+', '-', '*', '/', '(', ')']:
+                calculated_rule += item
+            else:  # NOTE: pk should be integer
+                pk = int(item)
 
-                        calculated_rule += item_val
-                    except PlanAnnualAttribute.DoesNotExist:
-                        print('Invalid: no operand')
-                        return False
-            try:
-                value = eval(calculated_rule)
-                return str(value)
-            except:
-                print('Invalid: calculation error')
-                return False
+                try:
+                    item_val = PlanAnnualAttribute.objects.get(
+                        plan=self.plan,
+                        year=self.year,
+                        plan_attribute__id=pk
+                    ).attribute_value
+
+                    calculated_rule += item_val
+                except PlanAnnualAttribute.DoesNotExist:
+                    # print('Invalid: no operand')
+                    return '0'
+        try:
+            value = eval(calculated_rule)
+            return str(value)
+        except:
+            # print('Invalid: calculation error')
+            return '0'
 
 
 class PlanAttributeCategory(models.Model):
