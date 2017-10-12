@@ -111,7 +111,7 @@ class PlanAdmin(admin.ModelAdmin):
                         category_name=F('plan_attribute__plan_attribute_category__name'))\
             .order_by('category_name', '-year')
 
-        attr_list = PlanAttribute.objects.all().order_by("name")
+        attr_list = PlanAttribute.objects.all().order_by("name").select_related('plan_attribute_category')
 
         extra_context['categories_queryset'] = categories
         extra_context['categories_json'] = json.dumps(list(categories))

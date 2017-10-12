@@ -275,6 +275,12 @@ class PlanAttribute(models.Model):
     def is_static(self):
         return self.attribute_type == 'static'
 
+    @property
+    def category(self):
+        if self.plan_attribute_category is None:
+            return ''
+        return self.plan_attribute_category.name
+
     def __str__(self):
         return self.name
 

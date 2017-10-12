@@ -139,10 +139,14 @@
                 {% for attr in attr_list %}
                 <option value="{{ attr.id }}"
                         data-is-static="{{ attr.is_static }}"
-                        data-rule="{{ attr.get_rule_readable }}">{{ attr.name }}</option>
+                        data-type="{{ attr.attribute_type }}"
+                        data-category="{{ attr.category }}"
+                >{{ attr.name }}</option>
                 {% endfor %}
-              </select><br><span class="calc-rule-field"></span>
+              </select>
             </p>
+            <p><label>Type:&nbsp;</label><span id="attribute-type"></span></p>
+            <p><label>Category:&nbsp;</label><span id="attribute-category"></span></p>
             <p><label>Value:&nbsp;</label><input type="text" name="attribute_value" id="attr-val-input"></p>
             <div id="add-new-result" style="display: none"></div>
           </div>
@@ -231,7 +235,8 @@
             return false
         }
         var is_static = $(this).find(":selected").data('is-static');
-        $('.calc-rule-field').text( '= ' + $(this).find(":selected").data('rule') )
+        $('#attribute-type').text( $(this).find(":selected").data('type') );
+        $('#attribute-category').text( $(this).find(":selected").data('category') );
 
         if(is_static === 'False'){
 
