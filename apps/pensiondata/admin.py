@@ -111,9 +111,12 @@ class PlanAdmin(admin.ModelAdmin):
                         category_name=F('plan_attribute__plan_attribute_category__name'))\
             .order_by('category_name', '-year')
 
+        attr_list = PlanAttribute.objects.all().order_by("name")
+
         extra_context['categories_queryset'] = categories
         extra_context['categories_json'] = json.dumps(list(categories))
         extra_context['plan_annual_attrs'] = json.dumps(list(plan_annual_attrs))
+        extra_context['attr_list'] = attr_list
 
         return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
 
@@ -253,6 +256,6 @@ admin.site.register(PlanAnnual, PlanAnnualAdmin)
 
 class PlanAnnualAttributeAdmin(admin.ModelAdmin):
     list_display = ['plan', 'year', 'plan_attribute', 'attribute_value']
-
+    list_select_related = ('plan', 'plan_attribute')
 
 admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)

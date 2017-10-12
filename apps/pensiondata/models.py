@@ -204,11 +204,13 @@ class PlanAnnualAttribute(models.Model):
 
                         calculated_rule += item_val
                     except PlanAnnualAttribute.DoesNotExist:
+                        print('Invalid: no operand')
                         return False
             try:
                 value = eval(calculated_rule)
                 return str(value)
             except:
+                print('Invalid: calculation error')
                 return False
 
 
