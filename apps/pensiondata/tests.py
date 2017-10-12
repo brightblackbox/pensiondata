@@ -84,3 +84,14 @@ class PensionTest(TestCase):
         response = json.loads(response.content)
         self.assertEqual(response['result'], 'success')
         self.assertTrue(PlanAnnualAttribute.objects.filter(plan=self.plan, year='2016', plan_attribute=self.plan_static_attr1).exists())
+
+    def test_trigger_when_edit_calc_rule(self):
+        print('-------------Trigger test---------------')
+        # print(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value)
+        self.plan_calculated_attr.calculated_rule = '#%123%#'
+        self.plan_calculated_attr.save()
+        # print(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value)
+
+        self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value,
+                         '123')
+

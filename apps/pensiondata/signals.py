@@ -7,7 +7,8 @@ from .models import PlanAnnualAttribute, PlanAttribute
 @receiver(post_delete, sender=PlanAnnualAttribute)
 @receiver(post_save, sender=PlanAttribute)
 def recalculate(sender, instance, **kwargs):
-    post_save.disconnect(recalculate, sender=sender)
+    post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
+    post_save.disconnect(recalculate, sender=PlanAttribute)
     # print('Instance: {}'.format(instance.__dict__))
 
     if sender is PlanAnnualAttribute:
@@ -25,6 +26,7 @@ def recalculate(sender, instance, **kwargs):
     elif sender is PlanAttribute:
         # print('Signal in PlanAttribute')
         if not instance.is_static:
+            print('here')
             obj_list = PlanAnnualAttribute.objects.filter(plan_attribute=instance)
 
             for obj in obj_list:
@@ -33,7 +35,8 @@ def recalculate(sender, instance, **kwargs):
     else:
         pass
 
-    post_save.connect(recalculate, sender=sender)
+    post_save.connect(recalculate, sender=PlanAnnualAttribute)
+    post_save.connect(recalculate, sender=PlanAttribute)
 
 
 
