@@ -35,42 +35,6 @@ class CensusAnnualAttributeInline(admin.TabularInline):
     readonly_fields = ('year',)
 
 
-# class PPDAnnualAttributeInline(admin.TabularInline):
-#     model = PPDAnnualAttribute
-#     extra = 0
-#     exclude = ('id', )
-#     readonly_fields = ('year',)
-
-
-class PlanAnnualAttributeInline(ForeignKeyCacheMixin, admin.TabularInline):
-
-    model = PlanAnnualAttribute
-    extra = 0
-
-    readonly_fields = ['year', 'source', 'category', 'attribute']
-    fields = ['year', 'source', 'category', 'attribute', 'attribute_value']
-    ordering = ['-year']
-
-    def attribute(self, obj):
-        return obj.plan_attribute.attribute
-
-    def source(self, obj):
-        return obj.plan_attribute.data_source.name
-
-    def category(self, obj):
-        return obj.plan_attribute.plan_attribute_category.name
-
-    # template = "admin/plan-detail.html"
-
-    def get_queryset(self, request):
-        qs = PlanAnnualAttribute.objects.select_related(
-                                            'plan_attribute',
-                                            'plan_attribute__data_source',
-                                            'plan_attribute__plan_attribute_category'
-        )
-        return qs
-
-
 class PlanAdmin(admin.ModelAdmin):
     model = Plan
 
@@ -111,12 +75,19 @@ class PlanAdmin(admin.ModelAdmin):
                         category_name=F('plan_attribute__plan_attribute_category__name'))\
             .order_by('category_name', '-year')
 
-        attr_list = PlanAttribute.objects.all().order_by("name").select_related('plan_attribute_category')
+        attr_list = PlanAttribute.objects.all()\
+            .values(
+                'id', 'name', 'attribute_type', 'calculated_rule', 'plan_attribute_category__name'
+            ) \
+            .annotate(
+                category=F('plan_attribute_category__name')
+            ) \
+            .order_by("name")
 
         extra_context['categories_queryset'] = categories
         extra_context['categories_json'] = json.dumps(list(categories))
         extra_context['plan_annual_attrs'] = json.dumps(list(plan_annual_attrs))
-        extra_context['attr_list'] = attr_list
+        extra_context['attr_list'] = json.dumps(list(attr_list))
 
         return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
 

@@ -136,16 +136,10 @@
             <p><label>Attribute:&nbsp;</label>
               <select name="plan_attribute" id="attr-selectbox">
                 <option value="">----------</option>
-                {% for attr in attr_list %}
-                <option value="{{ attr.id }}"
-                        data-is-static="{{ attr.is_static }}"
-                        data-type="{{ attr.attribute_type }}"
-                        data-category="{{ attr.category }}"
-                >{{ attr.name }}</option>
-                {% endfor %}
               </select>
             </p>
             <p><label>Type:&nbsp;</label><span id="attribute-type"></span></p>
+            <div id="attribute-rule"></div>
             <p><label>Category:&nbsp;</label><span id="attribute-category"></span></p>
             <p><label>Value:&nbsp;</label><input type="text" name="attribute_value" id="attr-val-input"></p>
             <div id="add-new-result" style="display: none"></div>
@@ -213,10 +207,12 @@
       // Django -> JS
       var categories = "{{ categories_json }}";
       var plan_annual_attrs = "{{ plan_annual_attrs }}";
+      var attr_list = "{{ attr_list }}";
 
       // string -> JSON object
       categories = JSON.parse(categories.replace(/&quot;/g, '"'));
       plan_annual_attrs = JSON.parse(plan_annual_attrs.replace(/&quot;/g, '"'));
+      attr_list = JSON.parse(attr_list.replace(/&quot;/g, '"'));
 
       // new JSON object for tbody, tableobj
       var tbody_arr = {};
@@ -227,25 +223,72 @@
           tbody_arr[ categories[c].id ] = '';
           table_arr[ categories[c].id ] = '';
       }
+      // make selectbox for attributes
+      $.each(attr_list, function (i, attr) {
+        $('#attr-selectbox').append('<option value="'+ attr.id +'">' + attr.name +'</option>');
+      })
+
       // enable/disalbe attribute-value when a user selects attribute.
       $('#attr-selectbox').change(function () {
         var attr_id = $(this).val();
         if(!attr_id){
-            console.log('I have no value')
             return false
         }
-        var is_static = $(this).find(":selected").data('is-static');
-        $('#attribute-type').text( $(this).find(":selected").data('type') );
-        $('#attribute-category').text( $(this).find(":selected").data('category') );
 
-        if(is_static === 'False'){
+        var selected_attr = get_attr_by_id(attr_id);
 
+        $('#attribute-type').text( selected_attr.attribute_type );
+        $('#attribute-category').text( selected_attr.category );
+        $('#attribute-rule').html( show_rule( selected_attr.calculated_rule ) );
+
+        if(selected_attr.attribute_type === 'calculated'){
           $('#attr-val-input').prop("readonly", true).val('');
-
         }else{
           $('#attr-val-input').prop("readonly", false);
         }
       })
+
+      function show_rule(rule){
+        if(! rule){
+            return '';
+        }
+        var old_calc_items = rule.split(/#([\+\-\*\/\(\)]|\d+)#/)
+        var availableOperators = ['+', '-', '*', '/', '(', ')'];
+        var readable_rule = '<label>Rule:&nbsp;</label>';
+
+        for(var i=0, len=old_calc_items.length; i < len; i++){
+          if( old_calc_items[i].length <= 0){
+              continue;
+          }
+
+          static_value = old_calc_items[i].match(/%(.+)%/);
+
+          if ( $.inArray(old_calc_items[i], availableOperators) >= 0) {
+            readable_rule += '<span style="color:green">' + old_calc_items[i] + '</span>';
+          }
+          else if(static_value != null){
+            readable_rule += '<span style="color:blue">' + static_value[1] + '</span>';
+          }
+          else{
+            id = old_calc_items[i];
+            name = get_attr_by_id(id).name;
+            readable_rule += '<span style="background-color:#e4e4e4;">' + name + '</span>';
+          }
+        }
+
+        return readable_rule
+      }
+
+      function get_attr_by_id(id) {
+        var selected_attr = {};
+        $.each(attr_list, function (i, attr) {
+          if(attr.id == id){
+            selected_attr = attr;
+            return false;
+          }
+        });
+        return selected_attr;
+      }
 
       // add new form submit
       $('#add-new-form').on('submit', function (e) {
