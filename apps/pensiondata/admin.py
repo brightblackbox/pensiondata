@@ -88,6 +88,7 @@ class PlanAdmin(admin.ModelAdmin):
         extra_context['categories_json'] = json.dumps(list(categories))
         extra_context['plan_annual_attrs'] = json.dumps(list(plan_annual_attrs))
         extra_context['attr_list'] = json.dumps(list(attr_list))
+        extra_context['year_range'] = range(1990, 2020)
 
         return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
 

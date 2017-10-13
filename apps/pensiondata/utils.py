@@ -22,7 +22,7 @@ class BaseTestCase(TestCase):
                                                       data_source=self.data_source)
         self.plan_annual_attr = PlanAnnualAttribute.objects.create(plan=self.plan, year="2017",
                                                                    plan_attribute=self.plan_attr, attribute_value="111")
-
+        # PlanAttribute
         self.plan_static_attr1 = PlanAttribute.objects.create(
             id=100,
             name="test-static-attr1", plan_attribute_category=self.category,
@@ -40,6 +40,7 @@ class BaseTestCase(TestCase):
             calculated_rule='#100##*#%100%#-##(#%200%#/#%3%#)##+##200#'   # test-static-attr1*100-(200/3)+test-static-attr2
         )
 
+        # PlanAnnualAttribute
         self.plan_annual_attr_with_calc_rule = PlanAnnualAttribute.objects.create(
             plan=self.plan, year="2017",
             plan_attribute=self.plan_calculated_attr

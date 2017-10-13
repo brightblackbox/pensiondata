@@ -132,7 +132,12 @@
 
             <p><label>plan:&nbsp;</label>{{ original }}</p>
             <input type="hidden" name="plan" value="{{ original.pk }}" readonly>
-            <p><label>Year:&nbsp;</label><input type="text" name="year" id="year-input-field"></p>
+            <p><label>Year:&nbsp;</label>
+              <select name="plan_attribute" id="year-selectbox">
+                {% for year in year_range %}
+                  <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+              </select>
             <p><label>Attribute:&nbsp;</label>
               <select name="plan_attribute" id="attr-selectbox">
                 <option value="">----------</option>
@@ -228,33 +233,46 @@
         $('#attr-selectbox').append('<option value="'+ attr.id +'">' + attr.name +'</option>');
       })
 
-      // enable/disalbe attribute-value when a user selects attribute.
+      // when a user selects attribute.
       $('#attr-selectbox').change(function () {
         var attr_id = $(this).val();
         if(!attr_id){
-            return false
+          $('#attribute-type').text('');
+          $('#attribute-category').text('');
+          $('#attribute-rule').html('');
+          $('#attr-val-input').val( '' );
+          return false;
         }
 
-        var selected_attr = get_attr_by_id(attr_id);
-
-        $('#attribute-type').text( selected_attr.attribute_type );
-        $('#attribute-category').text( selected_attr.category );
-        $('#attribute-rule').html( show_rule( selected_attr.calculated_rule ) );
-
-        if(selected_attr.attribute_type === 'calculated'){
-          $('#attr-val-input').prop("readonly", true).val('');
-        }else{
-          $('#attr-val-input').prop("readonly", false);
-        }
+        show_detail_for_add_new(attr_id);
       })
 
-      function show_rule(rule){
+      // when a user selects year.
+      $('#year-selectbox').change(function () {
+        var attr_id = $('#attr-selectbox').val();
+        show_detail_for_add_new(attr_id);
+      })
+
+      function show_detail_for_add_new(attr_id){
+
+        var selected_attr = get_attr_by_id(attr_id);
+        $('#attribute-type').text( selected_attr.attribute_type );
+        $('#attribute-category').text( selected_attr.category );
+        $('#add-new-result').hide();
+
+        var rule = selected_attr.calculated_rule
+
         if(! rule){
-            return '';
+          $('#attribute-rule').html( '' );
+          $('#attr-val-input').val( '' );
+          return;
         }
         var old_calc_items = rule.split(/#([\+\-\*\/\(\)]|\d+)#/)
         var availableOperators = ['+', '-', '*', '/', '(', ')'];
         var readable_rule = '<label>Rule:&nbsp;</label>';
+        var calc_formula = '';
+        var year = $('#year-selectbox').val();
+        var is_valid = true;
 
         for(var i=0, len=old_calc_items.length; i < len; i++){
           if( old_calc_items[i].length <= 0){
@@ -265,18 +283,35 @@
 
           if ( $.inArray(old_calc_items[i], availableOperators) >= 0) {
             readable_rule += '<span style="color:green">' + old_calc_items[i] + '</span>';
+            calc_formula += old_calc_items[i]
           }
           else if(static_value != null){
             readable_rule += '<span style="color:blue">' + static_value[1] + '</span>';
+            calc_formula += static_value[1]
           }
           else{
             id = old_calc_items[i];
             name = get_attr_by_id(id).name;
             readable_rule += '<span style="background-color:#e4e4e4;">' + name + '</span>';
+            value = get_value(name, year);
+
+            if (! value){
+                is_valid = false;
+                calc_formula += '0';
+            }else{
+                calc_formula += value;
+            }
           }
         }
 
-        return readable_rule
+        $('#attribute-rule').html( readable_rule );
+
+        if(is_valid){
+          $('#attr-val-input').val( eval(calc_formula) )
+        }else{
+          $('#attr-val-input').val( '0' )
+        }
+
       }
 
       function get_attr_by_id(id) {
@@ -290,24 +325,32 @@
         return selected_attr;
       }
 
+      function get_value(name, year) {
+        var selected_val = false
+        $.each(plan_annual_attrs, function (i, annual_attr) {
+          if(annual_attr.attribute == name && annual_attr.year == year){
+
+            selected_val = annual_attr.attribute_value;
+            return false;
+          }
+        });
+        return selected_val;
+      }
+
       // add new form submit
       $('#add-new-form').on('submit', function (e) {
           e.preventDefault();
-          var year = parseInt( $('#year-input-field').val(), 10 );
+          var year = $('#year-selectbox').val();
           var attr_id = $('#attr-selectbox').val();
           var value = $('#attr-val-input').val();
 
-          if (isNaN(year)){
-            alert("invalid year");
-            return false;
-          }
           if(attr_id==""){
             alert("invalid attribute");
             return false;
           }
 
           // disable buttons before submit
-          $('#add-new-result').html('Please wait ...').css('color', 'red');
+          $('#add-new-result').html('Please wait ...').css('color', 'red').show();
           $('#add-new-form .btn-primary').prop('disabled', true);
           $('#add-new-form button').prop('disabled', true);
 

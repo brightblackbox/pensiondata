@@ -112,13 +112,6 @@ def add_plan_annual_attr(request):
             attribute_value=value
         )
 
-        if not plan_attr_obj.is_static:
-            calculated_value = new_plan_annual_attr_obj.value
-            if not calculated_value:
-                return JsonResponse({'result': 'fail', 'msg': 'Cannot calculate attribute value.'})
-            else:
-                new_plan_annual_attr_obj.attribute_value = calculated_value
-
         new_plan_annual_attr_obj.save()
 
         return JsonResponse({'result': 'success'})

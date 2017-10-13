@@ -73,6 +73,22 @@ class PensionTest(TestCase):
         response = json.loads(response.content)
         self.assertEqual(response['result'], 'fail')
 
+        # add new obj with calculated attr
+        response = self.client.post(url, {'attr_id': self.plan_calculated_attr.id,
+                                          'plan_id': self.plan.id,
+                                          'year': '2016',
+                                          'value': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.content)
+        self.assertEqual(response['result'], 'success')
+        self.assertEqual(
+            PlanAnnualAttribute.objects.get(plan=self.plan, year='2016',
+                                            plan_attribute=self.plan_calculated_attr).attribute_value,
+            '0'  # '2' if not trigger
+        )
+
         # add new obj with static attr
         response = self.client.post(url, {'attr_id': self.plan_static_attr1.id,
                                           'plan_id': self.plan.id,
