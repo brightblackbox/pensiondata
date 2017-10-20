@@ -3,9 +3,13 @@ import json
 
 from .utils import BaseTestCase as TestCase
 from .models import PlanAnnualAttribute, PlanAttribute
+from moderation.models import ModeratedObject
 
 
 class PensionTest(TestCase):
+    """
+    This results "fails" in moderation mode
+    """
     def setUp(self):
         self.create_init_data()
 
@@ -111,3 +115,91 @@ class PensionTest(TestCase):
         self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value,
                          '123')
 
+
+class PensionModerationTest(TestCase):
+    def setUp(self):
+        self.create_init_data()
+
+    def test_del_planannualattr(self):
+        print('Delete test---------------')
+        self.login_admin()
+        self.assertTrue(PlanAnnualAttribute.objects.filter(id=self.plan_annual_attr.pk).exists())
+
+        url = reverse('pensiondata:delete_plan_annual_attr')
+
+        # ajax post
+        response = self.client.post(url, {'attr_id': self.plan_annual_attr.pk}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(PlanAnnualAttribute.objects.filter(id=self.plan_annual_attr.pk).exists())
+
+        mods = ModeratedObject.objects.all()
+        for m in mods:
+            print("%d %d" % (m.state, m.status))
+
+    def test_add_planannualattr(self):
+        print('Add test---------------')
+        self.login_admin()
+        url = reverse('pensiondata:add_plan_annual_attr')
+
+        # already exists
+        response = self.client.post(url, {'attr_id': self.plan_static_attr1.id,
+                                          'plan_id': self.plan.id,
+                                          'year': '2017',
+                                          'value': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.content)
+        self.assertEqual(response['result'], 'fail')
+
+        # add new obj with calculated attr
+        response = self.client.post(url, {'attr_id': self.plan_calculated_attr.id,
+                                          'plan_id': self.plan.id,
+                                          'year': '2016',
+                                          'value': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.content)
+        self.assertEqual(response['result'], 'success')
+        self.assertFalse(PlanAnnualAttribute.objects.filter(plan=self.plan, year='2016', plan_attribute=self.plan_calculated_attr).exists())
+
+
+        # self.assertEqual(
+        #     PlanAnnualAttribute.objects.get(plan=self.plan, year='2016',
+        #                                     plan_attribute=self.plan_calculated_attr).attribute_value,
+        #     '0'  # '2' if not trigger
+        # )
+
+        # add new obj with static attr
+        response = self.client.post(url, {'attr_id': self.plan_static_attr1.id,
+                                          'plan_id': self.plan.id,
+                                          'year': '2016',
+                                          'value': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 200)
+        response = json.loads(response.content)
+        self.assertEqual(response['result'], 'success')
+        self.assertFalse(PlanAnnualAttribute.objects.filter(plan=self.plan, year='2016', plan_attribute=self.plan_static_attr1).exists())
+
+    def test_edit_planannualattr(self):
+        print('Edit test---------------')
+        self.login_admin()
+        url = reverse('pensiondata:edit_plan_annual_attr')
+
+        # ajax post
+        # plan_annual_attr_with_static2 old_val = 222
+        response = self.client.post(url, {'attr_id': self.plan_annual_attr_with_static2.id, 'new_val': '2'},
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        # print('Response: {}'.format(response.__dict__))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_static2.id).attribute_value,
+                         '222')  # not 2
+
+        # check signal: should not trigger signal
+        static_value1 = 111
+        static_value2 = 222  # not 2
+        self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value,
+                         str(static_value1*100-(200/3)+static_value2))

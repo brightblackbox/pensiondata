@@ -30,14 +30,19 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
 
+    'django.contrib.sites',
+
     'nested_admin',
     'bootstrap3',
     'django_tables2',
 
     'common',
     'pensiondata',
+    'moderation',
 ]
 
+
+SITE_ID = 1
 
 MIDDLEWARE_CLASSES = [
     'django.middleware.security.SecurityMiddleware',
@@ -135,4 +140,10 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'assets'),
 )
+
+
+# Email settings
+
+DEFAULT_FROM_EMAIL = 'nick@brightblackbox.com'
+MODERATION_MODERATORS = [DEFAULT_FROM_EMAIL, ]
 

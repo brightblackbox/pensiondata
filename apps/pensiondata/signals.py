@@ -7,6 +7,7 @@ from .models import PlanAnnualAttribute, PlanAttribute
 @receiver(post_delete, sender=PlanAnnualAttribute)
 @receiver(post_save, sender=PlanAttribute)
 def recalculate(sender, instance, **kwargs):
+
     post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
     post_save.disconnect(recalculate, sender=PlanAttribute)
     # print('Instance: {}'.format(instance.__dict__))

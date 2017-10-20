@@ -7,6 +7,8 @@ from .models import Plan, Government, County, State, GovernmentType, PlanAttribu
 
 from .models import CensusAnnualAttribute
 
+from moderation.admin import ModerationAdmin
+
 
 class ForeignKeyCacheMixin(object):
     """
@@ -35,7 +37,7 @@ class CensusAnnualAttributeInline(admin.TabularInline):
     readonly_fields = ('year',)
 
 
-class PlanAdmin(admin.ModelAdmin):
+class PlanAdmin(ModerationAdmin):
     model = Plan
 
     list_display = ['name', 'state']
@@ -49,6 +51,12 @@ class PlanAdmin(admin.ModelAdmin):
     def state(self, obj):
         return obj.admin_gov.state
 
+    def get_actions(self, request):
+        actions = super(ModerationAdmin, self).get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+
     class Media:
         css = {"all": ("css/admin.css",)}
 
@@ -56,6 +64,9 @@ class PlanAdmin(admin.ModelAdmin):
     change_form_template = 'admin/plan-detail.html'
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
+        if self.admin_integration_enabled:
+            self.send_message(request, object_id)
+
         extra_context = extra_context or {}
 
         categories = PlanAttributeCategory.objects.values('id', 'name').order_by("name")
