@@ -10,7 +10,7 @@ from .models import Plan, PlanAnnualAttribute, PlanAttribute, PlanAttributeCateg
 class BaseTestCase(TestCase):
 
     def create_init_data(self):
-        self.admin = User.objects.create_user(username='admin', email='admin@test.com', password='test', is_staff=True)
+        self.admin = User.objects.create_user(username='admin', email='admin@test.com', password='test', is_staff=True, is_superuser=True)
 
         self.state = State.objects.create(name="test-state", state_abbreviation="xxx", retirement_census_state_code="xxx")
         self.govenment = Government.objects.create(name="test-goven", state=self.state)

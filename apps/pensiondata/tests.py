@@ -4,6 +4,8 @@ import json
 from .utils import BaseTestCase as TestCase
 from .models import PlanAnnualAttribute, PlanAttribute
 from moderation.models import ModeratedObject
+from moderation.constants import (MODERATION_DRAFT_STATE, MODERATION_ADD_STATE, MODERATION_DELETE_STATE,
+                                  MODERATION_STATUS_APPROVED, MODERATION_STATUS_PENDING)
 
 
 class PensionTest(TestCase):
@@ -121,7 +123,9 @@ class PensionModerationTest(TestCase):
         self.create_init_data()
 
     def test_del_planannualattr(self):
-        print('Delete test---------------')
+        print('*************************************')
+        print('--------------Del test---------------')
+        print('*************************************')
         self.login_admin()
         self.assertTrue(PlanAnnualAttribute.objects.filter(id=self.plan_annual_attr.pk).exists())
 
@@ -134,11 +138,29 @@ class PensionModerationTest(TestCase):
         self.assertTrue(PlanAnnualAttribute.objects.filter(id=self.plan_annual_attr.pk).exists())
 
         mods = ModeratedObject.objects.all()
+        self.assertEqual(len(mods), 2)
         for m in mods:
-            print("%d %d" % (m.state, m.status))
+            self.assertTrue([m.state, m.status] in [[MODERATION_ADD_STATE, MODERATION_STATUS_APPROVED],
+                                                    [MODERATION_DELETE_STATE, MODERATION_STATUS_PENDING]])
+        # approve
+        url = reverse('admin:moderation_moderatedobject_change',
+                      args=(self.plan_annual_attr.moderated_object.pk,))
+
+        response = self.client.post(url, {'approve': 'Approve',
+                                          'reason': 'this is reason'})
+
+        self.assertEqual(response.status_code, 302)
+
+
+        # for obj in self.plan_annual_attr.moderated_objects:
+        #     obj.approve(by=self.admin)
+
+        self.assertFalse(PlanAnnualAttribute.objects.filter(id=self.plan_annual_attr.pk).exists())
 
     def test_add_planannualattr(self):
-        print('Add test---------------')
+        print('*************************************')
+        print('--------------Add test---------------')
+        print('*************************************')
         self.login_admin()
         url = reverse('pensiondata:add_plan_annual_attr')
 
@@ -165,12 +187,20 @@ class PensionModerationTest(TestCase):
         self.assertEqual(response['result'], 'success')
         self.assertFalse(PlanAnnualAttribute.objects.filter(plan=self.plan, year='2016', plan_attribute=self.plan_calculated_attr).exists())
 
+        mods = ModeratedObject.objects.all()
+        self.assertEqual(len(mods), 1)
+        for m in mods:
+            self.assertTrue([m.state, m.status] in [[MODERATION_ADD_STATE, MODERATION_STATUS_PENDING]])
 
-        # self.assertEqual(
-        #     PlanAnnualAttribute.objects.get(plan=self.plan, year='2016',
-        #                                     plan_attribute=self.plan_calculated_attr).attribute_value,
-        #     '0'  # '2' if not trigger
-        # )
+        # If approve:
+        for m in mods:
+            m.approve(by=self.admin)
+
+        self.assertEqual(
+            PlanAnnualAttribute.objects.get(plan=self.plan, year='2016',
+                                            plan_attribute=self.plan_calculated_attr).attribute_value,
+            '0'  # '2' if not trigger
+        )
 
         # add new obj with static attr
         response = self.client.post(url, {'attr_id': self.plan_static_attr1.id,
@@ -185,7 +215,9 @@ class PensionModerationTest(TestCase):
         self.assertFalse(PlanAnnualAttribute.objects.filter(plan=self.plan, year='2016', plan_attribute=self.plan_static_attr1).exists())
 
     def test_edit_planannualattr(self):
-        print('Edit test---------------')
+        print('*************************************')
+        print('--------------Edit test---------------')
+        print('*************************************')
         self.login_admin()
         url = reverse('pensiondata:edit_plan_annual_attr')
 
@@ -198,8 +230,22 @@ class PensionModerationTest(TestCase):
         self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_static2.id).attribute_value,
                          '222')  # not 2
 
+        mods = ModeratedObject.objects.all()
+        self.assertEqual(len(mods), 2)
+        for m in mods:
+            self.assertTrue([m.state, m.status] in [[MODERATION_ADD_STATE, MODERATION_STATUS_APPROVED],
+                                                    [MODERATION_DRAFT_STATE, MODERATION_STATUS_PENDING]])
+        # If approve:
+        for m in mods:
+            m.approve(by=self.admin)
+
+        self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_static2.id).attribute_value,
+                         '2')  # changed to 2
+
         # check signal: should not trigger signal
         static_value1 = 111
-        static_value2 = 222  # not 2
+        static_value2 = 2
         self.assertEqual(PlanAnnualAttribute.objects.get(id=self.plan_annual_attr_with_calc_rule.id).attribute_value,
                          str(static_value1*100-(200/3)+static_value2))
+
+
