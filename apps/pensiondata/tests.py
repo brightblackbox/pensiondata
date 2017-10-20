@@ -157,6 +157,9 @@ class PensionModerationTest(TestCase):
 
         self.assertFalse(PlanAnnualAttribute.objects.filter(id=self.plan_annual_attr.pk).exists())
 
+        mods = ModeratedObject.objects.all()
+        self.assertEqual(len(mods), 0)
+
     def test_add_planannualattr(self):
         print('*************************************')
         print('--------------Add test---------------')
