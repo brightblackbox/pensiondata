@@ -276,12 +276,10 @@ class ModerationManager(with_metaclass(ModerationManagerSingleton, object)):
         if unchanged_obj:
             moderated_obj = self._get_or_create_moderated_object(instance,
                                                                  unchanged_obj,
-                                                                 moderator)
+                                                                 moderator,
+                                                                 action='delete')
 
-            if not (moderated_obj.status ==
-                    MODERATION_STATUS_APPROVED or
-                    moderator.bypass_moderation_after_approval):
-                moderated_obj.save()
+            moderated_obj.save()
 
     def _get_unchanged_object(self, instance):
         if instance.pk is None:
@@ -307,7 +305,7 @@ class ModerationManager(with_metaclass(ModerationManagerSingleton, object)):
         return unchanged_obj
 
     def _get_or_create_moderated_object(self, instance,
-                                        unchanged_obj, moderator):
+                                        unchanged_obj, moderator, action=None):
         """
         Get or create ModeratedObject instance.
         If moderated object is not equal instance then serialize unchanged
@@ -357,6 +355,9 @@ class ModerationManager(with_metaclass(ModerationManagerSingleton, object)):
                                                           only_excluded=True):
                 moderated_object.changed_object = self._get_updated_object(
                     instance, unchanged_obj, moderator)
+            else:
+                if action == 'delete':
+                    moderated_object = get_new_instance(unchanged_obj)
 
         return moderated_object
 
@@ -421,7 +422,6 @@ class ModerationManager(with_metaclass(ModerationManagerSingleton, object)):
             moderator.inform_moderator(instance)
 
     def post_delete_handler(self, sender, instance, **kwargs):
-        pk = instance.pk
         moderator = self.get_moderator(sender)
 
         moderated_obj = ModeratedObject.objects.get_for_instance(instance)
@@ -436,8 +436,8 @@ class ModerationManager(with_metaclass(ModerationManagerSingleton, object)):
         moderated_obj.status = MODERATION_STATUS_PENDING
         moderated_obj.state = MODERATION_DELETE_STATE
         moderated_obj.save()
-        moderator.inform_moderator(instance)
         instance._moderated_object = moderated_obj
+        moderator.inform_moderator(instance)
 
     def _copy_model_instance(self, obj):
         initial = dict(
