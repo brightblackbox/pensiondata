@@ -26,7 +26,7 @@ from .managers import ModeratedObjectManager
 from .signals import post_moderation, pre_moderation
 from .utils import django_19
 
-import datetime
+from django.utils import timezone
 
 
 MODERATION_STATES = Choices(
@@ -224,7 +224,7 @@ class ModeratedObject(models.Model):
             pass
 
         self.status = new_status
-        self.on = datetime.datetime.now()
+        self.on = timezone.now()
         self.by = by
         self.reason = reason
         self.save()
