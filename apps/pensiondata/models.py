@@ -164,6 +164,9 @@ class PlanAnnualAttribute(models.Model):
         # unique_together = ('plan', 'year', 'plan_attribute',)
         db_table = 'plan_annual_attribute'
 
+    def __str__(self):
+        return "PlanAnnualAttribute(%s)" % self.year
+
     @property
     def data_source(self):
         return self.plan_attribute.data_source.name

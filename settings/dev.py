@@ -4,7 +4,13 @@ from .base import *
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', '192.168.0.2', '192.168.99.101', '0.0.0.0', 'pensiondata-dev.us-east-1.elasticbeanstalk.com']
+ALLOWED_HOSTS = [
+    '127.0.0.1',
+    '192.168.0.2',
+    '192.168.99.101',
+    '0.0.0.0',
+    'pensiondata-dev.us-east-1.elasticbeanstalk.com'
+]
 
 INTERNAL_IPS = ['127.0.0.1', '0.0.0.0']
 
@@ -35,3 +41,7 @@ if IS_TESTING:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     )
 
+
+# Email settings
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
