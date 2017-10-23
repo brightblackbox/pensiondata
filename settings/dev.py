@@ -12,6 +12,8 @@ ALLOWED_HOSTS = [
     'pensiondata-dev.us-east-1.elasticbeanstalk.com'
 ]
 
+BASE_URL = 'http://127.0.0.1:8000'
+
 INTERNAL_IPS = ['127.0.0.1', '0.0.0.0']
 
 INSTALLED_APPS += ['debug_toolbar']
@@ -44,4 +46,4 @@ if IS_TESTING:
 
 # Email settings
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

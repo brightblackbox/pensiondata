@@ -144,6 +144,12 @@ STATICFILES_DIRS = (
 
 # Email settings
 
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = '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'
+EMAIL_USE_TLS = True
+
 DEFAULT_FROM_EMAIL = 'nick@brightblackbox.com'
 MODERATION_MODERATORS = [DEFAULT_FROM_EMAIL, ]
 
