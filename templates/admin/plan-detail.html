@@ -74,12 +74,14 @@
 {#    {% block inline_field_sets %}#}
 {#      {% for inline_admin_formset in inline_admin_formsets %}#}
 {#          {% include inline_admin_formset.opts.template %}#}
-    <h4>Plan Annual Attributes</h4>
+    <h4 style="display: inline">Plan Annual Attributes:</h4>
+    (<a href="#" class="add-link" style="display: inline"
+       data-toggle="modal" data-target="#add-modal">
+      <img src="/static/admin/img/icon-addlink.svg">Add New</a>)
 
     {% for catefory in categories_queryset %}
       <div class="accordion accordion-{{ catefory.id }} ">{{ catefory.name }}( <span></span> )</div>
       <div class="accordion-panel">
-        <a href="#">Add new</a>
         <table class="table table-striped table-plan-attr table-category-{{ catefory.id }}" data-id="{{ catefory.id }}">
           <thead>
             <tr>
@@ -115,6 +117,48 @@
 
   </div>
 </form>
+    <!-- Add Modal -->
+    <div id="add-modal" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title">Add New</h4>
+          </div>
+          <form id="add-new-form" method="post">{% csrf_token %}
+          <div class="modal-body">
+
+            <p><label>plan:&nbsp;</label>{{ original }}</p>
+            <input type="hidden" name="plan" value="{{ original.pk }}" readonly>
+            <p><label>Year:&nbsp;</label>
+              <select name="plan_attribute" id="year-selectbox">
+                {% for year in year_range %}
+                  <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+              </select>
+            <p><label>Attribute:&nbsp;</label>
+              <select name="plan_attribute" id="attr-selectbox">
+                <option value="">----------</option>
+              </select>
+            </p>
+            <p><label>Type:&nbsp;</label><span id="attribute-type"></span></p>
+            <div id="attribute-rule"></div>
+            <p><label>Category:&nbsp;</label><span id="attribute-category"></span></p>
+            <p><label>Value:&nbsp;</label><input type="text" name="attribute_value" id="attr-val-input"></p>
+            <div id="add-new-result" style="display: none"></div>
+          </div>
+          <div class="modal-footer">
+            <input type="submit" class="btn btn-default btn-primary" value="Save">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+          </form>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Edit Modal -->
     <div id="edit-modal" class="modal fade" role="dialog">
       <div class="modal-dialog">
@@ -163,16 +207,17 @@
   <script src="{% static 'js/libs/bootstrap.min.js' %}"></script>
   <script src="{% static 'js/libs/jquery.dataTables.min.js' %}"></script>
 
-
   <script type="text/javascript">
     $(document).ready(function (e) {
       // Django -> JS
       var categories = "{{ categories_json }}";
       var plan_annual_attrs = "{{ plan_annual_attrs }}";
+      var attr_list = "{{ attr_list }}";
 
       // string -> JSON object
       categories = JSON.parse(categories.replace(/&quot;/g, '"'));
       plan_annual_attrs = JSON.parse(plan_annual_attrs.replace(/&quot;/g, '"'));
+      attr_list = JSON.parse(attr_list.replace(/&quot;/g, '"'));
 
       // new JSON object for tbody, tableobj
       var tbody_arr = {};
@@ -183,7 +228,170 @@
           tbody_arr[ categories[c].id ] = '';
           table_arr[ categories[c].id ] = '';
       }
+      // make selectbox for attributes
+      $.each(attr_list, function (i, attr) {
+        $('#attr-selectbox').append('<option value="'+ attr.id +'">' + attr.name +'</option>');
+      })
 
+      // when a user selects attribute.
+      $('#attr-selectbox').change(function () {
+        var attr_id = $(this).val();
+        if(!attr_id){
+          $('#attribute-type').text('');
+          $('#attribute-category').text('');
+          $('#attribute-rule').html('');
+          $('#attr-val-input').val( '' );
+          return false;
+        }
+
+        show_detail_for_add_new(attr_id);
+      })
+
+      // when a user selects year.
+      $('#year-selectbox').change(function () {
+        var attr_id = $('#attr-selectbox').val();
+        show_detail_for_add_new(attr_id);
+      })
+
+      function show_detail_for_add_new(attr_id){
+
+        var selected_attr = get_attr_by_id(attr_id);
+        $('#attribute-type').text( selected_attr.attribute_type );
+        $('#attribute-category').text( selected_attr.category );
+        $('#add-new-result').hide();
+
+        var rule = selected_attr.calculated_rule
+
+        if(! rule){
+          $('#attribute-rule').html( '' );
+          $('#attr-val-input').val( '' );
+          return;
+        }
+        var old_calc_items = rule.split(/#([\+\-\*\/\(\)]|\d+)#/)
+        var availableOperators = ['+', '-', '*', '/', '(', ')'];
+        var readable_rule = '<label>Rule:&nbsp;</label>';
+        var calc_formula = '';
+        var year = $('#year-selectbox').val();
+        var is_valid = true;
+
+        for(var i=0, len=old_calc_items.length; i < len; i++){
+          if( old_calc_items[i].length <= 0){
+              continue;
+          }
+
+          static_value = old_calc_items[i].match(/%(.+)%/);
+
+          if ( $.inArray(old_calc_items[i], availableOperators) >= 0) {
+            readable_rule += '<span style="color:green">' + old_calc_items[i] + '</span>';
+            calc_formula += old_calc_items[i]
+          }
+          else if(static_value != null){
+            readable_rule += '<span style="color:blue">' + static_value[1] + '</span>';
+            calc_formula += static_value[1]
+          }
+          else{
+            id = old_calc_items[i];
+            name = get_attr_by_id(id).name;
+            readable_rule += '<span style="background-color:#e4e4e4;">' + name + '</span>';
+            value = get_value(name, year);
+
+            if (! value){
+                is_valid = false;
+                calc_formula += '0';
+            }else{
+                calc_formula += value;
+            }
+          }
+        }
+
+        $('#attribute-rule').html( readable_rule );
+
+        if(is_valid){
+          $('#attr-val-input').val( eval(calc_formula) )
+        }else{
+          $('#attr-val-input').val( '0' )
+        }
+
+      }
+
+      function get_attr_by_id(id) {
+        var selected_attr = {};
+        $.each(attr_list, function (i, attr) {
+          if(attr.id == id){
+            selected_attr = attr;
+            return false;
+          }
+        });
+        return selected_attr;
+      }
+
+      function get_value(name, year) {
+        var selected_val = false
+        $.each(plan_annual_attrs, function (i, annual_attr) {
+          if(annual_attr.attribute == name && annual_attr.year == year){
+
+            selected_val = annual_attr.attribute_value;
+            return false;
+          }
+        });
+        return selected_val;
+      }
+
+      // add new form submit
+      $('#add-new-form').on('submit', function (e) {
+          e.preventDefault();
+          var year = $('#year-selectbox').val();
+          var attr_id = $('#attr-selectbox').val();
+          var value = $('#attr-val-input').val();
+
+          if(attr_id==""){
+            alert("invalid attribute");
+            return false;
+          }
+
+          // disable buttons before submit
+          $('#add-new-result').html('Please wait ...').css('color', 'red').show();
+          $('#add-new-form .btn-primary').prop('disabled', true);
+          $('#add-new-form button').prop('disabled', true);
+
+          // submit
+          $.ajax({
+            data:{
+              'attr_id': attr_id,
+              'plan_id': {{ original.pk }},
+              'year': year,
+              'value': value,
+              'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
+            },
+            type: "post",
+            url: '{% url "pensiondata:add_plan_annual_attr" %}',
+            success: function (resp) {
+              console.log(resp);
+              if(resp.result == 'success'){
+                $('#add-new-result').html('Successfully added').css('color','green').show();
+                setTimeout(
+                  function()
+                  {
+                    location.reload();
+                  }, 2000);
+
+              }else{
+                $('#add-new-result').html(resp.msg).css('color','red').show();
+                // disable buttons before submit
+                $('#add-new-form .btn-primary').prop('disabled', false);
+                $('#add-new-form button').prop('disabled', false);
+              }
+
+            },
+            error: function (resp) {
+              alert(resp);
+              $('#add-new-form .btn-primary').prop('disabled', false);
+              $('#add-new-form button').prop('disabled', false);
+            }
+          });
+
+          return false;
+      })
       // make tbody
       for(i=0; i< plan_annual_attrs.length; i++){
 
@@ -254,7 +462,7 @@
             'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
           },
           type: "post",
-          url: '{% url "pensiondata:edit_plan_attr" %}',
+          url: '{% url "pensiondata:edit_plan_annual_attr" %}',
           success: function (resp) {
             console.log(resp);
             if(resp.result == 'success'){
@@ -286,7 +494,7 @@
             'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
           },
           type: "post",
-          url: '{% url "pensiondata:delete_plan_attr" %}',
+          url: '{% url "pensiondata:delete_plan_annual_attr" %}',
           success: function (resp) {
             console.log(resp);
             if(resp.result == 'success'){

@@ -11,7 +11,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-
+import re
 #########################################################################################################
 
 
@@ -103,7 +103,7 @@ class Plan(models.Model):
     id = models.BigAutoField(primary_key=True)
     census_plan_id = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
-    display_name = models.CharField(max_length=255)
+    display_name = models.CharField(max_length=255, blank=True, null=True)
     year_of_inception = models.IntegerField(blank=True, null=True)
     benefit_tier = models.IntegerField(blank=True, null=True)
     year_closed = models.IntegerField(blank=True, null=True)
@@ -141,7 +141,7 @@ class PlanAnnual(models.Model):
     id = models.BigAutoField(primary_key=True)
     plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
     year = models.CharField(max_length=4)
-    government_id = models.BigIntegerField()
+    government_id = models.BigIntegerField(null=True, blank=True)
     # census_plan_annual = models.OneToOneField('CensusPlanAnnualAttribute', models.DO_NOTHING, null=True, blank=True)
 
     class Meta:
@@ -158,10 +158,10 @@ class PlanAnnualAttribute(models.Model):
     plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
     year = models.CharField(max_length=4)
     plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True)
-    attribute_value = models.CharField(max_length=256)
+    attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
     class Meta:
-        managed = False
+        # unique_together = ('plan', 'year', 'plan_attribute',)
         db_table = 'plan_annual_attribute'
 
     @property
@@ -171,6 +171,47 @@ class PlanAnnualAttribute(models.Model):
     @property
     def category(self):
         return self.plan_attribute.plan_attribute_category.name
+
+    @property
+    def value(self):
+        """
+        :return: string value
+        """
+        if self.plan_attribute.is_static:
+            return self.attribute_value
+
+        stored_rule = self.plan_attribute.calculated_rule
+        calculated_rule = ''
+        calc_items = re.split(r'#([\+\-\*\/\(\)]|\d+)#', stored_rule)
+
+        for item in calc_items:
+            if item == '':
+                continue
+            if '%' in item:
+                static_value = re.findall(r'%(.+)%', item)[0]
+                calculated_rule += static_value
+            elif item in ['+', '-', '*', '/', '(', ')']:
+                calculated_rule += item
+            else:  # NOTE: pk should be integer
+                pk = int(item)
+
+                try:
+                    item_val = PlanAnnualAttribute.objects.get(
+                        plan=self.plan,
+                        year=self.year,
+                        plan_attribute__id=pk
+                    ).attribute_value
+
+                    calculated_rule += item_val
+                except PlanAnnualAttribute.DoesNotExist:
+                    # print('Invalid: no operand')
+                    return '0'
+        try:
+            value = eval(calculated_rule)
+            return str(value)
+        except:
+            # print('Invalid: calculation error')
+            return '0'
 
 
 class PlanAttributeCategory(models.Model):
@@ -206,8 +247,13 @@ class PlanAttributeMaster(models.Model):
 
 
 class PlanAttribute(models.Model):
+    ATTRIBUTE_TYPE_CHOICES = (
+        ('static', 'static'),
+        ('calculated', 'calculated'),
+    )
+
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=256, null=True, blank=True)
+    name = models.CharField(max_length=256, unique=True, null=True, blank=True)
     datatype = models.CharField(max_length=256, null=True, blank=True)
     plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=True, blank=True)
     line_item_code = models.CharField(max_length=256)
@@ -218,23 +264,63 @@ class PlanAttribute(models.Model):
     plan_attribute_master = models.ForeignKey('PlanAttributeMaster', models.DO_NOTHING, null=True, blank=True)
     data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
 
+    attribute_type = models.CharField(max_length=16, choices=ATTRIBUTE_TYPE_CHOICES, default='static')
+    calculated_rule = models.TextField(null=True, blank=True)
+
     class Meta:
         managed = True
         db_table = 'plan_attribute'
 
+    @property
+    def is_static(self):
+        return self.attribute_type == 'static'
+
+    @property
+    def category(self):
+        if self.plan_attribute_category is None:
+            return ''
+        return self.plan_attribute_category.name
+
     def __str__(self):
         return self.name
+
+    def get_rule_readable(self):
+        # e.g. #1# #+# #2# #*# #3# = 1+2*3
+        if self.is_static:
+            return ''
+
+        stored_rule = self.calculated_rule
+        readable_rule = ''
+        calc_items = re.split(r'#([\+\-\*\/\(\)]|\d+)#', stored_rule)
+
+        for item in calc_items:
+            if item == '':
+                continue
+            if '%' in item:
+                static_value = re.findall(r'%(.+)%', item)[0]
+                readable_rule += static_value
+            elif item in ['+', '-', '*', '/', '(', ')']:
+                readable_rule += item
+            else:  # NOTE: pk should be integer
+                pk = int(item)
+
+                try:
+                    attr_name = PlanAttribute.objects.get(id=int(pk)).name  # NOTE: pk is string
+                    readable_rule += attr_name
+                except PlanAttribute.DoesNotExist:
+                    return False
+        return readable_rule
 
 
 ### THIS MODEL IS A WORK IN PROGRESS -- DO NOT USE FOR NOW
 class PlanInheritance(models.Model):
     id = models.BigAutoField(primary_key=True)
-    parent_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='parent_plan_fk')
-    child_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='child_plan_fk')
+    parent_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='parent_plan_fk', null=True)
+    child_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='child_plan_fk', null=True)
     level = models.IntegerField()
 
     class Meta:
-        managed = True
+        managed = False
         db_table = 'plan_inheritance'
 
 
@@ -257,7 +343,7 @@ class PlanProvisions(models.Model):
     deferred_retirement_option_program = models.NullBooleanField()
 
     class Meta:
-        managed = True
+        managed = False
         db_table = 'plan_provisions'
 
 
@@ -370,7 +456,7 @@ class CensusAnnualAttribute(models.Model):
     #         locals()[col.attribute_column_name] = models.CharField(max_length=256)
 
     class Meta:
-        managed = True
+        managed = False
         db_table = 'census_annual_attribute_mv'
 
 class PPDAnnualAttribute(models.Model):
@@ -655,7 +741,7 @@ class PPDAnnualAttribute(models.Model):
     beneficiaries_dependentsurvivors=models.CharField(max_length=256)
 
     class Meta:
-        managed = True
+        managed = False
         db_table = 'ppd_annual_attribute'
 
 # class ReasonData(models.Model):
@@ -740,7 +826,7 @@ class PPDAnnualAttribute(models.Model):
 #     total_percentage_of_investments_in_real_estate = models.DecimalField(max_digits=10, decimal_places=6, blank=True, null=True)
 
 #     class Meta:
-#         managed = True
+#         managed = False
 #         db_table = 'reason_data'
 
 # class SleppData(models.Model):
@@ -751,7 +837,7 @@ class PPDAnnualAttribute(models.Model):
 #     source = models.TextField()
 
 #     class Meta:
-#         managed = True
+#         managed = False
 #         db_table = 'slepp_data'
 
 

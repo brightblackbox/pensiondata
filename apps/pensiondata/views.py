@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 
-from .models import Plan, PlanAnnualAttribute, CensusAnnualAttribute
+from .models import Plan, PlanAnnualAttribute, CensusAnnualAttribute, PlanAttribute
 from .tables import PlanTable, PlanAnnualAttrTable, CensusAnnualAttrTable
 
 
@@ -79,3 +79,42 @@ def edit_plan_annual_attr(request):
         return JsonResponse({'result': 'success'})
     except PlanAnnualAttribute.DoesNotExist:
         return JsonResponse({'result': 'fail', 'msg': 'There is no matching record.'})
+
+
+def add_plan_annual_attr(request):
+    attr_id = request.POST.get('attr_id')
+    plan_id = request.POST.get('plan_id')
+    year = request.POST.get('year')
+    value = request.POST.get('value', '0')
+
+    try:
+        plan_attr_obj = PlanAttribute.objects.get(id=attr_id)
+        plan_obj = Plan.objects.get(id=plan_id)
+
+        try:
+            # check if already exists
+            old_obj = PlanAnnualAttribute.objects.get(
+                plan=plan_obj,
+                year=year,
+                plan_attribute=plan_attr_obj
+            )
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
+        except PlanAnnualAttribute.DoesNotExist:
+            pass
+        except PlanAnnualAttribute.MultipleObjectsReturned:
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
+        new_plan_annual_attr_obj = PlanAnnualAttribute(
+            plan=plan_obj,
+            year=year,
+            plan_attribute=plan_attr_obj,
+            attribute_value=value
+        )
+
+        new_plan_annual_attr_obj.save()
+
+        return JsonResponse({'result': 'success'})
+    except Exception as e:
+        print(e)
+        return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
