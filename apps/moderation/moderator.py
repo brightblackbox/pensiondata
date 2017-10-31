@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.contrib.sites.models import Site
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.fields import BooleanField
@@ -179,14 +179,17 @@ class GenericModerator(object):
                          content_object,
                          extra_context=None):
         '''Send notification to moderator'''
-        from .conf.settings import MODERATORS
+        # from .conf.settings import MODERATORS
+
+        # send superuser group
+        superusers_emails = list(User.objects.filter(is_superuser=True).values_list('email', flat=True))
 
         if self.notify_moderator:
             self.send(
                 content_object=content_object,
                 subject_template=self.subject_template_moderator,
                 message_template=self.message_template_moderator,
-                recipient_list=MODERATORS)
+                recipient_list=superusers_emails)  # recipient_list=MODERATORS)
 
     def inform_user(self, content_object,
                     user,
