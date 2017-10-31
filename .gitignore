@@ -27,3 +27,5 @@ workspace.xml
 !.elasticbeanstalk/*.global.yml
 
 *.sqlite3
+
+settings/local.py
