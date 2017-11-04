@@ -157,7 +157,7 @@ class PlanAnnualAttribute(models.Model):
     # plan_annual = models.ForeignKey('PlanAnnual', models.DO_NOTHING, null=True, blank=True)
     plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
     year = models.CharField(max_length=4)
-    plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True)
+    plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True, related_name='annual_attrs')
     attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
     class Meta:
@@ -226,6 +226,7 @@ class PlanAttributeCategory(models.Model):
         verbose_name = 'Attribute category'
         verbose_name_plural = 'Attribute categories'
         db_table = 'plan_attribute_category'
+        ordering = ('name',)
 
     def __str__(self):
         return self.name

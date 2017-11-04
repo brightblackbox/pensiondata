@@ -141,3 +141,16 @@ def add_plan_annual_attr(request):
     except Exception as e:
         print(e)
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
+
+
+def save_checklist(request):
+    try:
+
+        request.session['category_checked_states'] = list(map(int, request.POST.getlist('category_checked_states[]')))
+        request.session['datasource_checked_states'] = list(map(int, request.POST.getlist('datasource_checked_states[]')))
+        request.session['attr_checked_states'] = list(map(int, request.POST.getlist('attr_checked_states[]')))
+
+        return JsonResponse({'result': 'success'})
+    except:
+        return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
+

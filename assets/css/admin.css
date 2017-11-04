@@ -150,3 +150,57 @@ div.accordion-panel {
     float: left;
 }
 
+/*=================================================*/
+/*      Annual Table Column Selector Popup         */
+/*=================================================*/
+
+.poup-settings-wrap {
+    display: none;
+    z-index: 9;
+    width: 700px;
+    margin-left: 100px;
+}
+
+.poup-settings-wrap.active {
+    display: block;
+}
+
+.poup-settings-wrap .datasource-selector {
+    margin-right: 50px;
+}
+
+.poup-settings-wrap ul.attr-list {
+    max-height: 400px;
+    overflow-y: scroll;
+}
+
+.poup-settings-wrap ul li {
+    list-style: none;
+}
+
+li.category-level>label {
+    font-weight: bolder;
+}
+
+li.attr-level>label {
+    font-weight: normal;
+}
+
+/*=================================================*/
+/*                 Annual Table                    */
+/*=================================================*/
+
+#table-annual-data td {
+    padding: 0 !important;
+}
+
+span.annual-value {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+}
+
+span.selected_td {
+    border: 2px dashed red;
+}

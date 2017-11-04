@@ -1,11 +1,11 @@
 from django.contrib import admin
-from django.db.models import F
+from django.db.models import F, Count
 import json
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, \
     PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory, PlanAnnual
 
-from .models import CensusAnnualAttribute
+from .models import CensusAnnualAttribute, DataSource
 
 from moderation.admin import ModerationAdmin
 
@@ -69,24 +69,52 @@ class PlanAdmin(ModerationAdmin):
 
         extra_context = extra_context or {}
 
-        categories = PlanAttributeCategory.objects.values('id', 'name').order_by("name")
-        plan_annual_attrs \
-            = PlanAnnualAttribute.objects.filter(plan__id=object_id)\
+        plan = Plan.objects.get(id=object_id)
+
+        # attr_list = PlanAttribute.objects.filter(annual_attrs__plan=plan)\
+        #     .select_related('plan_attribute_category', 'data_source').distinct()
+
+        category_list = PlanAttributeCategory.objects.order_by('name')
+        datasource_list = DataSource.objects.order_by('name')
+
+        plan_annual_objs = PlanAnnualAttribute.objects \
+            .filter(plan=plan) \
+            .select_related('plan_attribute') \
+            .select_related('plan_attribute__plan_attribute_category') \
+            .select_related('plan_attribute__data_source')
+
+        year_list = plan_annual_objs.order_by('year').values('year').distinct()
+
+        plan_annual_data \
+            = plan_annual_objs \
             .values('id',
                     'year',
-                    'plan_attribute__name',
-                    'plan_attribute__data_source__name',
+                    'plan_attribute__id',
+                    'plan_attribute__data_source__id',
                     'plan_attribute__plan_attribute_category__id',
-                    'plan_attribute__plan_attribute_category__name',
                     'attribute_value') \
             .annotate(
-                        attribute=F('plan_attribute__name'),
-                        data_source=F('plan_attribute__data_source__name'),
-                        category_id=F('plan_attribute__plan_attribute_category__id'),
-                        category_name=F('plan_attribute__plan_attribute_category__name'))\
-            .order_by('category_name', '-year')
+                    attribute_id=F('plan_attribute__id'),
+                    data_source_id=F('plan_attribute__data_source__id'),
+                    category_id=F('plan_attribute__plan_attribute_category__id'))
 
-        attr_list = PlanAttribute.objects.all()\
+        attr_list = plan_annual_objs.values(
+            'plan_attribute__id',
+            'plan_attribute__name',
+            'plan_attribute__data_source__id',
+            'plan_attribute__data_source__name',
+            'plan_attribute__plan_attribute_category__id',
+            'plan_attribute__plan_attribute_category__name'
+        ).annotate(
+            attribute_id=F('plan_attribute__id'),
+            attribute_name=F('plan_attribute__name'),
+            data_source_id=F('plan_attribute__data_source__id'),
+            data_source_name=F('plan_attribute__data_source__name'),
+            category_id=F('plan_attribute__plan_attribute_category__id'),
+            category_name=F('plan_attribute__plan_attribute_category__name')
+        ).distinct().order_by('category_name', 'attribute_name')
+
+        all_attr_list = PlanAttribute.objects.all() \
             .values(
                 'id', 'name', 'attribute_type', 'calculated_rule', 'plan_attribute_category__name'
             ) \
@@ -95,11 +123,14 @@ class PlanAdmin(ModerationAdmin):
             ) \
             .order_by("name")
 
-        extra_context['categories_queryset'] = categories
-        extra_context['categories_json'] = json.dumps(list(categories))
-        extra_context['plan_annual_attrs'] = json.dumps(list(plan_annual_attrs))
-        extra_context['attr_list'] = json.dumps(list(attr_list))
+        extra_context['attr_list'] = attr_list
+        extra_context['category_list'] = category_list
+        extra_context['datasource_list'] = datasource_list
+        extra_context['year_list'] = year_list
         extra_context['year_range'] = range(1990, 2020)
+
+        extra_context['plan_annual_data'] = json.dumps(list(plan_annual_data))
+        extra_context['all_attr_list'] = json.dumps(list(all_attr_list))
 
         return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
 
