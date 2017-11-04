@@ -5,12 +5,14 @@
 {% block extrahead %}
   {{ block.super }}
   <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+  <script type="text/javascript" src="{% static 'js/libs/bootstrap.min.js' %}"></script>
   {{ media }}
 {% endblock %}
 
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/bootstrap.min.css' %}" />
 {% endblock %}
 
 {% block coltype %}colM{% endblock %}
@@ -314,10 +316,6 @@
   </div>
 </div>
 
-
-<link rel="stylesheet" type="text/css" href="{% static 'css/libs/bootstrap.min.css' %}" />
-<script type="text/javascript" src="{% static 'js/libs/jquery-1.10.2.min.js' %}"></script>
-<script src="{% static 'js/libs/bootstrap.min.js' %}"></script>
 <script type="text/javascript">
   var plan_annual_data = "{{ plan_annual_data }}";
   var all_attr_list = "{{ all_attr_list }}";

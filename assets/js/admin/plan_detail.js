@@ -258,7 +258,9 @@ $('.btn-delete').click(function () {
       success: function (resp) {
         console.log(resp);
         if(resp.result == 'success'){
-          $selected_td_element.remove();
+            $selected_td_element.remove();
+            $('.btn-edit-for-modal').prop( "disabled", true );
+            $('.btn-delete-for-modal').prop( "disabled", true );
         }else{
           alert(resp.msg);
         }
