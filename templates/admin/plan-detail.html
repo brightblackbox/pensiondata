@@ -216,7 +216,7 @@
     </thead>
     <tbody>
       {% for year in year_list %}
-      <tr>
+      <tr class="tr-annual-data-per-year">
         <td>{{ year.year }}</td>
         {% for attr in attr_list %}
         <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"

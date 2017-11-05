@@ -67,7 +67,12 @@ $('input.column-check-box').change(function () {
 
       $('.attr-column').each(function () {
           if( $(this).data('source-id') == source_id ){
-              $(this).prop('checked', state).prop('disabled', !state).change()
+              $(this).prop('checked', state).prop('disabled', !state).change();
+              if(state)
+                $(this).closest('li').show();
+              else
+                $(this).closest('li').hide();
+
           }
       })
     }
@@ -103,68 +108,89 @@ function initialize_annual_table() {
 }
 
 function redraw_annual_table() {
-  // show all td
-  $('#table-annual-data td').show();
-  $('#table-annual-data th').show();
+    // show all td
+    $('#table-annual-data td').show();
+    $('#table-annual-data th').show();
 
-  // restore thead
-  var $tr_category = '<th rowspan="3" style="vertical-align: middle;">Year</th>';
+    // restore thead
+    var $tr_category = '<th rowspan="3" style="vertical-align: middle;">Year</th>';
 
-  $('.category-level').each(function () {
+    $('.category-level').each(function () {
     var attr_children_len = $(this).find("li").length;
     if ( attr_children_len > 0 )
       $tr_category += '<th style="text-align: center;" colspan="' + attr_children_len
           + '" id="th-category-' + $('label:first input', this).data('category-id') + '">'
           + $('label:first', this).text()
           + '</th>';
-  });
+    });
 
-  $('.tr-category ').html($tr_category);
+    $('.tr-category ').html($tr_category);
 
-  // hide datasource
-  $(".datasource-column:not(:checked)").each(function () {
-    var unchecked_source_id = $(this).data('source-id');
+    // hide datasource
+    $(".datasource-column:not(:checked)").each(function () {
+        var unchecked_source_id = $(this).data('source-id');
 
-    // hide all relavant tds in tbody
-    $('.td-source-'+unchecked_source_id).hide();
+        // hide all relavant tds in tbody
+        $('.td-source-'+unchecked_source_id).hide();
 
-    // decrese colspan in thead Category
-    $('.th-source-'+unchecked_source_id).each(function () {
-        category_id = $(this).data('category-id');
+        // decrese colspan in thead Category
+        $('.th-source-'+unchecked_source_id).each(function () {
+            category_id = $(this).data('category-id');
 
-        old_colspan = $('#th-category-'+ category_id).attr('colspan');
-        if (old_colspan > 1){
-            $('#th-category-'+category_id).attr('colspan', old_colspan-1);
-        }else{
-            $('#th-category-'+category_id).hide();
+            old_colspan = $('#th-category-'+ category_id).attr('colspan');
+            if (old_colspan > 1){
+                $('#th-category-'+category_id).attr('colspan', old_colspan-1);
+            }else{
+                $('#th-category-'+category_id).hide();
+            }
+
+            $(this).hide();
+        });
+    });
+
+    // hide attribute
+    $(".attr-column:not(:checked)").each(function () {
+        var unchecked_attr_id = $(this).data('attr-id');
+
+        // hide all relavant tds in tbody
+        $('.td-attr-'+unchecked_attr_id).hide();
+
+        // decrese colspan in thead Category
+        $('.th-attr-'+unchecked_attr_id).each(function () {
+            category_id = $(this).data('category-id');
+
+            old_colspan = $('#th-category-'+category_id).attr('colspan');
+            if (old_colspan > 1){
+                $('#th-category-'+category_id).attr('colspan', old_colspan-1);
+            }else{
+                $('#th-category-'+category_id).hide();
+            }
+
+            $(this).hide();
+        })
+    });
+
+    // remove emtpy row
+    $('.tr-annual-data-per-year').each(function () {
+        var $tr = $(this);
+        $tr.show();
+        var is_visible = false;
+
+        $tr.find('td').each(function () {
+
+            var $td = $(this);
+
+            if( $td.is(":visible") && $td.find('span').length > 0 ){
+                is_visible = true;
+                return false;
+            }
+        });
+
+        if ( !is_visible ){
+            $tr.hide();
         }
+    });
 
-        $(this).hide();
-    })
-
-  });
-
-  // hide attribute
-  $(".attr-column:not(:checked)").each(function () {
-    var unchecked_attr_id = $(this).data('attr-id');
-
-    // hide all relavant tds in tbody
-    $('.td-attr-'+unchecked_attr_id).hide();
-
-    // decrese colspan in thead Category
-    $('.th-attr-'+unchecked_attr_id).each(function () {
-        category_id = $(this).data('category-id');
-
-        old_colspan = $('#th-category-'+category_id).attr('colspan');
-        if (old_colspan > 1){
-            $('#th-category-'+category_id).attr('colspan', old_colspan-1);
-        }else{
-            $('#th-category-'+category_id).hide();
-        }
-
-        $(this).hide();
-    })
-  });
 }
 
 // apply

@@ -65,9 +65,9 @@ div.accordion-panel {
 /*=================================================*/
 /*                  Minor fix                      */
 /*=================================================*/
-/*.submit-row a.deletelink {*/
-    /*height: 35px!important;*/
-/*}*/
+.submit-row a.deletelink {
+    height: auto !important;
+}
 
 /*=================================================*/
 /*                 Calculated Rule                 */
