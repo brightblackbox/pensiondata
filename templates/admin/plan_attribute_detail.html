@@ -5,12 +5,14 @@
 {% block extrahead %}
   {{ block.super }}
   <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+  <script type="text/javascript" src="{% static 'js/libs/jquery-ui/jquery-ui.min.js' %}"></script>
   {{ media }}
 {% endblock %}
 
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'js/libs/jquery-ui/jquery-ui.min.css' %}" />
 {% endblock %}
 
 {% block coltype %}colM{% endblock %}
@@ -110,10 +112,6 @@
     <div class="validation-result"></div>
   </div>
 </div>
-
-  <link rel="stylesheet" type="text/css" href="{% static 'js/libs/jquery-ui/jquery-ui.min.css' %}" />
-  <script type="text/javascript" src="{% static 'js/libs/jquery-1.10.2.min.js' %}"></script>
-  <script type="text/javascript" src="{% static 'js/libs/jquery-ui/jquery-ui.min.js' %}"></script>
 
   <script type="text/javascript">
     $(document).ready(function (e) {
