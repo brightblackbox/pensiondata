@@ -35,7 +35,7 @@
   <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
   <!-- Selector Popup -->
-  <div class="poup-settings-wrap panel panel-default" style="position: absolute">
+  <div class="poup-settings-wrap panel panel-default">
     <div class="poup-settings">
     <form id="column_checklist_form">{% csrf_token %}
       <div class="arrow"></div>
@@ -64,7 +64,7 @@
           <!-- Attribute selector -->
           <div class="pull-left attr-selector">
             <h4>Attributes</h4>
-            <input class="form-control input-search" type="text" placeholder="Search..">
+            <input class="form-control input-search" type="text" placeholder="Search...">
             <br>
             <ul class="list-group column-list attr-list">
             {% for category in category_list %}
@@ -118,7 +118,7 @@
   </div>
 
   <!-- PlanAnnualAttribute Table -->
-  <div class="annual_table_area" style="display:none; overflow-x: scroll;">
+  <div class="annual_table_area" style="display:none;">
     <table class="table table-bordered table-striped" id="table-annual-data">
       <thead>
         <tr class="tr-category"></tr>

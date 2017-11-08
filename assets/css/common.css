@@ -30,14 +30,45 @@ Annual Table Column Selector Popup
 */
 
 .poup-settings-wrap {
+    position: absolute;
     display: none;
     z-index: 9;
     /*width: 700px;*/
     margin-left: 100px;
+    margin-top: 8px;
 }
 
 .poup-settings-wrap.active {
     display: block;
+}
+
+.poup-settings-wrap .arrow {
+    position: absolute;
+    display: block;
+    width: 0;
+    height: 0;
+    border-color: transparent;
+    border-style: solid;
+    border-width: 11px;
+    top: 0px;
+    left: 147px;
+    margin-top: -22px;
+    /* border-bottom-width: 0; */
+    border-bottom-color: #999;
+    border-bottom-color: rgba(0,0,0,.25);
+}
+
+.poup-settings-wrap .arrow:after {
+    position: absolute;
+    display: block;
+    width: 0;
+    height: 0;
+    border: 10px solid transparent;
+    content: "";
+    right: -10px;
+    bottom: -11px;
+    border-top-width: 0;
+    border-bottom-color: #fff;
 }
 
 .poup-settings-wrap .datasource-selector {
@@ -75,6 +106,11 @@ li.attr-level>label {
 Annual Table
 ===============
 */
+.annual_table_area {
+    overflow-x: scroll;
+    margin-top: 12px;
+}
+
 #table-annual-data th {
     text-transform: none;
     background: #f6f6f6;
