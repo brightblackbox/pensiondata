@@ -100,7 +100,7 @@ function initialize_annual_table() {
 
     $.each(plan_annual_data, function (i, annual_item) {
       var $td_id = 'td-id-' + annual_item.year + '-' + annual_item.attribute_id;
-      var $td_html = '<span class="annual-value">' + annual_item.attribute_value + '</span>';
+      var $td_html = '<span class="annual-value">' + numberWithCommas(annual_item.attribute_value) + '</span>';
       $('#' + $td_id).html($td_html).data('annual-data-pk', annual_item.id);
     });
 
@@ -214,6 +214,25 @@ $('.poup-settings-wrap .button-apply').on("click", function () {
 
 });
 
+/**
+ * @input: unformated number, for example: 123456789.0123456
+ * @result 123,456,789.0123456
+ */
+function numberWithCommas(unformatted) {
+    var parts = unformatted.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+}
+
+/**
+ * @input: formated number, for example: 123,456,789.0123456
+ * @result 123456789.0123456
+ */
+function unformatnumber(formatted) {
+    return formatted.replace(/,/g, "");
+}
+
+
 var selected_annual_id = 0;
 var $selected_td_element=null;
 // click td
@@ -230,7 +249,7 @@ $('#table-annual-data td').on("click", function () {
     $('.btn-edit-for-modal').prop( "disabled", false );
     $('.btn-delete-for-modal').prop( "disabled", false );
 
-    var old_value = $span.text();
+    var old_value = unformatnumber($span.text());
     $('#annual-new-val').val(old_value);
 
   }else{
@@ -242,7 +261,7 @@ $('#table-annual-data td').on("click", function () {
 // edit value
 $('.btn-update').click(function () {
     var new_val = $('#annual-new-val').val();
-    var old_val = $selected_td_element.text();
+    var old_val = unformatnumber($selected_td_element.text());
 
     if ( !new_val || 0 === new_val.length){
         alert('The value is required.');

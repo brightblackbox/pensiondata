@@ -1,27 +1,8 @@
 {% extends "base.html" %}
-{% load bootstrap3 %}
-{% load querystring from django_tables2 %}
-{% load title from django_tables2 %}
-{% load trans blocktrans from i18n %}
-{% load humanize %}
 {% load static %}
 
 {% block extra-styles %}
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/jquery.dataTables.min.css' %}" />
-  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/colReorder.dataTables.min.css' %}" />
-  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/fixedColumns.dataTables.min.css' %}" />
-  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/buttons.dataTables.min.css' %}" />
-
-  <style>
-    button.dt-button, div.dt-button, a.dt-button {
-      white-space: normal;
-    }
-    div.dt-button-collection.fixed.four-column {
-      width: 700px;
-      height: 80%;
-      overflow: auto;
-    }
-  </style>
 {% endblock %}
 
 {% block content %}
@@ -50,112 +31,135 @@
   </table>
 
   <!-- Plan Annual Attributes -->
-  <h3>Plan Attributes</h3>
-  {% if table.page %}
-    <div class="table-container">
-  {% endif %}
+<h3 style="display: inline">Plan Annual Attributes:</h3>&nbsp;
+  <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
-  {% block table %}
-    <div class="table-responsive">
-      <table id="plan-attr-table" class="table table-hover table-bordered table-striped" width="100%" {% if table.attrs %} {{ table.attrs.as_html }}{% endif %}>
-        {% block table.thead %}
-        <thead>
-        
-{#          <tr>#}
-{#            <th colspan="6">#}
-{#              <form method="post" class="form-inline form-search pull-right">#}
-{#                {% csrf_token %}#}
-{#                  <div>#}
-{#                    <input id="search_form_id" name="search" type="text" class="form-control col-md-3" placeholder="ID, Name, State"{% if search %} value="{{ search }}"{% endif %}>#}
-{#                    <button type="submit" class="btn btn-small btn-dark"><i class="fa fa-search"></i> Search</button>#}
-{#                  </div>#}
-{#              </form>#}
-{#            </th>#}
-{#          </tr>#}
-
-          <tr>
-            {% for column in table.columns %}
-                {% if column.orderable %}
-                <th {{ column.attrs.th.as_html }}><a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}">{{ column.header|title }}</a></th>
-                {% else %}
-                <th {{ column.attrs.th.as_html }}>{{ column.header|title }}</th>
-                {% endif %}
+  <!-- Selector Popup -->
+  <div class="poup-settings-wrap panel panel-default" style="position: absolute">
+    <div class="poup-settings">
+    <form id="column_checklist_form">{% csrf_token %}
+      <div class="arrow"></div>
+        <div class="panel-body">
+        <div class="clearfix">
+          <!-- DataSource selector -->
+          <div class="pull-left datasource-selector">
+            <h4>Data Sources</h4>
+            <ul class="list-group column-list datasource-list">
+            {% for ds in datasource_list %}
+              <li class="datasource-level">
+                <label>
+                  <input type="checkbox"
+                         name="datasource_checked_states[]"
+                         class="column-check-box datasource-column"
+                         data-source-id="{{ ds.id }}"
+                     {% if not request.session.datasource_checked_states or ds.id in request.session.datasource_checked_states %}
+                         checked
+                     {% endif %}
+                         value={{ ds.id }}
+                  >{{ ds.name }}</label></li>
             {% endfor %}
-          </tr>
-        </thead>
-        {% endblock table.thead %}
+            </ul>
+          </div>
 
-        {% block table.tbody %}
-        <tbody class="plan-attributes">
-          {% for row in table.page.object_list|default:table.rows %} {# support pagination #}
-            {% block table.tbody.row %}
-            <tr class="{% cycle "odd" "even" %}">
-                {% for column, cell in row.items %}
-                    <td {{ column.attrs.td.as_html }}>
-                    {% if column.header == 'Year' %}
-                      {{ cell }}
-                    {% else %}
-                      {{ cell | intcomma }}
-                    {% endif %}
-                    </td>
+          <!-- Attribute selector -->
+          <div class="pull-left attr-selector">
+            <h4>Attributes</h4>
+            <input class="form-control input-search" type="text" placeholder="Search..">
+            <br>
+            <ul class="list-group column-list attr-list">
+            {% for category in category_list %}
+              <li class="category-level">
+                <label>
+                  <input type="checkbox"
+                         name="category_checked_states[]"
+                         class="column-check-box category-column"
+                         data-category-id="{{ category.id }}"
+                     {% if not request.session.category_checked_states or category.id in request.session.category_checked_states %}
+                         checked
+                     {% endif %}
+                         value={{ category.id }}
+                  >{{ category.name }}</label>
+                <ul>
+                {% for attr in attr_list %}
+                  {% if attr.category_id == category.id %}
+                    <li class="attr-level">
+                      <label>
+                        <input type="checkbox"
+                               name="attr_checked_states[]"
+                               class="column-check-box attr-column"
+                               data-attr-id="{{ attr.attribute_id }}"
+                               data-source-id="{{ attr.data_source_id }}"
+                           {% if not request.session.attr_checked_states or attr.attribute_id in request.session.attr_checked_states %}
+                               checked
+                           {% endif %}
+
+                           {% if attr.data_source_id not in request.session.datasource_checked_states %}
+                               disabled="disabled"
+                           {% endif %}
+
+                               value={{ attr.attribute_id }}
+                        >{{ attr.attribute_name }}</label></li>
+                  {% endif %}
                 {% endfor %}
-            </tr>
-            {% endblock table.tbody.row %}
-          {% empty %}
-            {% if table.empty_text %}
-            {% block table.tbody.empty_text %}
-            <tr><td colspan="{{ table.columns|length }}">{{ table.empty_text }}</td></tr>
-            {% endblock table.tbody.empty_text %}
-            {% endif %}
+                </ul>
+              </li>
+            {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="panel-footer clearfix">
+  {#          <button type="button" class="btn btn-default pull-left button-default">Default</button>#}
+        <button type="button" class="btn btn-success pull-right button-apply">Apply</button>
+        <button type="button" class="btn btn-default pull-right button-cancel">Cancel</button>
+      </div>
+    </form>
+    </div>
+  </div>
+
+  <!-- PlanAnnualAttribute Table -->
+  <div class="annual_table_area" style="display:none; overflow-x: scroll;">
+    <table class="table table-bordered table-striped" id="table-annual-data">
+      <thead>
+        <tr class="tr-category"></tr>
+        <tr class="tr-attribute">
+          {% for attr in attr_list %}
+            <th class="th-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
+                data-category-id="{{ attr.category_id }}">
+              {{ attr.attribute_name|capfirst }}</th>
           {% endfor %}
-        </tbody>
-        {% endblock table.tbody %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for year in year_list %}
+        <tr class="tr-annual-data-per-year">
+          <td>{{ year.year }}</td>
+          {% for attr in attr_list %}
+          <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
+              id="td-id-{{ year.year }}-{{ attr.attribute_id }}"
+              data-annual-data-pk="-1"
+          ></td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 
-        {% block table.tfoot %}
-        <tfoot></tfoot>
-        {% endblock table.tfoot %}
-      </table>
-    </div>
-  {% endblock table %}
 
-  {% if table.page %}
-      {% block pagination %}
-          {% bootstrap_pagination table.page url=request.get_full_path %}
-      {% endblock pagination %}
-    </div>
-  {% endif %}
-
-</div>
+</div><!-- end of content -->
 {% endblock %}
 
 {% block extra-scripts %}
   <script src="{% static 'js/libs/jquery.dataTables.min.js' %}"></script>
-  <script src="{% static 'js/libs/dataTables.colReorder.min.js' %}"></script>
-  <script src="{% static 'js/libs/dataTables.fixedColumns.min.js' %}"></script>
-  <script src="{% static 'js/libs/dataTables.buttons.min.js' %}"></script>
-  <script src="{% static 'js/libs/buttons.colVis.min.js' %}"></script>
+
   <script type="text/javascript">
-    $(document).ready(function() {
-      $('#plan-attr-table').DataTable( {
-          colReorder: true,
-          scrollX: true,
-          paging: false,
-          info: false,
-          searching: false,
-          fixedColumns: {
-              leftColumns:1
-          },
-          dom: 'Bfrtip',
-          buttons:[
-              {
-                extend: 'colvis',
-                collectionLayout: 'fixed four-column',
-{#                columnText: function (dt, idx, title) {#}
-{#                    return (idx+1)+': '+ title;#}
-{#                }#}
-              }
-          ]
-      } );
-    } );
+    var plan_annual_data = "{{ plan_annual_data }}";
+    var save_checklist_url = '{% url "pensiondata:save_checklist" %}';
+
+    // string -> JSON object
+    plan_annual_data = JSON.parse(plan_annual_data.replace(/&quot;/g, '"'));
+
   </script>
+  <script type="text/javascript" src="{% static 'js/annual_table.js' %}"></script>
 {% endblock %}

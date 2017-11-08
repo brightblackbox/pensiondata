@@ -1,6 +1,6 @@
 import django_tables2 as tables
 from django_tables2.utils import A
-from .models import Plan, PlanAnnualAttribute, CensusAnnualAttribute
+from .models import Plan
 
 
 class PlanTable(tables.Table):
@@ -12,22 +12,3 @@ class PlanTable(tables.Table):
         fields = ('census_plan_id', 'display_name')
         attrs = {"class": "table-striped table-bordered"}
         empty_text = "There are no plans matching the search criteria..."
-
-
-class PlanAnnualAttrTable(tables.Table):
-
-    class Meta:
-        model = PlanAnnualAttribute
-        fields = ('year', 'plan_attribute', 'attribute_value')
-        attrs = {"class": "table-striped table-bordered"}
-        empty_text = "There are no records."
-
-
-class CensusAnnualAttrTable(tables.Table):
-
-    class Meta:
-        model = CensusAnnualAttribute
-        exclude = ('id', 'plan')
-        attrs = {"class": "table-striped table-bordered"}
-        empty_text = "There are no records."
-
