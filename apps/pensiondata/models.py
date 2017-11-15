@@ -275,7 +275,9 @@ class PlanAttribute(models.Model):
     data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
 
     # master attribute
-    attributes_for_master = models.CharField('Attributes for Master', max_length=256, null=True, blank=True)
+    attributes_for_master = models.CharField('Attributes for Master', max_length=256,
+                                             null=True, blank=True,
+                                             help_text='Souce Attributes for the master attribute')
 
     # properties for value
     attribute_type = models.CharField(max_length=16, choices=ATTRIBUTE_TYPE_CHOICES, default='static')

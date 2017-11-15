@@ -218,8 +218,18 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
 
         static_attr_list = PlanAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        non_master_attrs = PlanAttribute.objects.exclude(data_source__name='Pension Data')\
+            .order_by('name') \
+            .select_related('data_source')  # NOTE: pension data
+
+        try:
+            object = PlanAttribute.objects.get(id=object_id)
+            extra_context['attrs_for_master'] = object.attributes_for_master.split(",")
+        except PlanAttribute.DoesNotExist:
+            extra_context['attrs_for_master'] = []
 
         extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+        extra_context['non_master_attrs'] = non_master_attrs
 
         return super(PlanAttributeAdmin, self).change_view(request, object_id, form_url, extra_context)
 
@@ -227,8 +237,13 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
 
         static_attr_list = PlanAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        non_master_attrs = PlanAttribute.objects.exclude(data_source__name='Pension Data') \
+            .order_by('name') \
+            .select_related('data_source')  # NOTE: pension data
 
         extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+        extra_context['non_master_attrs'] = non_master_attrs
+        extra_context['attrs_for_master'] = []
 
         return super(PlanAttributeAdmin, self).add_view(request, form_url, extra_context)
 
