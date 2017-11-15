@@ -50,6 +50,10 @@ class DataSource(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def is_master_source(self):
+        return self.name == 'Pension Data'
+
 
 class Government(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -160,6 +164,8 @@ class PlanAnnualAttribute(models.Model):
     plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True, related_name='annual_attrs')
     attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
+    is_from_source = models.BooleanField(default=True)
+
     class Meta:
         # unique_together = ('plan', 'year', 'plan_attribute',)
         db_table = 'plan_annual_attribute'
@@ -265,9 +271,13 @@ class PlanAttribute(models.Model):
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
     weight = models.IntegerField(null=True, blank=True)
-    plan_attribute_master = models.ForeignKey('PlanAttributeMaster', models.DO_NOTHING, null=True, blank=True)
+
     data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
 
+    # master attribute
+    attributes_for_master = models.CharField('Attributes for Master', max_length=256, null=True, blank=True)
+
+    # properties for value
     attribute_type = models.CharField(max_length=16, choices=ATTRIBUTE_TYPE_CHOICES, default='static')
     calculated_rule = models.TextField(null=True, blank=True)
 
