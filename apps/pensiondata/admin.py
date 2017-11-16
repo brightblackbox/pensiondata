@@ -151,6 +151,14 @@ class CountyAdmin(admin.ModelAdmin):
     def state(self, obj):
         return obj.government.state
 
+    def get_queryset(self, request):
+        """
+        Filter the objects displayed in the change_list to only
+        display those for the currently signed in user.
+        """
+        qs = super(CountyAdmin, self).get_queryset(request)
+        return qs.exclude(name='Not Applicable')
+
 
 admin.site.register(County, CountyAdmin)
 
@@ -183,6 +191,8 @@ admin.site.register(GovernmentType, GovernmentTypeAdmin)
 
 #### GOVERNMENT TYPE
 class GovernmentAdmin(admin.ModelAdmin):
+    model = Government
+
     fieldsets = [
         (None, {'fields': [field.name for field in Government._meta.fields if field.name != 'id']})
     ]

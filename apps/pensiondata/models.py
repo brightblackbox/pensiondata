@@ -60,6 +60,8 @@ class Government(models.Model):
 
     class Meta:
         db_table = 'government'
+        verbose_name = 'Admin Government'
+        verbose_name_plural = 'Admin Governments'
 
     def __str__(self):
         return self.name
