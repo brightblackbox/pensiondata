@@ -6,9 +6,11 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models.signals import pre_save, pre_delete, post_save, post_delete
+from django.db.models import F
+import json
 
-from .models import Plan, PlanAnnualAttribute, CensusAnnualAttribute, PlanAttribute
-from .tables import PlanTable, PlanAnnualAttrTable, CensusAnnualAttrTable
+from .models import Plan, PlanAnnualAttribute, PlanAttributeCategory, PlanAttribute, DataSource
+from .tables import PlanTable
 from .signals import recalculate
 
 from moderation import moderation
@@ -52,12 +54,65 @@ class PlanDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(PlanDetailView, self).get_context_data(**kwargs)
+        plan = self.object
 
-        table = CensusAnnualAttrTable(CensusAnnualAttribute.objects.filter(plan=self.object).order_by('-year'))
-        # table = PlanAnnualAttrTable(PlanAnnualAttribute.objects.select_related().filter(plan=self.object).order_by('-year'))
-        RequestConfig(self.request, paginate={'per_page': 30}).configure(table)
-        # RequestConfig(self.request, paginate=False).configure(table)
-        context['table'] = table
+        plan_annual_objs = PlanAnnualAttribute.objects \
+            .filter(plan=plan) \
+            .select_related('plan_attribute') \
+            .select_related('plan_attribute__plan_attribute_category') \
+            .select_related('plan_attribute__data_source')
+
+        year_list = plan_annual_objs.order_by('year').values('year').distinct()
+
+        plan_annual_data \
+            = plan_annual_objs \
+            .values('id',
+                    'year',
+                    'plan_attribute__id',
+                    'plan_attribute__multiplier',
+                    'plan_attribute__data_source__id',
+                    'plan_attribute__plan_attribute_category__id',
+                    'attribute_value') \
+            .annotate(
+                attribute_id=F('plan_attribute__id'),
+                multiplier=F('plan_attribute__multiplier'),
+                data_source_id=F('plan_attribute__data_source__id'),
+                category_id=F('plan_attribute__plan_attribute_category__id')
+            )
+
+        attr_list = plan_annual_objs.values(
+            'plan_attribute__id',
+            'plan_attribute__name',
+            'plan_attribute__data_source__id',
+            'plan_attribute__data_source__name',
+            'plan_attribute__plan_attribute_category__id',
+            'plan_attribute__plan_attribute_category__name'
+        ).annotate(
+            attribute_id=F('plan_attribute__id'),
+            attribute_name=F('plan_attribute__name'),
+            data_source_id=F('plan_attribute__data_source__id'),
+            data_source_name=F('plan_attribute__data_source__name'),
+            category_id=F('plan_attribute__plan_attribute_category__id'),
+            category_name=F('plan_attribute__plan_attribute_category__name')
+        ).distinct().order_by('category_name', 'attribute_name')
+
+        category_list = plan_annual_objs.values(
+            'plan_attribute__plan_attribute_category__id',
+            'plan_attribute__plan_attribute_category__name'
+        ).annotate(
+            id=F('plan_attribute__plan_attribute_category__id'),
+            name=F('plan_attribute__plan_attribute_category__name')
+        ).distinct().order_by('name')
+
+        datasource_list = DataSource.objects.order_by('name')
+
+        context['attr_list'] = attr_list
+        context['category_list'] = category_list
+        context['datasource_list'] = datasource_list
+        context['year_list'] = year_list
+
+        context['plan_annual_data'] = json.dumps(list(plan_annual_data))
+
         return context
 
 

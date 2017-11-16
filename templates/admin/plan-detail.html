@@ -54,7 +54,7 @@
 {% endblock %}
 
 <form action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}
-  <div style="position: relative;">
+  <div>
     {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
     {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
     {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
@@ -101,11 +101,11 @@
   </div>
 </form>
 
-<h4 style="display: inline">Plan Annual Attributes:</h4>
-(<a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i>Column Setting</a>)
+<h3 style="display: inline">Plan Annual Attributes:</h3>&nbsp;
+<a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
 <!-- Selector Popup -->
-<div class="poup-settings-wrap panel panel-default" style="position: absolute">
+<div class="poup-settings-wrap panel panel-default">
   <div class="poup-settings">
   <form id="column_checklist_form">{% csrf_token %}
     <div class="arrow"></div>
@@ -188,6 +188,7 @@
   </div>
 </div>
 
+<!-- control buttons -->
 <div class="control-buttons" style="padding: 10px 0;">
   <button class="btn btn-primary btn-add-for-modal" data-toggle="modal" data-target="#add-modal">Add New</button>
   <button class="btn btn-primary btn-edit-for-modal" data-toggle="modal" data-target="#edit-modal" disabled="disabled">Edit</button>
@@ -195,7 +196,7 @@
 </div>
 
 <!-- PlanAnnualAttribute Table -->
-<div class="annual_table_area" style="display: none; overflow-x: scroll;">
+<div class="annual_table_area" style="display: none;">
   <table class="table table-bordered table-striped" id="table-annual-data">
     <thead>
       <tr class="tr-category"></tr>
