@@ -62,6 +62,15 @@ div.accordion-panel {
 .modal select {
     background-color: white;
 }
+
+#id-is_from_source-wrapper input {
+    width: 50px;
+    margin: 0 10px 0 0;
+}
+
+#attribute-rule {
+    margin: 10px 0;
+}
 /*=================================================*/
 /*                  Minor fix                      */
 /*=================================================*/

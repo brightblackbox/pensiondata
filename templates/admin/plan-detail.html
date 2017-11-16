@@ -222,7 +222,7 @@
         {% for attr in attr_list %}
         <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
             id="td-id-{{ year.year }}-{{ attr.attribute_id }}"
-            data-annual-data-pk="-1"
+            data-annual-data-pk="-1" data-is-from-source="" data-source-pk="{{ attr.data_source_id }}"
         ></td>
         {% endfor %}
       </tr>
@@ -259,8 +259,21 @@
           </select>
         </p>
         <p><label>Type:&nbsp;</label><span id="attribute-type"></span></p>
-        <div id="attribute-rule"></div>
+
         <p><label>Category:&nbsp;</label><span id="attribute-category"></span></p>
+
+        <p><label>Source:&nbsp;</label><span id="attribute-source"></span></p>
+
+        <div id="id-is_from_source-wrapper">
+          <input type="radio" id="id-is_from_source-radio1" name="is_from_source" value="1" checked>
+          <label for="id-is_from_source-radio1">Is from DataSource</label>
+
+          <input type="radio" id="id-is_from_source-radio0" name="is_from_source" value="0">
+          <label for="id-is_from_source-radio2">Directly Input</label>
+        </div>
+
+        <div id="attribute-rule"></div>
+
         <p><label>Value:&nbsp;</label><input type="text" name="attribute_value" id="attr-val-input"></p>
         <div id="add-new-result" style="display: none"></div>
       </div>

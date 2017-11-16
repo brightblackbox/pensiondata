@@ -101,7 +101,7 @@ function initialize_annual_table() {
     $.each(plan_annual_data, function (i, annual_item) {
       var $td_id = 'td-id-' + annual_item.year + '-' + annual_item.attribute_id;
       var $td_html = '<span class="annual-value">' + numberWithCommas(annual_item.attribute_value) + '</span>';
-      $('#' + $td_id).html($td_html).data('annual-data-pk', annual_item.id);
+      $('#' + $td_id).html($td_html).attr({'data-annual-data-pk': annual_item.id, 'data-is-from-source': annual_item.is_from_source});
     });
 
     $('.annual_table_area').css('display', 'block');
@@ -240,6 +240,16 @@ $('#table-annual-data td').on("click", function () {
 
   $('span.annual-value').removeClass('selected_td');
   var annual_data_pk = $(this).data('annual-data-pk');
+
+  var is_from_source = $(this).data('is-from-source');
+  var source_pk = $(this).data('source-pk');
+
+  var is_readonly = false;
+  if (is_from_source && source_pk===0) { // NOTE: hardcoded
+      console.log('here-------readonly');
+      is_readonly = true;
+  }
+
   var $span = $('span', this);
   $selected_td_element = $span;
 
@@ -250,7 +260,8 @@ $('#table-annual-data td').on("click", function () {
     $('.btn-delete-for-modal').prop( "disabled", false );
 
     var old_value = unformatnumber($span.text());
-    $('#annual-new-val').val(old_value);
+    $('#annual-new-val').val(old_value).prop("readonly", is_readonly);
+
 
   }else{
     $('.btn-edit-for-modal').prop( "disabled", true );
@@ -323,6 +334,7 @@ $('#attr-selectbox').change(function () {
     var attr_id = $(this).val();
     if(!attr_id){
       $('#attribute-type').text('');
+      $('#attribute-source').text('');
       $('#attribute-category').text('');
       $('#attribute-rule').html('');
       $('#attr-val-input').val( '' );
@@ -337,9 +349,30 @@ $('#year-selectbox').change(function () {
     show_detail_for_add_new(attr_id);
 });
 
+ $("input[name='is_from_source']").change(function(){
+    var _val = $(this).val();
+    if (_val == 1){
+        $('#attr-val-input').hide().val();
+    }else{
+        $('#attr-val-input').show();
+    }
+});
+
+
 function show_detail_for_add_new(attr_id){
     var selected_attr = get_attr_by_id(attr_id);
     $('#attribute-type').text( selected_attr.attribute_type );
+    $('#attribute-source').text( selected_attr.data_source );
+
+    $('#id-is_from_source-radio1').prop("checked", true);
+    if (selected_attr.data_source === 'pensiondata.org'){ // NOTE: hardcoded !!!
+        $('#id-is_from_source-wrapper').show();
+        $('#attr-val-input').hide().val();
+    }else{
+        $('#id-is_from_source-wrapper').hide();
+        $('#attr-val-input').show();
+    }
+
     $('#attribute-category').text( selected_attr.category );
     $('#add-new-result').hide();
     var rule = selected_attr.calculated_rule;
@@ -416,6 +449,7 @@ $('#add-new-form').on('submit', function (e) {
   var year = $('#year-selectbox').val();
   var attr_id = $('#attr-selectbox').val();
   var value = $('#attr-val-input').val();
+  var is_from_source = $("input[name='is_from_source']:checked").val();
   if(attr_id==""){
     alert("invalid attribute");
     return false;
@@ -431,6 +465,7 @@ $('#add-new-form').on('submit', function (e) {
       'plan_id': plan_pk,
       'year': year,
       'value': value,
+      'is_from_source': is_from_source,
       'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
     },
     type: "post",

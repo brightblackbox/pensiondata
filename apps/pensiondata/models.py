@@ -11,6 +11,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Max
 import re
 #########################################################################################################
 
@@ -54,7 +55,7 @@ class DataSource(models.Model):
 
     @property
     def is_master_source(self):
-        return self.name == 'Pension Data'
+        return self.id == 0  # NOTE: hardcodes
 
 
 class Government(models.Model):
@@ -196,7 +197,10 @@ class PlanAnnualAttribute(models.Model):
     plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True, related_name='annual_attrs')
     attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
-    is_from_source = models.BooleanField(default=True)
+    is_from_source = models.BooleanField(
+        default=True,
+        help_text='check if the value is from source or from user just for Master Attribute'
+    )
 
     class Meta:
         # unique_together = ('plan', 'year', 'plan_attribute',)
@@ -218,6 +222,22 @@ class PlanAnnualAttribute(models.Model):
         """
         :return: string value
         """
+        if self.plan_attribute.is_master_attribute and self.is_from_source:
+            attr_ids_for_master = self.plan_attribute.attributes_for_master
+            if attr_ids_for_master is None:
+                return '0'
+            else:
+                attr_id_list = attr_ids_for_master.split(",")
+                attr_id_list = list(map(int, attr_id_list))
+
+                try:  # NOTE: if it is calculated_rule?
+                    obj = PlanAnnualAttribute.objects.filter(plan=self.plan, year=self.year, plan_attribute__id__in=attr_id_list).\
+                        order_by('-plan_attribute__weight')[0]
+                    return obj.attribute_value
+                except Exception as e:
+                    print(e.__dict__)
+                    return '0'
+
         if self.plan_attribute.is_static:
             return self.attribute_value
 
@@ -330,6 +350,10 @@ class PlanAttribute(models.Model):
         if self.plan_attribute_category is None:
             return ''
         return self.plan_attribute_category.name
+
+    @property
+    def is_master_attribute(self):
+        return self.data_source.is_master_source
 
     def __str__(self):
         return self.name

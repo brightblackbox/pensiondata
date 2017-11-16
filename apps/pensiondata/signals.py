@@ -1,6 +1,7 @@
 from django.db.models.signals import pre_save, pre_delete, post_save, post_delete
 from django.dispatch import receiver
 from .models import PlanAnnualAttribute, PlanAttribute
+from django.db.models import Q
 
 
 @receiver(post_save, sender=PlanAnnualAttribute)
@@ -13,12 +14,12 @@ def recalculate(sender, instance, **kwargs):
     # print('Instance: {}'.format(instance.__dict__))
 
     if sender is PlanAnnualAttribute:
-        # print('Signal in PlanAnnualAttribute')
         obj_list = PlanAnnualAttribute.objects.filter(
             plan=instance.plan,
-            year=instance.year,
-            plan_attribute__attribute_type='calculated'
-        ).select_related('plan_attribute')
+            year=instance.year
+        ).filter(
+            Q(plan_attribute__attribute_type='calculated') | Q(plan_attribute__data_source__id=0)  # NOTE: hardcoded
+        ).select_related('plan_attribute', 'plan_attribute__data_source')
 
         for obj in obj_list:
             obj.attribute_value = obj.value
@@ -26,7 +27,7 @@ def recalculate(sender, instance, **kwargs):
 
     elif sender is PlanAttribute:
         # print('Signal in PlanAttribute')
-        if not instance.is_static:
+        if not instance.is_static or instance.is_master_attribute:
             obj_list = PlanAnnualAttribute.objects.filter(plan_attribute=instance)
 
             for obj in obj_list:

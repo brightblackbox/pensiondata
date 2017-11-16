@@ -158,6 +158,12 @@ def add_plan_annual_attr(request):
     plan_id = request.POST.get('plan_id')
     year = request.POST.get('year')
     value = request.POST.get('value', '0')
+    is_from_source = request.POST.get('is_from_source')
+
+    if is_from_source == '1':
+        is_from_source = True
+    else:
+        is_from_source = False
 
     try:
         plan_attr_obj = PlanAttribute.objects.get(id=attr_id)
@@ -181,7 +187,8 @@ def add_plan_annual_attr(request):
             plan=plan_obj,
             year=year,
             plan_attribute=plan_attr_obj,
-            attribute_value=value
+            attribute_value=value,
+            is_from_source=is_from_source
         )
 
         post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
