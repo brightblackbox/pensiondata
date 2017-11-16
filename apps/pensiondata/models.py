@@ -46,6 +46,8 @@ class DataSource(models.Model):
     class Meta:
         managed = True
         db_table = 'data_source'
+        verbose_name = 'Data Source'
+        verbose_name_plural = 'Data Sources'
 
     def __str__(self):
         return self.name
@@ -60,31 +62,59 @@ class Government(models.Model):
 
     class Meta:
         db_table = 'government'
+        verbose_name = 'Admin Government'
+        verbose_name_plural = 'Admin Governments'
+
+    def __str__(self):
+        return self.name
+
+class GovernmentAttributeCategory(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'government_attribute_category'
+        verbose_name = 'Government Attribute Category'
+        verbose_name_plural = 'Government Attribute Categories'
+
+    def __str__(self):
+        return self.name
+
+class GovernmentAttribute(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    name = models.TextField()
+    datatype = models.IntegerField()
+    line_item_code = models.TextField()
+    display_order = models.IntegerField()
+    attribute_column_name = models.TextField()
+    multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
+    weight = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
+    government_attribute_master_id = models.BigIntegerField()
+    data_source = models.ForeignKey(DataSource, models.DO_NOTHING, blank=True, null=True)
+    government_attribute_category = models.ForeignKey(GovernmentAttributeCategory, models.DO_NOTHING, blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'government_attribute'
+        verbose_name = 'Government Attribute'
+        verbose_name_plural = 'Government Attributes'
 
     def __str__(self):
         return self.name
 
 
-class GovernmentAnnual(models.Model):
+class GovernmentAnnualAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
     government = models.ForeignKey(Government, models.DO_NOTHING, null=True, blank=True)
-    government_attribute = models.ForeignKey('GovernmentAttribute', models.DO_NOTHING, null=True, blank=True)
-    attribute_value = models.TextField()
+    year = models.IntegerField(blank=True, null=True)
+    government_attribute = models.ForeignKey(GovernmentAttribute, models.DO_NOTHING, null=True, blank=True)
+    value = models.TextField()
 
     class Meta:
         managed = True
-        db_table = 'government_annual'
-
-
-class GovernmentAttribute(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    attribute_key = models.TextField()
-    attribute_datatype = models.IntegerField()
-    attribute_category = models.IntegerField()
-
-    class Meta:
-        managed = True
-        db_table = 'government_attribute'
+        db_table = 'government_annual_attribute'
+        verbose_name = 'Government Annual Attribute'
+        verbose_name_plural = 'Government Annual Attributes'
 
 
 class GovernmentType(models.Model):
@@ -94,6 +124,8 @@ class GovernmentType(models.Model):
     class Meta:
         managed = True
         db_table = 'government_type'
+        verbose_name = 'Government Type'
+        verbose_name_plural = 'Government Types'
 
     def __str__(self):
         return self.level
@@ -223,8 +255,8 @@ class PlanAttributeCategory(models.Model):
 
     class Meta:
         managed = True
-        verbose_name = 'Attribute category'
-        verbose_name_plural = 'Attribute categories'
+        verbose_name = 'Plan Attribute Category'
+        verbose_name_plural = 'Plan Attribute Categories'
         db_table = 'plan_attribute_category'
         ordering = ('name',)
 
@@ -242,8 +274,8 @@ class PlanAttributeMaster(models.Model):
 
     class Meta:
         managed = True
-        verbose_name = 'Master attribute'
-        verbose_name_plural = 'Master attributes'
+        verbose_name = 'Master Attribute'
+        verbose_name_plural = 'Master Attributes'
         db_table = 'plan_attribute_master'
 
     def __str__(self):
@@ -274,6 +306,8 @@ class PlanAttribute(models.Model):
     class Meta:
         managed = True
         db_table = 'plan_attribute'
+        verbose_name = 'Plan Attribute'
+        verbose_name_plural = 'Plan Attributes'
 
     @property
     def is_static(self):
