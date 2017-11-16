@@ -3,11 +3,15 @@ from django.db.models import F, Count
 import json
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, \
-    PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory, PlanAnnual
+    PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory, PlanAnnual, \
+    GovernmentAttribute, GovernmentAnnualAttribute, GovernmentAttributeCategory
 
 from .models import CensusAnnualAttribute, DataSource
 
 from moderation.admin import ModerationAdmin
+
+from django.forms import TextInput, Textarea
+from django.db import models
 
 
 class ForeignKeyCacheMixin(object):
@@ -36,17 +40,26 @@ class CensusAnnualAttributeInline(admin.TabularInline):
     exclude = ('id', )
     readonly_fields = ('year',)
 
+class DataSourceAdmin(admin.ModelAdmin):
+    model = DataSource
+    extra = 0
+
+admin.site.register(DataSource, DataSourceAdmin)
 
 class PlanAdmin(ModerationAdmin):
     model = Plan
 
-    list_display = ['name', 'state']
+    list_display = ['display_name', 'state']
     list_filter = ['admin_gov__state__name']
     list_per_page = 50
     ordering = ['admin_gov__state__id']
-    search_fields = ['name']
+    search_fields = ['display_name']
 
     list_select_related = ('admin_gov', 'admin_gov__state',)
+
+    formfield_overrides = {
+        models.CharField: {'widget': TextInput(attrs={'size':'80'})}
+    }
 
     def state(self, obj):
         return obj.admin_gov.state
@@ -204,6 +217,30 @@ class GovernmentAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Government, GovernmentAdmin)
+
+#### GOVERNMENT Attribute 
+class GovernmentAttributeAdmin(admin.ModelAdmin):
+    model = GovernmentAttribute
+
+    list_display = ['name']
+
+admin.site.register(GovernmentAttribute, GovernmentAttributeAdmin)
+
+#### GOVERNMENT Attribute Category
+class GovernmentAttributeCategoryAdmin(admin.ModelAdmin):
+    model = GovernmentAttributeCategory
+
+    list_display = ['name']
+
+admin.site.register(GovernmentAttributeCategory, GovernmentAttributeCategoryAdmin)
+
+#### GOVERNMENT Annual Attribute
+class GovernmentAnnualAttributeAdmin(admin.ModelAdmin):
+    model = GovernmentAnnualAttribute
+
+    list_display = ['government_attribute', 'year', 'value']
+
+admin.site.register(GovernmentAnnualAttribute, GovernmentAnnualAttributeAdmin)
 
 
 class PlanAttributeAdmin(admin.ModelAdmin):
