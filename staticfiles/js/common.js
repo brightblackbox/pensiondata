@@ -1,5 +1,5 @@
 /**
- * @main.js
+ * @common.js
  * This is used in all of front/admin pages
  */
 
