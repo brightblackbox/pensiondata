@@ -87,14 +87,14 @@ class GovernmentAttributeCategory(models.Model):
 
 class GovernmentAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.TextField()
+    name = models.TextField(null=True, blank=True)
     datatype = models.IntegerField()
-    line_item_code = models.TextField()
+    line_item_code = models.TextField(null=True, blank=True)
     display_order = models.IntegerField()
     attribute_column_name = models.TextField()
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
     weight = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
-    government_attribute_master_id = models.BigIntegerField()
+    government_attribute_master_id = models.BigIntegerField(null=True, blank=True)
     data_source = models.ForeignKey(DataSource, models.DO_NOTHING, blank=True, null=True)
     government_attribute_category = models.ForeignKey(GovernmentAttributeCategory, models.DO_NOTHING, blank=True, null=True)
 
@@ -316,20 +316,19 @@ class PlanAttribute(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256, unique=True, null=True, blank=True)
+    data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
     datatype = models.CharField(max_length=256, null=True, blank=True)
     plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=True, blank=True)
     line_item_code = models.CharField(max_length=256)
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
-    weight = models.IntegerField(null=True, blank=True)
-
-    data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
+    weight = models.IntegerField(default=0)
 
     # master attribute
-    attributes_for_master = models.CharField('Attributes for Master', max_length=256,
+    attributes_for_master = models.CharField('Source Attributes', max_length=256,
                                              null=True, blank=True,
-                                             help_text='Souce Attributes for the master attribute')
+                                             help_text='Source Attributes for the master attribute')
 
     # properties for value
     attribute_type = models.CharField(max_length=16, choices=ATTRIBUTE_TYPE_CHOICES, default='static')

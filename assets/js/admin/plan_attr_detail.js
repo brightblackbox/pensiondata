@@ -21,9 +21,39 @@ $(document).ready(function (e) {
     // When change DataSource
     $('#id_data_source').change(function () {
         if( $(this).val() === '0' ){ // NOTE: hardcoded 0: Pension Data. Should be changed when Datasource model is updated.
+
+            // source attributes
             $('#id_attrs_for_master-selectbox').prop("disabled", false);
+            $('.field-attributes_for_master').show();
+
+            // multiplier
+            $('#id_multiplier').prop("disabled", true);
+            $('.field-multiplier').hide();
+
+            // weight
+            $('#id_weight').prop("disabled", true);
+            $('.field-weight').hide();
+
+            // attribute_type
+            $('#id_attribute_type').val("static").change();
+            $('.field-attribute_type').hide();
+
         }else{
+            // source attributes
             $('#id_attrs_for_master-selectbox').prop("disabled", true).val(null).change();
+            $('.field-attributes_for_master').hide();
+
+            // multiplier
+            $('#id_multiplier').prop("disabled", false);
+            $('.field-multiplier').show();
+
+            // weight
+            $('#id_weight').prop("disabled", false);
+            $('.field-weight').show();
+
+            // attribute_type
+            $('.field-attribute_type').show();
+
         }
     }).change();
 
