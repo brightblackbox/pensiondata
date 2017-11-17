@@ -63,9 +63,13 @@ div.accordion-panel {
     background-color: white;
 }
 
-#id-is_from_source-wrapper input {
-    width: 50px;
+.is_from_source-wrapper input {
+    width: 20px;
     margin: 0 10px 0 0;
+}
+
+.is_from_source-wrapper label {
+    width: 150px;
 }
 
 #attribute-rule {

@@ -197,8 +197,8 @@ class PlanAnnualAttribute(models.Model):
     plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True, related_name='annual_attrs')
     attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
-    is_from_source = models.BooleanField(
-        default=True,
+    is_from_source = models.NullBooleanField(
+        default=None,
         help_text='check if the value is from source or from user just for Master Attribute'
     )
 

@@ -235,38 +235,63 @@ function unformatnumber(formatted) {
 
 var selected_annual_id = 0;
 var $selected_td_element=null;
+var selected_is_from_source;
 // click td
 $('#table-annual-data td').on("click", function () {
 
-  $('span.annual-value').removeClass('selected_td');
-  var annual_data_pk = $(this).data('annual-data-pk');
+    console.log('one-click');
 
-  var is_from_source = $(this).data('is-from-source');
-  var source_pk = $(this).data('source-pk');
+    $('span.annual-value').removeClass('selected_td');
+    var annual_data_pk = $(this).data('annual-data-pk');
 
-  var is_readonly = false;
-  if (is_from_source && source_pk===0) { // NOTE: hardcoded
-      console.log('here-------readonly');
-      is_readonly = true;
-  }
+    var $span = $('span', this);
+    $selected_td_element = $span;
 
-  var $span = $('span', this);
-  $selected_td_element = $span;
+    if( annual_data_pk > 0 ){
+        selected_annual_id = annual_data_pk;
+        $span.addClass('selected_td');
+        $('.btn-edit-for-modal').prop( "disabled", false );
+        $('.btn-delete-for-modal').prop( "disabled", false );
 
-  if( annual_data_pk > 0 ){
-    selected_annual_id = annual_data_pk;
-    $span.addClass('selected_td');
-    $('.btn-edit-for-modal').prop( "disabled", false );
-    $('.btn-delete-for-modal').prop( "disabled", false );
+        var old_value = unformatnumber($span.text());
 
-    var old_value = unformatnumber($span.text());
-    $('#annual-new-val').val(old_value).prop("readonly", is_readonly);
+        $('#annual-new-val').val(old_value);
+
+        selected_is_from_source = $(this).data('is-from-source');
+
+        if (typeof selected_is_from_source === "undefined"){
+            selected_is_from_source = null;
+            console.log("source is null");
+            $("input[name='is_from_source-edit']").prop('disabled', true);
+            $('#id-is_from_source-edit-wrapper').hide();
+            $('#annual-new-val').prop("disabled", false);
+
+        }else {
+            $("input[name='is_from_source-edit']").prop('disabled', false);
+            $('#id-is_from_source-edit-wrapper').show();
+            if(selected_is_from_source){
+                selected_is_from_source = '1';
+                console.log("source is true");
+                $('#id-is_from_source-edit-radio1').prop("checked", true).change();
+
+            }else{
+                selected_is_from_source = '0';
+                console.log("source is false");
+                $('#id-is_from_source-edit-radio0').prop("checked", true).change();
+            }
+        }
+        // .prop("readonly", is_readonly);
 
 
-  }else{
-    $('.btn-edit-for-modal').prop( "disabled", true );
-    $('.btn-delete-for-modal').prop( "disabled", true );
-  }
+    }else{
+        $('.btn-edit-for-modal').prop( "disabled", true );
+        $('.btn-delete-for-modal').prop( "disabled", true );
+    }
+});
+
+$('#table-annual-data td').on("dblclick", function () {
+    console.log('double click');
+    $('.btn-edit-for-modal').click();
 });
 
 // edit value
@@ -274,16 +299,50 @@ $('.btn-update').click(function () {
     var new_val = $('#annual-new-val').val();
     var old_val = unformatnumber($selected_td_element.text());
 
-    if ( !new_val || 0 === new_val.length){
-        alert('The value is required.');
-        return;
-    }else if (new_val == old_val){
+    var is_from_source = null;
+    if( !$("input[name='is_from_source-edit']").prop("disabled")){
+        is_from_source = $("input[name='is_from_source-edit']:checked").val();
+    }
+
+    console.log(selected_is_from_source);
+    console.log(is_from_source);
+
+    if( $("input[name='is_from_source-edit']").prop("disabled")
+        || (is_from_source === selected_is_from_source && is_from_source === '0') )
+    {
+        if ( !new_val || 0 === new_val.length){
+            alert('The value is required.');
+            return;
+        }else if (new_val == old_val){
+            return;
+        }
+    }
+
+    if( is_from_source === selected_is_from_source && is_from_source === '1' ){
         return;
     }
+    if(is_from_source !== selected_is_from_source && is_from_source === '0'){
+        if ( !new_val || 0 === new_val.length){
+            alert('The value is required.');
+            return;
+        }
+    }
+
+    // if ( is_from_source === '1' ){
+    //    new_val = ''
+    // }
+
+    // console.log("Edit result");
+    // console.log("-- new_val:" + new_val);
+    // console.log("-- is from source: " + is_from_source);
+    // console.log("-------------------");
+    // return;
+
     $.ajax({
       data:{
         'attr_id': selected_annual_id,
         'new_val': new_val,
+        'is_from_source': is_from_source,
         'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
       },
       type: "post",
@@ -336,6 +395,7 @@ $('#attr-selectbox').change(function () {
       $('#attribute-type').text('');
       $('#attribute-source').text('');
       $('#attribute-category').text('');
+      $('#id-is_from_source-add-wrapper').hide();
       $('#attribute-rule').html('');
       $('#attr-val-input').val( '' );
       return false;
@@ -349,12 +409,23 @@ $('#year-selectbox').change(function () {
     show_detail_for_add_new(attr_id);
 });
 
- $("input[name='is_from_source']").change(function(){
+ $("input[name='is_from_source-add']").change(function(){
     var _val = $(this).val();
-    if (_val == 1){
-        $('#attr-val-input').hide().val();
+    console.log(_val);
+    if (_val === '1'){
+        $('#attr-val-input').val('').prop("disabled", true);
     }else{
-        $('#attr-val-input').show();
+        $('#attr-val-input').prop("disabled", false);
+    }
+});
+
+ $("input[name='is_from_source-edit']").change(function(){
+    var _val = $(this).val();
+    console.log(_val);
+    if (_val === '1'){
+        $('#annual-new-val').prop("disabled", true);
+    }else{
+        $('#annual-new-val').prop("disabled", false);
     }
 });
 
@@ -364,13 +435,17 @@ function show_detail_for_add_new(attr_id){
     $('#attribute-type').text( selected_attr.attribute_type );
     $('#attribute-source').text( selected_attr.data_source );
 
-    $('#id-is_from_source-radio1').prop("checked", true);
+    $('#id-is_from_source-add-radio1').prop("checked", true);
     if (selected_attr.data_source === 'pensiondata.org'){ // NOTE: hardcoded !!!
-        $('#id-is_from_source-wrapper').show();
-        $('#attr-val-input').hide().val();
+        $('#id-is_from_source-add-wrapper').show();
+        $("input[name='is_from_source-add']").prop("disabled", false);
+        $('#id-is_from_source-add-radio1').prop("checked", true).change();
+
     }else{
-        $('#id-is_from_source-wrapper').hide();
-        $('#attr-val-input').show();
+        $('#id-is_from_source-add-wrapper').hide();
+        $("input[name='is_from_source-add']").prop("disabled", true);
+        console.log( $("input[name='is_from_source-add']:checked").val() );
+        $('#attr-val-input').prop("disabled", false);
     }
 
     $('#attribute-category').text( selected_attr.category );
@@ -443,13 +518,19 @@ function get_value(name, year) {
     });
     return selected_val;
 }
+
 // add new form submit
 $('#add-new-form').on('submit', function (e) {
   e.preventDefault();
   var year = $('#year-selectbox').val();
   var attr_id = $('#attr-selectbox').val();
   var value = $('#attr-val-input').val();
-  var is_from_source = $("input[name='is_from_source']:checked").val();
+
+  var is_from_source = null;
+  if( !$("input[name='is_from_source-edit']").prop("disabled")){
+      is_from_source = $("input[name='is_from_source-add']:checked").val();
+  }
+
   if(attr_id==""){
     alert("invalid attribute");
     return false;
@@ -458,6 +539,13 @@ $('#add-new-form').on('submit', function (e) {
   $('#add-new-result').html('Please wait ...').css('color', 'red').show();
   $('#add-new-form .btn-primary').prop('disabled', true);
   $('#add-new-form button').prop('disabled', true);
+
+    // console.log("Add result");
+    // console.log("-- val:" + value);
+    // console.log("-- is from source: " + is_from_source);
+    // console.log("-------------------");
+    // return;
+
   // submit
   $.ajax({
     data:{
@@ -474,11 +562,11 @@ $('#add-new-form').on('submit', function (e) {
       console.log(resp);
       if(resp.result == 'success'){
         $('#add-new-result').html('Successfully added').css('color','green').show();
-        setTimeout(
-          function()
-          {
-            location.reload();
-          }, 2000);
+        // setTimeout(
+        //   function()
+        //   {
+        //     location.reload();
+        //   }, 2000);
       }else{
         $('#add-new-result').html(resp.msg).css('color','red').show();
         // disable buttons before submit

@@ -27,12 +27,14 @@ def recalculate(sender, instance, **kwargs):
 
     elif sender is PlanAttribute:
         # print('Signal in PlanAttribute')
-        if not instance.is_static or instance.is_master_attribute:
+        if not instance.is_static:  # calculated
             obj_list = PlanAnnualAttribute.objects.filter(plan_attribute=instance)
+        else:
+            obj_list = PlanAnnualAttribute.objects.filter(plan_attribute=instance, is_from_source=True)
 
-            for obj in obj_list:
-                obj.attribute_value = obj.value
-                obj.save()
+        for obj in obj_list:
+            obj.attribute_value = obj.value
+            obj.save()
     else:
         pass
 
