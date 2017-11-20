@@ -62,6 +62,19 @@ div.accordion-panel {
 .modal select {
     background-color: white;
 }
+
+.is_from_source-wrapper input {
+    width: 20px;
+    margin: 0 10px 0 0;
+}
+
+.is_from_source-wrapper label {
+    width: 150px;
+}
+
+#attribute-rule {
+    margin: 10px 0;
+}
 /*=================================================*/
 /*                  Minor fix                      */
 /*=================================================*/
@@ -148,4 +161,13 @@ div.accordion-panel {
 
 .calc-input-inline {
     float: left;
+}
+
+/*
+================================
+select2 for master attribute
+================================
+ */
+#id_attrs_for_master-selectbox .info-datasource {
+    color: #999999;
 }
