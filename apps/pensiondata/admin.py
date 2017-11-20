@@ -40,11 +40,14 @@ class CensusAnnualAttributeInline(admin.TabularInline):
     exclude = ('id', )
     readonly_fields = ('year',)
 
+
 class DataSourceAdmin(admin.ModelAdmin):
     model = DataSource
     extra = 0
 
+
 admin.site.register(DataSource, DataSourceAdmin)
+
 
 class PlanAdmin(ModerationAdmin):
     model = Plan
@@ -105,7 +108,8 @@ class PlanAdmin(ModerationAdmin):
                     'plan_attribute__id',
                     'plan_attribute__data_source__id',
                     'plan_attribute__plan_attribute_category__id',
-                    'attribute_value') \
+                    'attribute_value',
+                    'is_from_source') \
             .annotate(
                     attribute_id=F('plan_attribute__id'),
                     data_source_id=F('plan_attribute__data_source__id'),
@@ -129,10 +133,11 @@ class PlanAdmin(ModerationAdmin):
 
         all_attr_list = PlanAttribute.objects.all() \
             .values(
-                'id', 'name', 'attribute_type', 'calculated_rule', 'plan_attribute_category__name'
+                'id', 'name', 'attribute_type', 'calculated_rule', 'plan_attribute_category__name', 'data_source__name'
             ) \
             .annotate(
-                category=F('plan_attribute_category__name')
+                category=F('plan_attribute_category__name'),
+                data_source=F('data_source__name')
             ) \
             .order_by("name")
 
@@ -265,8 +270,22 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
 
         static_attr_list = PlanAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        non_master_attrs = PlanAttribute.objects.exclude(data_source__id=0)\
+            .order_by('name') \
+            .select_related('data_source')  # NOTE: pension data
+
+        try:
+            obj = PlanAttribute.objects.get(id=object_id)
+
+            extra_context['attrs_for_master'] = obj.attributes_for_master
+            if obj.attributes_for_master is not None:
+                extra_context['attrs_for_master'] = obj.attributes_for_master.split(",")
+
+        except PlanAttribute.DoesNotExist:
+            extra_context['attrs_for_master'] = []
 
         extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+        extra_context['non_master_attrs'] = non_master_attrs
 
         return super(PlanAttributeAdmin, self).change_view(request, object_id, form_url, extra_context)
 
@@ -274,8 +293,13 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
 
         static_attr_list = PlanAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        non_master_attrs = PlanAttribute.objects.exclude(data_source__id=0) \
+            .order_by('name') \
+            .select_related('data_source')  # NOTE: pension data
 
         extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+        extra_context['non_master_attrs'] = non_master_attrs
+        extra_context['attrs_for_master'] = []
 
         return super(PlanAttributeAdmin, self).add_view(request, form_url, extra_context)
 

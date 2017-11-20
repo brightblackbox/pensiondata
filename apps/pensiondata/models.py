@@ -11,6 +11,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Max
 import re
 #########################################################################################################
 
@@ -52,6 +53,10 @@ class DataSource(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def is_master_source(self):
+        return self.id == 0  # NOTE: hardcodes
+
 
 class Government(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -82,14 +87,14 @@ class GovernmentAttributeCategory(models.Model):
 
 class GovernmentAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.TextField()
+    name = models.TextField(null=True, blank=True)
     datatype = models.IntegerField()
-    line_item_code = models.TextField()
+    line_item_code = models.TextField(null=True, blank=True)
     display_order = models.IntegerField()
     attribute_column_name = models.TextField()
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
     weight = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
-    government_attribute_master_id = models.BigIntegerField()
+    government_attribute_master_id = models.BigIntegerField(null=True, blank=True)
     data_source = models.ForeignKey(DataSource, models.DO_NOTHING, blank=True, null=True)
     government_attribute_category = models.ForeignKey(GovernmentAttributeCategory, models.DO_NOTHING, blank=True, null=True)
 
@@ -192,6 +197,11 @@ class PlanAnnualAttribute(models.Model):
     plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True, related_name='annual_attrs')
     attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
+    is_from_source = models.NullBooleanField(
+        default=None,
+        help_text='check if the value is from source or from user just for Master Attribute'
+    )
+
     class Meta:
         # unique_together = ('plan', 'year', 'plan_attribute',)
         db_table = 'plan_annual_attribute'
@@ -212,6 +222,22 @@ class PlanAnnualAttribute(models.Model):
         """
         :return: string value
         """
+        if self.plan_attribute.is_master_attribute and self.is_from_source:
+            attr_ids_for_master = self.plan_attribute.attributes_for_master
+            if attr_ids_for_master is None:
+                return '0'
+            else:
+                attr_id_list = attr_ids_for_master.split(",")
+                attr_id_list = list(map(int, attr_id_list))
+
+                try:  # NOTE: if it is calculated_rule?
+                    obj = PlanAnnualAttribute.objects.filter(plan=self.plan, year=self.year, plan_attribute__id__in=attr_id_list).\
+                        order_by('-plan_attribute__weight')[0]
+                    return obj.attribute_value
+                except Exception as e:
+                    print(e.__dict__)
+                    return '0'
+
         if self.plan_attribute.is_static:
             return self.attribute_value
 
@@ -290,16 +316,21 @@ class PlanAttribute(models.Model):
 
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256, unique=True, null=True, blank=True)
+    data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
     datatype = models.CharField(max_length=256, null=True, blank=True)
     plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=True, blank=True)
     line_item_code = models.CharField(max_length=256)
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
-    weight = models.IntegerField(null=True, blank=True)
-    plan_attribute_master = models.ForeignKey('PlanAttributeMaster', models.DO_NOTHING, null=True, blank=True)
-    data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
+    weight = models.IntegerField(default=0)
 
+    # master attribute
+    attributes_for_master = models.CharField('Source Attributes', max_length=256,
+                                             null=True, blank=True,
+                                             help_text='Source Attributes for the master attribute')
+
+    # properties for value
     attribute_type = models.CharField(max_length=16, choices=ATTRIBUTE_TYPE_CHOICES, default='static')
     calculated_rule = models.TextField(null=True, blank=True)
 
@@ -318,6 +349,10 @@ class PlanAttribute(models.Model):
         if self.plan_attribute_category is None:
             return ''
         return self.plan_attribute_category.name
+
+    @property
+    def is_master_attribute(self):
+        return self.data_source.is_master_source
 
     def __str__(self):
         return self.name
