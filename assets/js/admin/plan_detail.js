@@ -219,6 +219,8 @@ $('.poup-settings-wrap .button-apply').on("click", function () {
  * @result 123,456,789.0123456
  */
 function numberWithCommas(unformatted) {
+    if (unformatted === null)
+        return '';
     var parts = unformatted.toString().split(".");
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return parts.join(".");
