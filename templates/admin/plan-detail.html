@@ -101,6 +101,7 @@
   </div>
 </form>
 
+{% if attr_list|length > 0 %}
 <h3 style="display: inline">Plan Annual Attributes:</h3>&nbsp;
 <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
@@ -342,6 +343,7 @@
 </div>
 
 <script type="text/javascript">
+
   var plan_annual_data = "{{ plan_annual_data }}";
   var all_attr_list = "{{ all_attr_list }}";
   var save_checklist_url = '{% url "pensiondata:save_checklist" %}';
@@ -353,10 +355,13 @@
   var plan_pk = {{ original.pk }};
 
   // string -> JSON object
+
   plan_annual_data = JSON.parse(plan_annual_data.replace(/&quot;/g, '"'));
   all_attr_list = JSON.parse(all_attr_list.replace(/&quot;/g, '"'));
 
+
 </script>
 <script type="text/javascript" src="{% static 'js/admin/plan_detail.js' %}"></script>
+{% endif %} {# extra_context #}
 
 {% endblock %}

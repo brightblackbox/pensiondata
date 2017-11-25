@@ -8,7 +8,7 @@
   <link rel="stylesheet" type="text/css" href="{% block stylesheet %}{% static "admin/css/base.css" %}{% endblock %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/common.css' %}" />
 
-  <script type="text/javascript" src="{% static 'js/libs/jquery-1.10.2.min.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/libs/jquery.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/common.js' %}"></script>
 
   {% block extrastyle %}{% endblock %}
@@ -21,7 +21,10 @@
 <body class="{% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}"
   data-admin-utc-offset="{% now "Z" %}">
 
+{% block ajax_waiting_modal %}
 <div class="waiting-modal"></div>
+{% endblock %}
+
 <!-- Container -->
 <div id="container">
 
