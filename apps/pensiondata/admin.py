@@ -12,7 +12,7 @@ from moderation.admin import ModerationAdmin
 
 from django.forms import TextInput, Textarea
 from django.db import models
-
+from django.shortcuts import redirect
 
 from .mixins import ImportMixin
 
@@ -337,8 +337,14 @@ admin.site.register(PlanAttributeCategory, PlanAttributeCategoryAdmin)
 # PlanAnnualAttribute
 
 class PlanAnnualAttributeAdmin(ImportMixin, admin.ModelAdmin):
-    list_display = ['plan', 'plan_attribute', 'year', 'attribute_value']
-    list_per_page = 20
+
+    def changelist_view(self, request, extra_context=None):
+        """
+        The 'change list' admin view for this model.
+        """
+
+        return redirect('/admin/%s/%s/import/' % self.get_model_info())
+
 
 admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
 
