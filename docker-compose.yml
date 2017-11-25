@@ -1,0 +1,50 @@
+version: '2'
+
+services:
+
+  # RabbitMQ
+  rabbit:
+    hostname: rabbit
+    image: rabbitmq:latest
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mypass
+    ports:
+      - "5672:5672"  # we forward this port because it's useful for debugging
+
+  # Django web server
+  web:
+    build:
+      context: .
+      dockerfile: /conf/dockerfiles/django
+    hostname: web
+    command: ./conf/commands/run_webapp.sh
+    volumes:
+      - .:/pensiondata  # mount current directory inside container
+    environment:
+      - DJANGO_SETTINGS_MODULE=settings.prod
+    ports:
+      - "8000:8000"
+    # set up links so that web knows about db, rabbit and redis
+    links:
+      - rabbit
+    depends_on:
+      - rabbit
+
+  # Celery worker
+  celery:
+    build:
+      context: .
+      dockerfile: /conf/dockerfiles/celery
+    command: ./conf/commands/run_celery.sh
+
+    volumes:
+      - .:/pensiondata
+
+    environment:
+      - DJANGO_SETTINGS_MODULE=settings.prod
+
+    links:
+      - rabbit
+    depends_on:
+      - rabbit
