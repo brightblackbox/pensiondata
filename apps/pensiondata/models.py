@@ -167,7 +167,7 @@ class Plan(models.Model):
         db_table = 'plan'
 
     def __str__(self):
-        return self.name
+        return self.display_name
 
     # @property
     # def gov_state(self):
@@ -207,6 +207,8 @@ class PlanAnnualAttribute(models.Model):
     class Meta:
         # unique_together = ('plan', 'year', 'plan_attribute',)
         db_table = 'plan_annual_attribute'
+        verbose_name = 'Plan Annual Attribute'
+        verbose_name_plural = 'Plan Annual Attributes'
 
     def __str__(self):
         return "PlanAnnualAttribute(%s)" % self.year

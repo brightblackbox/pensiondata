@@ -337,8 +337,8 @@ admin.site.register(PlanAttributeCategory, PlanAttributeCategoryAdmin)
 # PlanAnnualAttribute
 
 class PlanAnnualAttributeAdmin(ImportMixin, admin.ModelAdmin):
+    list_display = ['plan', 'plan_attribute', 'year', 'attribute_value']
     list_per_page = 20
-
 
 admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
 
