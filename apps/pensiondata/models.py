@@ -28,8 +28,8 @@ class CensusData(models.Model):
 class County(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=255)
-    retirement_census_county_code = models.CharField(max_length=3)
-    retirement_census_state_code = models.CharField(max_length=2)
+    retirement_census_county_code = models.CharField(max_length=3, null=True, blank=True)
+    retirement_census_state_code = models.CharField(max_length=2, null=True, blank=True)
     state = models.ForeignKey('State', models.DO_NOTHING, null=True, blank=True)
 
     class Meta:
@@ -41,7 +41,7 @@ class County(models.Model):
 
 class DataSource(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     trust_level = models.IntegerField()
 
     class Meta:
@@ -73,6 +73,7 @@ class Government(models.Model):
     def __str__(self):
         return self.name
 
+
 class GovernmentAttributeCategory(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=255)
@@ -85,13 +86,14 @@ class GovernmentAttributeCategory(models.Model):
     def __str__(self):
         return self.name
 
+
 class GovernmentAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.TextField(null=True, blank=True)
-    datatype = models.IntegerField()
+    datatype = models.IntegerField(null=True, blank=True)
     line_item_code = models.TextField(null=True, blank=True)
-    display_order = models.IntegerField()
-    attribute_column_name = models.TextField()
+    display_order = models.IntegerField(null=True, blank=True)
+    attribute_column_name = models.TextField(null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
     weight = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
     government_attribute_master_id = models.BigIntegerField(null=True, blank=True)
@@ -138,7 +140,7 @@ class GovernmentType(models.Model):
 
 class Plan(models.Model):
     id = models.BigAutoField(primary_key=True)
-    census_plan_id = models.CharField(max_length=255)
+    census_plan_id = models.CharField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     display_name = models.CharField(max_length=255, blank=True, null=True)
     year_of_inception = models.IntegerField(blank=True, null=True)
@@ -322,7 +324,7 @@ class PlanAttribute(models.Model):
     line_item_code = models.CharField(max_length=256)
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
-    multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
+    multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True, default=1000)
     weight = models.IntegerField(default=0)
 
     # master attribute
@@ -339,6 +341,7 @@ class PlanAttribute(models.Model):
         db_table = 'plan_attribute'
         verbose_name = 'Plan Attribute'
         verbose_name_plural = 'Plan Attributes'
+        unique_together = (('data_source', 'line_item_code'),)
 
     @property
     def is_static(self):
@@ -423,8 +426,8 @@ class PlanProvisions(models.Model):
 class State(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.TextField()
-    state_abbreviation = models.CharField(max_length=2)
-    retirement_census_state_code = models.CharField(max_length=2)
+    state_abbreviation = models.CharField(max_length=2, null=True, blank=True)
+    retirement_census_state_code = models.CharField(max_length=2, null=True, blank=True)
 
     class Meta:
         db_table = 'state'

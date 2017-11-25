@@ -1,0 +1,128 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_static admin_modify %}
+{% load admin_urls %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <link rel="stylesheet" type="text/css" href="{% static "css/libs/bootstrap.min.css" %}" />
+
+  <style>
+      .error {
+          color: red;
+          font-size: 20px;
+          padding-left: 20px;
+      }
+
+      /* progress bar */
+      .progress {
+          height: 35px !important;
+          margin: 20px 0 !important;
+      }
+
+      #fill-progress{
+          font-size: 16pt;
+          width: 100%;
+          padding-top: 10px;
+      }
+      /* upload report */
+      .upload-report span {
+          margin: 10px 20px;
+      }
+      .upload-report .filled-count {
+          color: green;
+      }
+      .upload-report .failed-count {
+          color: red;
+      }
+      .upload-report .total-count {
+      }
+
+  </style>
+{% endblock %}
+
+{% block extrahead %}
+  <script type="text/javascript" src="{% static 'js/libs/bootstrap.min.js' %}"></script>
+{% endblock %}
+
+{% block bodyclass %}{{ opts.app_label }}-{{ opts.object_name.lower }} change-form{% endblock %}
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_label|capfirst|escape }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {% block breadcrumbs_last %}{% trans "Import" %}{% endblock %}
+</div>
+{% endblock %}
+{% endif %}
+
+{% block ajax_waiting_modal %}
+{% endblock %}
+
+{% block content %}
+<form action="" method="post" enctype="multipart/form-data" id="id-import-form">
+  {% csrf_token %}
+
+{#    <p>#}
+{#      {% trans "This importer will import the following fields: " %}#}
+{#      <code>{{ fields|join:", " }}</code>#}
+{#    </p>#}
+
+  <fieldset class="module aligned">
+    {% for field in form %}
+      <div class="form-row">
+        {{ field.errors }}
+
+        {{ field.label_tag }}
+
+        {{ field }}
+
+        {% if field.field.help_text %}
+        <p class="help">{{ field.field.help_text|safe }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </fieldset>
+  <div class="error"></div>
+  <div class="submit-row">
+    <input type="submit" class="default" value="{% trans "Submit" %}">
+  </div>
+</form>
+
+
+<div class="modal fade" id="modal-progress" data-backdrop="static" data-keyboard="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Please wait...</h4>
+      </div>
+      <div class="modal-body">
+        <div class="progress">
+          <div id="fill-progress" class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="100"
+          aria-valuemin="0" aria-valuemax="100" style="width:100%;"></div>
+        </div>
+        <div class="upload-report">
+          <span class="filled-count"></span>
+          <span class="failed-count"></span>
+          <span class="total-count"></span>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: none;">
+        <button type="button" class="btn btn-default" onclick="location.reload()" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  var has_error = false;
+  var will_stop = 0;
+  var task_id;
+  var job_count;
+  var interval = 3000; // consider ajax timeout
+  var get_progress_url = "{% url opts|admin_urlname:"get_import_progress" %}";
+</script>
+<script type="text/javascript" src="{% static 'js/admin/import.js' %}"></script>
+
+{% endblock %}

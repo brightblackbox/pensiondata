@@ -219,6 +219,8 @@ $('.poup-settings-wrap .button-apply').on("click", function () {
  * @result 123,456,789.0123456
  */
 function numberWithCommas(unformatted) {
+    if (unformatted === null)
+        return '';
     var parts = unformatted.toString().split(".");
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return parts.join(".");
@@ -259,7 +261,7 @@ $('#table-annual-data td').on("click", function () {
 
         selected_is_from_source = $(this).data('is-from-source');
 
-        if (typeof selected_is_from_source === "undefined"){
+        if (typeof selected_is_from_source === "undefined"){  // NOTE:
             selected_is_from_source = null;
             console.log("source is null");
             $("input[name='is_from_source-edit']").prop('disabled', true);
