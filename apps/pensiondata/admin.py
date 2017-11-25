@@ -98,9 +98,7 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
             .select_related('plan_attribute__plan_attribute_category') \
             .select_related('plan_attribute__data_source')
 
-        print(plan_annual_objs.count())
         if plan_annual_objs.count() < 1:
-            print('here----------')
             return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
 
         year_list = plan_annual_objs.order_by('year').values('year').distinct()
