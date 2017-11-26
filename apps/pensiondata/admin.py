@@ -209,7 +209,6 @@ class GovernmentTypeAdmin(admin.ModelAdmin):
 admin.site.register(GovernmentType, GovernmentTypeAdmin)
 
 
-#### GOVERNMENT TYPE
 class GovernmentAdmin(admin.ModelAdmin):
     model = Government
 
@@ -218,6 +217,8 @@ class GovernmentAdmin(admin.ModelAdmin):
     ]
     list_display = ['name', 'government_type', 'county', 'state']
     list_filter = ['government_type', 'state']
+
+    list_select_related = ('government_type', 'county', 'state', )
     list_per_page = 50
     search_fields = ['name', 'county', 'state']
     ordering = ['state', 'government_type', 'county']
