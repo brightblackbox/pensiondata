@@ -58,6 +58,21 @@ class DataSource(models.Model):
         return self.id == 0  # NOTE: hardcodes
 
 
+class AttributeCategory(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=256)
+
+    class Meta:
+        managed = True
+        verbose_name = 'Attribute Category'
+        verbose_name_plural = 'Attribute Categories'
+        db_table = 'attribute_category'
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
+
+
 class Government(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=255)
@@ -74,23 +89,10 @@ class Government(models.Model):
         return self.name
 
 
-class GovernmentAttributeCategory(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = 'government_attribute_category'
-        verbose_name = 'Government Attribute Category'
-        verbose_name_plural = 'Government Attribute Categories'
-
-    def __str__(self):
-        return self.name
-
-
 class GovernmentAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
-    name = models.TextField(null=True, blank=True)
-    datatype = models.IntegerField(null=True, blank=True)
+    name = models.CharField(max_length=256, null=True, blank=True)
+    datatype = models.CharField(max_length=256, null=True, blank=True)
     line_item_code = models.TextField(null=True, blank=True)
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.TextField(null=True, blank=True)
@@ -98,7 +100,7 @@ class GovernmentAttribute(models.Model):
     weight = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True)
     government_attribute_master_id = models.BigIntegerField(null=True, blank=True)
     data_source = models.ForeignKey(DataSource, models.DO_NOTHING, blank=True, null=True)
-    government_attribute_category = models.ForeignKey(GovernmentAttributeCategory, models.DO_NOTHING, blank=True, null=True)
+    attribute_category = models.ForeignKey(AttributeCategory, models.DO_NOTHING, blank=True, null=True)
 
     class Meta:
         managed = True
@@ -219,7 +221,7 @@ class PlanAnnualAttribute(models.Model):
 
     @property
     def category(self):
-        return self.plan_attribute.plan_attribute_category.name
+        return self.plan_attribute.attribute_category.name
 
     @property
     def value(self):
@@ -279,26 +281,11 @@ class PlanAnnualAttribute(models.Model):
             return '0'
 
 
-class PlanAttributeCategory(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    name = models.CharField(max_length=256)
-
-    class Meta:
-        managed = True
-        verbose_name = 'Plan Attribute Category'
-        verbose_name_plural = 'Plan Attribute Categories'
-        db_table = 'plan_attribute_category'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-
 class PlanAttributeMaster(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256)
     datatype = models.CharField(max_length=256)
-    plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=True, blank=True)
+    attribute_category = models.ForeignKey('AttributeCategory', models.DO_NOTHING, null=True, blank=True)
     display_order = models.IntegerField()
     attribute_column_name = models.CharField(max_length=256)
 
@@ -322,7 +309,7 @@ class PlanAttribute(models.Model):
     name = models.CharField(max_length=256, unique=True, null=True, blank=True)
     data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
     datatype = models.CharField(max_length=256, null=True, blank=True)
-    plan_attribute_category = models.ForeignKey('PlanAttributeCategory', models.DO_NOTHING, null=True, blank=True)
+    attribute_category = models.ForeignKey('AttributeCategory', models.DO_NOTHING, null=True, blank=True)
     line_item_code = models.CharField(max_length=256)
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
@@ -351,9 +338,9 @@ class PlanAttribute(models.Model):
 
     @property
     def category(self):
-        if self.plan_attribute_category is None:
+        if self.attribute_category is None:
             return ''
-        return self.plan_attribute_category.name
+        return self.attribute_category.name
 
     @property
     def is_master_attribute(self):

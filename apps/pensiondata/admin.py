@@ -3,8 +3,8 @@ from django.db.models import F, Count
 import json
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, \
-    PlanAnnualAttribute, PlanAttributeMaster, PlanAttributeCategory, PlanAnnual, \
-    GovernmentAttribute, GovernmentAnnualAttribute, GovernmentAttributeCategory
+    PlanAnnualAttribute, PlanAttributeMaster, AttributeCategory, PlanAnnual, \
+    GovernmentAttribute, GovernmentAnnualAttribute
 
 from .models import CensusAnnualAttribute, DataSource
 
@@ -87,15 +87,15 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
         plan = Plan.objects.get(id=object_id)
 
         # attr_list = PlanAttribute.objects.filter(annual_attrs__plan=plan)\
-        #     .select_related('plan_attribute_category', 'data_source').distinct()
+        #     .select_related('attribute_category', 'data_source').distinct()
 
-        category_list = PlanAttributeCategory.objects.order_by('name')
+        category_list = AttributeCategory.objects.order_by('name')
         datasource_list = DataSource.objects.order_by('name')
 
         plan_annual_objs = PlanAnnualAttribute.objects \
             .filter(plan=plan) \
             .select_related('plan_attribute') \
-            .select_related('plan_attribute__plan_attribute_category') \
+            .select_related('plan_attribute__attribute_category') \
             .select_related('plan_attribute__data_source')
 
         if plan_annual_objs.count() < 1:
@@ -109,36 +109,36 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
                     'year',
                     'plan_attribute__id',
                     'plan_attribute__data_source__id',
-                    'plan_attribute__plan_attribute_category__id',
+                    'plan_attribute__attribute_category__id',
                     'attribute_value',
                     'is_from_source') \
             .annotate(
                     attribute_id=F('plan_attribute__id'),
                     data_source_id=F('plan_attribute__data_source__id'),
-                    category_id=F('plan_attribute__plan_attribute_category__id'))
+                    category_id=F('plan_attribute__attribute_category__id'))
 
         attr_list = plan_annual_objs.values(
             'plan_attribute__id',
             'plan_attribute__name',
             'plan_attribute__data_source__id',
             'plan_attribute__data_source__name',
-            'plan_attribute__plan_attribute_category__id',
-            'plan_attribute__plan_attribute_category__name'
+            'plan_attribute__attribute_category__id',
+            'plan_attribute__attribute_category__name'
         ).annotate(
             attribute_id=F('plan_attribute__id'),
             attribute_name=F('plan_attribute__name'),
             data_source_id=F('plan_attribute__data_source__id'),
             data_source_name=F('plan_attribute__data_source__name'),
-            category_id=F('plan_attribute__plan_attribute_category__id'),
-            category_name=F('plan_attribute__plan_attribute_category__name')
+            category_id=F('plan_attribute__attribute_category__id'),
+            category_name=F('plan_attribute__attribute_category__name')
         ).distinct().order_by('category_name', 'attribute_name')
 
         all_attr_list = PlanAttribute.objects.all() \
             .values(
-                'id', 'name', 'attribute_type', 'calculated_rule', 'plan_attribute_category__name', 'data_source__name'
+                'id', 'name', 'attribute_type', 'calculated_rule', 'attribute_category__name', 'data_source__name'
             ) \
             .annotate(
-                category=F('plan_attribute_category__name'),
+                category=F('attribute_category__name'),
                 data_source=F('data_source__name')
             ) \
             .order_by("name")
@@ -234,13 +234,6 @@ class GovernmentAttributeAdmin(admin.ModelAdmin):
 
 admin.site.register(GovernmentAttribute, GovernmentAttributeAdmin)
 
-#### GOVERNMENT Attribute Category
-class GovernmentAttributeCategoryAdmin(admin.ModelAdmin):
-    model = GovernmentAttributeCategory
-
-    list_display = ['name']
-
-admin.site.register(GovernmentAttributeCategory, GovernmentAttributeCategoryAdmin)
 
 #### GOVERNMENT Annual Attribute
 class GovernmentAnnualAttributeAdmin(admin.ModelAdmin):
@@ -256,10 +249,10 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         (None, {'fields': [field.name for field in PlanAttribute._meta.fields if field.name != 'id']})
     ]
 
-    list_display = ['name', 'data_source', 'datatype', 'plan_attribute_category', 'line_item_code',
+    list_display = ['name', 'data_source', 'datatype', 'attribute_category', 'line_item_code',
                     'attribute_column_name', 'multiplier', ]
-    list_select_related = ('plan_attribute_category', 'data_source')
-    list_filter = ['data_source', 'plan_attribute_category', 'attribute_type']
+    list_select_related = ('attribute_category', 'data_source')
+    list_filter = ['data_source', 'attribute_category', 'attribute_type']
     list_per_page = 50
     search_fields = ['name']
 
@@ -310,29 +303,12 @@ class PlanAttributeAdmin(admin.ModelAdmin):
 admin.site.register(PlanAttribute, PlanAttributeAdmin)
 
 
-# PLAN ATTRIBUTE MASTER
-class PlanAttributeMasterAdmin(admin.ModelAdmin):
-    fieldsets = [
-        (None, {'fields': [field.name for field in PlanAttribute._meta.fields if field.name != 'id']})
-    ]
-
-    list_display = ['id', 'name', 'datatype', 'plan_attribute_category', 'display_order', 'attribute_column_name']
-    list_select_related = True
-    list_filter = ['plan_attribute_category']
-    list_per_page = 50
-    search_fields = ['name']
-
-
-admin.site.register(PlanAttributeMaster, PlanAttributeMasterAdmin)
-
-
-# PLAN ATTRIBUTE MASTER
-class PlanAttributeCategoryAdmin(admin.ModelAdmin):
+class AttributeCategoryAdmin(admin.ModelAdmin):
     list_display = ['id', 'name']
     list_editable = ['name']
 
 
-admin.site.register(PlanAttributeCategory, PlanAttributeCategoryAdmin)
+admin.site.register(AttributeCategory, AttributeCategoryAdmin)
 
 
 # PlanAnnualAttribute

@@ -9,7 +9,7 @@ from django.db.models.signals import pre_save, pre_delete, post_save, post_delet
 from django.db.models import F
 import json
 
-from .models import Plan, PlanAnnualAttribute, PlanAttributeCategory, PlanAttribute, DataSource
+from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource
 from .tables import PlanTable
 from .signals import recalculate
 
@@ -59,7 +59,7 @@ class PlanDetailView(DetailView):
         plan_annual_objs = PlanAnnualAttribute.objects \
             .filter(plan=plan) \
             .select_related('plan_attribute') \
-            .select_related('plan_attribute__plan_attribute_category') \
+            .select_related('plan_attribute__attribute_category') \
             .select_related('plan_attribute__data_source')
 
         year_list = plan_annual_objs.order_by('year').values('year').distinct()
@@ -71,13 +71,13 @@ class PlanDetailView(DetailView):
                     'plan_attribute__id',
                     'plan_attribute__multiplier',
                     'plan_attribute__data_source__id',
-                    'plan_attribute__plan_attribute_category__id',
+                    'plan_attribute__attribute_category__id',
                     'attribute_value') \
             .annotate(
                 attribute_id=F('plan_attribute__id'),
                 multiplier=F('plan_attribute__multiplier'),
                 data_source_id=F('plan_attribute__data_source__id'),
-                category_id=F('plan_attribute__plan_attribute_category__id')
+                category_id=F('plan_attribute__attribute_category__id')
             )
 
         attr_list = plan_annual_objs.values(
@@ -85,23 +85,23 @@ class PlanDetailView(DetailView):
             'plan_attribute__name',
             'plan_attribute__data_source__id',
             'plan_attribute__data_source__name',
-            'plan_attribute__plan_attribute_category__id',
-            'plan_attribute__plan_attribute_category__name'
+            'plan_attribute__attribute_category__id',
+            'plan_attribute__attribute_category__name'
         ).annotate(
             attribute_id=F('plan_attribute__id'),
             attribute_name=F('plan_attribute__name'),
             data_source_id=F('plan_attribute__data_source__id'),
             data_source_name=F('plan_attribute__data_source__name'),
-            category_id=F('plan_attribute__plan_attribute_category__id'),
-            category_name=F('plan_attribute__plan_attribute_category__name')
+            category_id=F('plan_attribute__attribute_category__id'),
+            category_name=F('plan_attribute__attribute_category__name')
         ).distinct().order_by('category_name', 'attribute_name')
 
         category_list = plan_annual_objs.values(
-            'plan_attribute__plan_attribute_category__id',
-            'plan_attribute__plan_attribute_category__name'
+            'plan_attribute__attribute_category__id',
+            'plan_attribute__attribute_category__name'
         ).annotate(
-            id=F('plan_attribute__plan_attribute_category__id'),
-            name=F('plan_attribute__plan_attribute_category__name')
+            id=F('plan_attribute__attribute_category__id'),
+            name=F('plan_attribute__attribute_category__name')
         ).distinct().order_by('name')
 
         datasource_list = DataSource.objects.order_by('name')
