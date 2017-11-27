@@ -54,6 +54,7 @@ class DataSource(models.Model):
         db_table = 'data_source'
         verbose_name = 'Data Source'
         verbose_name_plural = 'Data Sources'
+        ordering = ('trust_level',)
 
     def __str__(self):
         return self.name

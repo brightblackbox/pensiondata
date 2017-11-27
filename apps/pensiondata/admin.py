@@ -293,6 +293,9 @@ admin.site.register(PlanAttribute, PlanAttributeAdmin)
 
 
 class AttributeCategoryAdmin(admin.ModelAdmin):
+    """
+    Category Admin page
+    """
     list_display = ['id', 'name']
     list_editable = ['name']
 
@@ -300,7 +303,16 @@ class AttributeCategoryAdmin(admin.ModelAdmin):
 admin.site.register(AttributeCategory, AttributeCategoryAdmin)
 
 
-# PlanAnnualAttribute
+class DataSourceAdmin(admin.ModelAdmin):
+    """
+    DataSource Admin page
+    """
+    list_display = ['id', 'name', 'trust_level']
+    list_editable = ['name', 'trust_level']
+
+
+admin.site.register(DataSource, DataSourceAdmin)
+
 
 class PlanAnnualAttributeAdmin(ImportMixin, admin.ModelAdmin):
 
