@@ -12,6 +12,9 @@ from moderation.admin import ModerationAdmin
 
 from django.forms import TextInput, Textarea
 from django.db import models
+from django.shortcuts import redirect
+
+from .mixins import ImportMixin
 
 
 class ForeignKeyCacheMixin(object):
@@ -41,20 +44,15 @@ class CensusAnnualAttributeInline(admin.TabularInline):
     readonly_fields = ('year',)
 
 
-class DataSourceAdmin(admin.ModelAdmin):
-    model = DataSource
-    extra = 0
+admin.site.register(DataSource)
 
 
-admin.site.register(DataSource, DataSourceAdmin)
-
-
-class PlanAdmin(ModerationAdmin):
+class PlanAdmin(ImportMixin, ModerationAdmin):
     model = Plan
 
-    list_display = ['display_name', 'state']
+    list_display = ['census_plan_id', 'name', 'display_name', ]
     list_filter = ['admin_gov__state__name']
-    list_per_page = 50
+    list_per_page = 30
     ordering = ['admin_gov__state__id']
     search_fields = ['display_name']
 
@@ -74,10 +72,11 @@ class PlanAdmin(ModerationAdmin):
         return actions
 
     class Media:
-        css = {"all": ("css/admin.css",)}
+        css = {"all": ("css/admin.css", )}
 
     # customized change view:
     change_form_template = 'admin/plan-detail.html'
+    add_form_template = 'admin/change_form.html'
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         if self.admin_integration_enabled:
@@ -98,6 +97,9 @@ class PlanAdmin(ModerationAdmin):
             .select_related('plan_attribute') \
             .select_related('plan_attribute__plan_attribute_category') \
             .select_related('plan_attribute__data_source')
+
+        if plan_annual_objs.count() < 1:
+            return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
 
         year_list = plan_annual_objs.order_by('year').values('year').distinct()
 
@@ -253,8 +255,8 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         (None, {'fields': [field.name for field in PlanAttribute._meta.fields if field.name != 'id']})
     ]
 
-    list_display = ['name', 'data_source', 'datatype', 'plan_attribute_category', 'display_order',
-                    'attribute_column_name', 'multiplier', 'attribute_type', ]
+    list_display = ['name', 'data_source', 'datatype', 'plan_attribute_category', 'line_item_code',
+                    'attribute_column_name', 'multiplier', ]
     list_select_related = ('plan_attribute_category', 'data_source')
     list_filter = ['data_source', 'plan_attribute_category', 'attribute_type']
     list_per_page = 50
@@ -264,7 +266,7 @@ class PlanAttributeAdmin(admin.ModelAdmin):
     add_form_template = 'admin/plan_attribute_detail.html'
 
     class Media:
-        css = {"all": ("css/admin.css",)}
+        css = {"all": ("css/admin.css", )}
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
@@ -307,7 +309,7 @@ class PlanAttributeAdmin(admin.ModelAdmin):
 admin.site.register(PlanAttribute, PlanAttributeAdmin)
 
 
-#### PLAN ATTRIBUTE MASTER
+# PLAN ATTRIBUTE MASTER
 class PlanAttributeMasterAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': [field.name for field in PlanAttribute._meta.fields if field.name != 'id']})
@@ -323,10 +325,26 @@ class PlanAttributeMasterAdmin(admin.ModelAdmin):
 admin.site.register(PlanAttributeMaster, PlanAttributeMasterAdmin)
 
 
-#### PLAN ATTRIBUTE MASTER
+# PLAN ATTRIBUTE MASTER
 class PlanAttributeCategoryAdmin(admin.ModelAdmin):
     list_display = ['id', 'name']
     list_editable = ['name']
 
 
 admin.site.register(PlanAttributeCategory, PlanAttributeCategoryAdmin)
+
+
+# PlanAnnualAttribute
+
+class PlanAnnualAttributeAdmin(ImportMixin, admin.ModelAdmin):
+
+    def changelist_view(self, request, extra_context=None):
+        """
+        The 'change list' admin view for this model.
+        """
+
+        return redirect('/admin/%s/%s/import/' % self.get_model_info())
+
+
+admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
+

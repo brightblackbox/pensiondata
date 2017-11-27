@@ -137,9 +137,6 @@ def edit_plan_annual_attr(request):
     attr_id = request.POST.get('attr_id')
     new_val = request.POST.get('new_val')
     is_from_source = request.POST.get('is_from_source')
-    print("is from source--------------------")
-    print(is_from_source)
-    print("+++++++++++++++++++++++++++++++++++")
     if is_from_source == '1':
         is_from_source = True
     elif is_from_source == '0':
@@ -215,7 +212,6 @@ def add_plan_annual_attr(request):
 
         return JsonResponse({'result': 'success'})
     except Exception as e:
-        print(e)
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 
 
