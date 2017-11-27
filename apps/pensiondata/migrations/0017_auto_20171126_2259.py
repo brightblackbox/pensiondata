@@ -18,6 +18,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(primary_key=True, serialize=False)),
                 ('year', models.CharField(max_length=4)),
+                ('value', models.TextField())
             ],
             options={
                 'verbose_name': 'Government Annual Attribute',

@@ -328,7 +328,7 @@ class PlanAnnualAttribute(models.Model):
     )
 
     class Meta:
-        # unique_together = ('plan', 'year', 'plan_attribute',)
+        unique_together = ('plan', 'year', 'plan_attribute',)
         db_table = 'plan_annual_attribute'
         verbose_name = 'Plan Annual Attribute'
         verbose_name_plural = 'Plan Annual Attributes'

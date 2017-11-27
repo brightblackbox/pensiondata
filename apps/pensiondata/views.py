@@ -9,7 +9,8 @@ from django.db.models.signals import pre_save, pre_delete, post_save, post_delet
 from django.db.models import F
 import json
 
-from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource
+from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, \
+                    Government, GovernmentAnnualAttribute, GovernmentAttribute
 from .tables import PlanTable
 from .signals import recalculate
 
@@ -49,7 +50,7 @@ class PlanListView(ListView):
 class PlanDetailView(DetailView):
     model = Plan
     context_object_name = 'plan'
-    template_name = 'plan-detail.html'
+    template_name = 'plan_detail.html'
     pk_url_kwarg = "PlanID"
 
     def get_context_data(self, **kwargs):
@@ -149,6 +150,7 @@ def edit_plan_annual_attr(request):
         obj.attribute_value = new_val
         obj.is_from_source = is_from_source
 
+        # disconnect signal becuase of moderation
         post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
         moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=obj)
         obj.save()
@@ -202,6 +204,7 @@ def add_plan_annual_attr(request):
             is_from_source=is_from_source
         )
 
+        # disconnect signal becuase of moderation
         post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
         moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=new_plan_annual_attr_obj)
         new_plan_annual_attr_obj.save()
@@ -215,7 +218,93 @@ def add_plan_annual_attr(request):
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 
 
+@staff_member_required
+def delete_gov_annual_attr(request):
+    attr_id = request.POST.get('attr_id')
+    try:
+        obj = GovernmentAnnualAttribute.objects.get(id=attr_id)
+        obj.delete()
+
+        return JsonResponse({'result': 'success'})
+    except GovernmentAnnualAttribute.DoesNotExist:
+        return JsonResponse({'result': 'fail', 'msg': 'There is no matching record.'})
+
+
+@staff_member_required
+def edit_gov_annual_attr(request):
+    attr_id = request.POST.get('attr_id')
+    new_val = request.POST.get('new_val')
+    is_from_source = request.POST.get('is_from_source')
+    if is_from_source == '1':
+        is_from_source = True
+    elif is_from_source == '0':
+        is_from_source = False
+    else:
+        is_from_source = None
+
+    try:
+        obj = GovernmentAnnualAttribute.objects.get(id=attr_id)
+        obj.attribute_value = new_val
+        obj.is_from_source = is_from_source
+        obj.save()
+
+        return JsonResponse({'result': 'success'})
+    except GovernmentAnnualAttribute.DoesNotExist:
+        return JsonResponse({'result': 'fail', 'msg': 'There is no matching record.'})
+
+
+@staff_member_required
+def add_gov_annual_attr(request):
+    attr_id = request.POST.get('attr_id')
+    gov_id = request.POST.get('gov_id')
+    year = request.POST.get('year')
+    value = request.POST.get('value', '0')
+    is_from_source = request.POST.get('is_from_source')
+
+    if is_from_source == '1':
+        is_from_source = True
+    elif is_from_source == '0':
+        is_from_source = False
+    else:
+        is_from_source = None
+
+    try:
+        gov_attr_obj = GovernmentAttribute.objects.get(id=attr_id)
+        gov_obj = Government.objects.get(id=gov_id)
+
+        try:
+            # check if already exists
+            old_obj = GovernmentAnnualAttribute.objects.get(
+                government=gov_obj,
+                year=year,
+                government_attribute=gov_attr_obj
+            )
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
+        except PlanAnnualAttribute.DoesNotExist:
+            pass
+        except PlanAnnualAttribute.MultipleObjectsReturned:
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
+        new_gov_annual_attr_obj = GovernmentAnnualAttribute(
+            government=gov_obj,
+            year=year,
+            government_attribute=gov_attr_obj,
+            attribute_value=value,
+            is_from_source=is_from_source
+        )
+
+        new_gov_annual_attr_obj.save()
+
+        return JsonResponse({'result': 'success'})
+    except Exception as e:
+        return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
+
+
 def save_checklist(request):
+    """
+    save column-visiblity status in session.
+    """
     try:
 
         request.session['category_checked_states'] = list(map(int, request.POST.getlist('category_checked_states[]')))

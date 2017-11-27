@@ -38,6 +38,113 @@ class ForeignKeyCacheMixin(object):
         return formfield
 
 
+class CountyAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {'fields': [field.name for field in County._meta.fields if field.name != 'id']})
+    ]
+    list_display = ['name', 'state']
+    list_filter = ['government__state']
+    search_fields = ['name', 'government__state']
+
+    list_select_related = True
+
+    def state(self, obj):
+        return obj.government.state
+
+    def get_queryset(self, request):
+        """
+        Filter the objects displayed in the change_list to only
+        display those for the currently signed in user.
+        """
+        qs = super(CountyAdmin, self).get_queryset(request)
+        return qs.exclude(name='Not Applicable')
+
+
+admin.site.register(County, CountyAdmin)
+
+
+class StateAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {'fields': [field.name for field in State._meta.fields if field.name != 'id']})
+    ]
+    list_display = ('name', 'state_abbreviation')
+    list_filter = ['name']
+    search_fields = ['name']
+
+
+admin.site.register(State, StateAdmin)
+
+
+class GovernmentTypeAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {'fields': [field.name for field in GovernmentType._meta.fields if field.name != 'id']})
+    ]
+    list_display = ('id', 'level')
+    list_filter = ['level']
+    search_fields = ['level']
+
+
+admin.site.register(GovernmentType, GovernmentTypeAdmin)
+
+
+class GovernmentAdmin(admin.ModelAdmin):
+    model = Government
+
+    fieldsets = [
+        (None, {'fields': [field.name for field in Government._meta.fields if field.name != 'id']})
+    ]
+    list_display = ['name', 'government_type', 'county', 'state']
+    list_filter = ['government_type', 'state']
+
+    list_select_related = ('government_type', 'county', 'state', )
+    list_per_page = 50
+    search_fields = ['name']
+    ordering = ['name']
+
+    # customized change view:
+    change_form_template = 'admin/gov_detail.html'
+    add_form_template = 'admin/change_form.html'
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        # if self.admin_integration_enabled:
+        #     self.send_message(request, object_id)
+
+        extra_context = extra_context or {}
+
+        government = Government.objects.get(id=object_id)
+
+        gov_annual_objs = GovernmentAnnualAttribute.objects.filter(government=government)
+
+        if gov_annual_objs.count() < 1:
+            print('here')
+            return super(GovernmentAdmin, self).change_view(request, object_id, form_url, extra_context)
+
+        category_list = AttributeCategory.objects.order_by('name')
+        datasource_list = DataSource.objects.order_by('name')
+        year_list = gov_annual_objs.order_by('year').values('year').distinct()
+
+        attr_id_list = gov_annual_objs.values_list('government_attribute__id', flat=True).distinct()
+        attr_list = GovernmentAttrSummary.objects.filter(id__in=attr_id_list).order_by("name")
+        all_attr_list = GovernmentAttrSummary.objects\
+            .values('id', 'name', 'attribute_type', 'data_source_id', 'data_source_name', 'attribute_category_name', 'calculated_rule')
+
+        gov_annual_objs = gov_annual_objs.values('id', 'year', 'attribute_value', 'is_from_source', 'government_attribute__id')
+
+        extra_context['attr_list'] = attr_list
+        extra_context['category_list'] = category_list
+        extra_context['datasource_list'] = datasource_list
+        extra_context['year_list'] = year_list
+        extra_context['year_range'] = range(1990, 2020)
+
+        extra_context['all_attr_list'] = json.dumps(list(all_attr_list))
+        extra_context['gov_annual_data'] = json.dumps(list(gov_annual_objs))
+
+        return super(GovernmentAdmin, self).change_view(request, object_id, form_url, extra_context)
+
+
+admin.site.register(Government, GovernmentAdmin)
+
+
 class PlanAdmin(ImportMixin, ModerationAdmin):
     model = Plan
 
@@ -62,11 +169,8 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
             del actions['delete_selected']
         return actions
 
-    class Media:
-        css = {"all": ("css/admin.css", )}
-
     # customized change view:
-    change_form_template = 'admin/plan-detail.html'
+    change_form_template = 'admin/plan_detail.html'
     add_form_template = 'admin/change_form.html'
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
@@ -149,73 +253,6 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
 admin.site.register(Plan, PlanAdmin)
 
 
-class CountyAdmin(admin.ModelAdmin):
-    fieldsets = [
-        (None, {'fields': [field.name for field in County._meta.fields if field.name != 'id']})
-    ]
-    list_display = ['name', 'state']
-    list_filter = ['government__state']
-    search_fields = ['name', 'government__state']
-
-    list_select_related = True
-
-    def state(self, obj):
-        return obj.government.state
-
-    def get_queryset(self, request):
-        """
-        Filter the objects displayed in the change_list to only
-        display those for the currently signed in user.
-        """
-        qs = super(CountyAdmin, self).get_queryset(request)
-        return qs.exclude(name='Not Applicable')
-
-
-admin.site.register(County, CountyAdmin)
-
-
-class StateAdmin(admin.ModelAdmin):
-    fieldsets = [
-        (None, {'fields': [field.name for field in State._meta.fields if field.name != 'id']})
-    ]
-    list_display = ('name', 'state_abbreviation')
-    list_filter = ['name']
-    search_fields = ['name']
-
-
-admin.site.register(State, StateAdmin)
-
-
-class GovernmentTypeAdmin(admin.ModelAdmin):
-    fieldsets = [
-        (None, {'fields': [field.name for field in GovernmentType._meta.fields if field.name != 'id']})
-    ]
-    list_display = ('id', 'level')
-    list_filter = ['level']
-    search_fields = ['level']
-
-
-admin.site.register(GovernmentType, GovernmentTypeAdmin)
-
-
-class GovernmentAdmin(admin.ModelAdmin):
-    model = Government
-
-    fieldsets = [
-        (None, {'fields': [field.name for field in Government._meta.fields if field.name != 'id']})
-    ]
-    list_display = ['name', 'government_type', 'county', 'state']
-    list_filter = ['government_type', 'state']
-
-    list_select_related = ('government_type', 'county', 'state', )
-    list_per_page = 50
-    search_fields = ['name', 'county', 'state']
-    ordering = ['state', 'government_type', 'county']
-
-
-admin.site.register(Government, GovernmentAdmin)
-
-
 class GovernmentAttributeAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': [field.name for field in GovernmentAttribute._meta.fields if field.name != 'id']})
@@ -234,13 +271,13 @@ class GovernmentAttributeAdmin(admin.ModelAdmin):
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
 
-        static_attr_list = GovernmentAttrSummary.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
-        non_master_attrs = GovernmentAttrSummary.objects.exclude(data_source_id=0).order_by("name")  # NOTE: pension data
+        # static_attr_list = GovernmentAttrSummary.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        # non_master_attrs = GovernmentAttrSummary.objects.exclude(data_source_id=0).order_by("name")  # NOTE: pension data
 
-        # static_attr_list = GovernmentAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
-        # non_master_attrs = GovernmentAttribute.objects.exclude(data_source__id=0) \
-        #     .order_by('name') \
-        #     .select_related('data_source')  # NOTE: pension data
+        static_attr_list = GovernmentAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        non_master_attrs = GovernmentAttribute.objects.exclude(data_source__id=0) \
+            .order_by('name') \
+            .select_related('data_source')  # NOTE: pension data
 
         try:
             obj = PlanAttribute.objects.get(id=object_id)
@@ -260,8 +297,11 @@ class GovernmentAttributeAdmin(admin.ModelAdmin):
     def add_view(self, request, form_url='', extra_context=None):
         extra_context = extra_context or {}
 
-        static_attr_list = GovernmentAttrSummary.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
-        non_master_attrs = GovernmentAttrSummary.objects.exclude(data_source_id=0).order_by("name")  # NOTE: pension data
+        static_attr_list = GovernmentAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by(
+            "name")
+        non_master_attrs = GovernmentAttribute.objects.exclude(data_source__id=0) \
+            .order_by('name') \
+            .select_related('data_source')  # NOTE: pension data
 
         extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
         extra_context['non_master_attrs'] = non_master_attrs
@@ -271,15 +311,6 @@ class GovernmentAttributeAdmin(admin.ModelAdmin):
 
 
 admin.site.register(GovernmentAttribute, GovernmentAttributeAdmin)
-
-
-class GovernmentAnnualAttributeAdmin(admin.ModelAdmin):
-    model = GovernmentAnnualAttribute
-
-    list_display = ['government_attribute', 'year', 'value']
-
-
-admin.site.register(GovernmentAnnualAttribute, GovernmentAnnualAttributeAdmin)
 
 
 class PlanAttributeAdmin(admin.ModelAdmin):

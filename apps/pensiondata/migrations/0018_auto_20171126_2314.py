@@ -18,7 +18,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterModelOptions(
             name='governmentattribute',
-            options={'managed': True, 'verbose_name': 'Government Attribute', 'verbose_name_plural': 'Government Attributes'},
+            options={'managed': True, 'verbose_name': 'Government Attribute',
+                     'verbose_name_plural': 'Government Attributes'},
         ),
         migrations.AlterModelOptions(
             name='governmenttype',
@@ -34,23 +35,21 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='governmentannualattribute',
-            name='attribute_value',
-            field=models.CharField(blank=True, max_length=256, null=True),
-        ),
-        migrations.AddField(
-            model_name='governmentannualattribute',
             name='is_from_source',
-            field=models.NullBooleanField(default=None, help_text='check if the value is from source or from user just for Master Attribute'),
+            field=models.NullBooleanField(default=None,
+                                          help_text='check if the value is from source or from user just for Master Attribute'),
         ),
         migrations.AddField(
             model_name='governmentattribute',
             name='attribute_type',
-            field=models.CharField(choices=[('static', 'static'), ('calculated', 'calculated')], default='static', max_length=16),
+            field=models.CharField(choices=[('static', 'static'), ('calculated', 'calculated')], default='static',
+                                   max_length=16),
         ),
         migrations.AddField(
             model_name='governmentattribute',
             name='attributes_for_master',
-            field=models.CharField(blank=True, help_text='Source Attributes for the master attribute', max_length=256, null=True, verbose_name='Source Attributes'),
+            field=models.CharField(blank=True, help_text='Source Attributes for the master attribute', max_length=256,
+                                   null=True, verbose_name='Source Attributes'),
         ),
         migrations.AddField(
             model_name='governmentattribute',
@@ -86,11 +85,6 @@ class Migration(migrations.Migration):
             model_name='governmentattribute',
             name='weight',
             field=models.IntegerField(default=0),
-        ),
-        migrations.AlterField(
-            model_name='planannualattribute',
-            name='attribute_value',
-            field=models.CharField(blank=True, max_length=256, null=True),
         ),
         migrations.AlterUniqueTogether(
             name='governmentannualattribute',
