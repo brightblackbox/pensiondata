@@ -11,7 +11,6 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models import Max
 import re
 #########################################################################################################
 
@@ -19,15 +18,6 @@ ATTRIBUTE_TYPE_CHOICES = (
     ('static', 'static'),
     ('calculated', 'calculated'),
 )
-
-
-class CensusData(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    state_contribution_for_local_employees = models.DecimalField(max_digits=10, decimal_places=6)
-
-    class Meta:
-        managed = True
-        db_table = 'census_data'
 
 
 class County(models.Model):
@@ -84,7 +74,7 @@ class Government(models.Model):
     name = models.CharField(max_length=255)
     state = models.ForeignKey('State', models.DO_NOTHING, null=True, blank=True)
     government_type = models.ForeignKey('GovernmentType', models.DO_NOTHING, null=True, blank=True)
-    county = models.ForeignKey(County, models.DO_NOTHING, null=True, blank=True)
+    county = models.ForeignKey('County', models.DO_NOTHING, null=True, blank=True)
 
     class Meta:
         db_table = 'government'
@@ -100,7 +90,7 @@ class GovernmentAttribute(models.Model):
     name = models.CharField(max_length=256, null=True, blank=True)
     data_source = models.ForeignKey('DataSource', models.DO_NOTHING, blank=True, null=True)
     datatype = models.CharField(max_length=256, null=True, blank=True)
-    attribute_category = models.ForeignKey(AttributeCategory, models.DO_NOTHING, blank=True, null=True)
+    attribute_category = models.ForeignKey('AttributeCategory', models.DO_NOTHING, blank=True, null=True)
     line_item_code = models.CharField(max_length=256, null=True, blank=True)
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
@@ -139,6 +129,36 @@ class GovernmentAttribute(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class GovernmentAttrSummary(models.Model):
+    """
+    This is a View in DB
+    NOTE: readonly
+    """
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=256, null=True, blank=True)
+    datatype = models.CharField(max_length=256, null=True, blank=True)
+    line_item_code = models.CharField(max_length=256, null=True, blank=True)
+    display_order = models.IntegerField(null=True, blank=True)
+    attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
+    multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True, default=1000)
+    weight = models.IntegerField(default=0)
+    attributes_for_master = models.CharField('Source Attributes', max_length=256,
+                                             null=True, blank=True,
+                                             help_text='Source Attributes for the master attribute')
+
+    attribute_type = models.CharField(max_length=16, choices=ATTRIBUTE_TYPE_CHOICES, default='static')
+    calculated_rule = models.TextField(null=True, blank=True)
+
+    data_source_id = models.IntegerField()
+    attribute_category_id = models.IntegerField()
+    data_source_name = models.CharField(max_length=255)
+    attribute_category_name = models.CharField(max_length=256)
+
+    class Meta:
+        managed = False
+        db_table = 'governmentattrview'
 
 
 class GovernmentAnnualAttribute(models.Model):

@@ -6,6 +6,8 @@ from .models import Plan, Government, County, State, GovernmentType, PlanAttribu
     PlanAnnualAttribute, AttributeCategory, \
     GovernmentAttribute, GovernmentAnnualAttribute
 
+from .models import GovernmentAttrSummary
+
 
 from moderation.admin import ModerationAdmin
 
@@ -172,7 +174,6 @@ class CountyAdmin(admin.ModelAdmin):
 admin.site.register(County, CountyAdmin)
 
 
-#### STATE
 class StateAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': [field.name for field in State._meta.fields if field.name != 'id']})
@@ -185,7 +186,6 @@ class StateAdmin(admin.ModelAdmin):
 admin.site.register(State, StateAdmin)
 
 
-#### GOVERNMENT TYPE
 class GovernmentTypeAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': [field.name for field in GovernmentType._meta.fields if field.name != 'id']})
@@ -215,20 +215,69 @@ class GovernmentAdmin(admin.ModelAdmin):
 
 admin.site.register(Government, GovernmentAdmin)
 
-#### GOVERNMENT Attribute 
-class GovernmentAttributeAdmin(admin.ModelAdmin):
-    model = GovernmentAttribute
 
-    list_display = ['name']
+class GovernmentAttributeAdmin(admin.ModelAdmin):
+    fieldsets = [
+        (None, {'fields': [field.name for field in GovernmentAttribute._meta.fields if field.name != 'id']})
+    ]
+
+    list_display = ['name', 'data_source', 'datatype', 'attribute_category', 'line_item_code',
+                    'attribute_column_name', 'multiplier', ]
+    list_select_related = ('attribute_category', 'data_source')
+    list_filter = ['data_source', 'attribute_category', 'attribute_type']
+    list_per_page = 50
+    search_fields = ['name']
+
+    change_form_template = 'admin/attribute_detail.html'
+    add_form_template = 'admin/attribute_detail.html'
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+
+        static_attr_list = GovernmentAttrSummary.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        non_master_attrs = GovernmentAttrSummary.objects.exclude(data_source_id=0).order_by("name")  # NOTE: pension data
+
+        # static_attr_list = GovernmentAttribute.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        # non_master_attrs = GovernmentAttribute.objects.exclude(data_source__id=0) \
+        #     .order_by('name') \
+        #     .select_related('data_source')  # NOTE: pension data
+
+        try:
+            obj = PlanAttribute.objects.get(id=object_id)
+
+            extra_context['attrs_for_master'] = obj.attributes_for_master
+            if obj.attributes_for_master is not None:
+                extra_context['attrs_for_master'] = obj.attributes_for_master.split(",")
+
+        except PlanAttribute.DoesNotExist:
+            extra_context['attrs_for_master'] = []
+
+        extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+        extra_context['non_master_attrs'] = non_master_attrs
+
+        return super(GovernmentAttributeAdmin, self).change_view(request, object_id, form_url, extra_context)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+
+        static_attr_list = GovernmentAttrSummary.objects.filter(attribute_type='static').values('id', 'name').order_by("name")
+        non_master_attrs = GovernmentAttrSummary.objects.exclude(data_source_id=0).order_by("name")  # NOTE: pension data
+
+        extra_context['static_attr_list'] = json.dumps(list(static_attr_list))
+        extra_context['non_master_attrs'] = non_master_attrs
+        extra_context['attrs_for_master'] = []
+
+        return super(GovernmentAttributeAdmin, self).add_view(request, form_url, extra_context)
+
 
 admin.site.register(GovernmentAttribute, GovernmentAttributeAdmin)
 
 
-#### GOVERNMENT Annual Attribute
 class GovernmentAnnualAttributeAdmin(admin.ModelAdmin):
     model = GovernmentAnnualAttribute
 
     list_display = ['government_attribute', 'year', 'value']
+
 
 admin.site.register(GovernmentAnnualAttribute, GovernmentAnnualAttributeAdmin)
 
@@ -245,11 +294,8 @@ class PlanAttributeAdmin(admin.ModelAdmin):
     list_per_page = 50
     search_fields = ['name']
 
-    change_form_template = 'admin/plan_attribute_detail.html'
-    add_form_template = 'admin/plan_attribute_detail.html'
-
-    class Media:
-        css = {"all": ("css/admin.css", )}
+    change_form_template = 'admin/attribute_detail.html'
+    add_form_template = 'admin/attribute_detail.html'
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
