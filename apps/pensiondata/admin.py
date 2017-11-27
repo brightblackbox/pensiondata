@@ -2,11 +2,10 @@ from django.contrib import admin
 from django.db.models import F, Count
 import json
 
-from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, \
-    PlanAnnualAttribute, PlanAttributeMaster, AttributeCategory, PlanAnnual, \
+from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, DataSource, \
+    PlanAnnualAttribute, AttributeCategory, \
     GovernmentAttribute, GovernmentAnnualAttribute
 
-from .models import CensusAnnualAttribute, DataSource
 
 from moderation.admin import ModerationAdmin
 
@@ -35,16 +34,6 @@ class ForeignKeyCacheMixin(object):
             request.db_field_cache = cache
             request.db_field_cache[db_field.name] = formfield.choices
         return formfield
-
-
-class CensusAnnualAttributeInline(admin.TabularInline):
-    model = CensusAnnualAttribute
-    extra = 0
-    exclude = ('id', )
-    readonly_fields = ('year',)
-
-
-admin.site.register(DataSource)
 
 
 class PlanAdmin(ImportMixin, ModerationAdmin):
