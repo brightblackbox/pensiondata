@@ -223,7 +223,10 @@ def delete_gov_annual_attr(request):
     attr_id = request.POST.get('attr_id')
     try:
         obj = GovernmentAnnualAttribute.objects.get(id=attr_id)
-        obj.delete()
+        # obj.delete()
+        moderation.pre_delete_handler(sender=GovernmentAnnualAttribute, instance=obj)
+        moderation.post_delete_handler(sender=GovernmentAnnualAttribute, instance=obj)
+        automoderate(obj, request.user)
 
         return JsonResponse({'result': 'success'})
     except GovernmentAnnualAttribute.DoesNotExist:
@@ -246,8 +249,15 @@ def edit_gov_annual_attr(request):
         obj = GovernmentAnnualAttribute.objects.get(id=attr_id)
         obj.attribute_value = new_val
         obj.is_from_source = is_from_source
-        obj.save()
 
+        # disconnect signal becuase of moderation
+        post_save.disconnect(recalculate, sender=GovernmentAnnualAttribute)
+        moderation.pre_save_handler(sender=GovernmentAnnualAttribute, instance=obj)
+        obj.save()
+        moderation.post_save_handler(sender=GovernmentAnnualAttribute, instance=obj, created=False)
+        post_save.connect(recalculate, sender=GovernmentAnnualAttribute)
+
+        automoderate(obj, request.user)
         return JsonResponse({'result': 'success'})
     except GovernmentAnnualAttribute.DoesNotExist:
         return JsonResponse({'result': 'fail', 'msg': 'There is no matching record.'})
@@ -255,7 +265,6 @@ def edit_gov_annual_attr(request):
 
 @staff_member_required
 def add_gov_annual_attr(request):
-    print(request.POST)
     attr_id = request.POST.get('attr_id')
     gov_id = request.POST.get('gov_id')
     year = request.POST.get('year')
@@ -295,11 +304,17 @@ def add_gov_annual_attr(request):
             is_from_source=is_from_source
         )
 
+        # disconnect signal becuase of moderation
+        post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
+        moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=new_gov_annual_attr_obj)
         new_gov_annual_attr_obj.save()
+        moderation.post_save_handler(sender=PlanAnnualAttribute, instance=new_gov_annual_attr_obj, created=True)
+        post_save.connect(recalculate, sender=PlanAnnualAttribute)
+
+        automoderate(new_gov_annual_attr_obj, request.user)
 
         return JsonResponse({'result': 'success'})
     except Exception as e:
-        print(e)
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 
 

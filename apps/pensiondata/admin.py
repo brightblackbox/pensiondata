@@ -87,7 +87,7 @@ class GovernmentTypeAdmin(admin.ModelAdmin):
 admin.site.register(GovernmentType, GovernmentTypeAdmin)
 
 
-class GovernmentAdmin(admin.ModelAdmin):
+class GovernmentAdmin(ModerationAdmin):
     model = Government
 
     fieldsets = [
@@ -101,13 +101,19 @@ class GovernmentAdmin(admin.ModelAdmin):
     search_fields = ['name']
     ordering = ['name']
 
+    def get_actions(self, request):
+        actions = super(ModerationAdmin, self).get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+
     # customized change view:
     change_form_template = 'admin/gov_detail.html'
     add_form_template = 'admin/change_form.html'
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
-        # if self.admin_integration_enabled:
-        #     self.send_message(request, object_id)
+        if self.admin_integration_enabled:
+            self.send_message(request, object_id)
 
         extra_context = extra_context or {}
 
