@@ -95,7 +95,7 @@ class GovernmentAttribute(models.Model):
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True, default=1000)
-    weight = models.IntegerField(default=0)
+    weight = models.IntegerField(null=True, blank=True, default=0)
 
     # master attribute
     attributes_for_master = models.CharField('Source Attributes', max_length=256,
@@ -143,7 +143,7 @@ class GovernmentAttrSummary(models.Model):
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True, default=1000)
-    weight = models.IntegerField(default=0)
+    weight = models.IntegerField(default=0, null=True, blank=True)
     attributes_for_master = models.CharField('Source Attributes', max_length=256,
                                              null=True, blank=True,
                                              help_text='Source Attributes for the master attribute')
@@ -196,6 +196,7 @@ class GovernmentAnnualAttribute(models.Model):
         :return: string value
         """
         if self.government_attribute.is_master_attribute and self.is_from_source:
+            print('here 1')
             attr_ids_for_master = self.government_attribute.attributes_for_master
             if attr_ids_for_master is None:
                 return '0'
@@ -204,6 +205,8 @@ class GovernmentAnnualAttribute(models.Model):
                 attr_id_list = list(map(int, attr_id_list))
 
                 try:  # NOTE: if it is calculated_rule?
+                    print(GovernmentAnnualAttribute.objects.filter(government=self.government, year=self.year,
+                                                             government_attribute__id__in=attr_id_list))
                     obj = GovernmentAnnualAttribute.objects.filter(government=self.government, year=self.year,
                                                                    government_attribute__id__in=attr_id_list). \
                         order_by('-government_attribute__weight')[0]
@@ -412,7 +415,7 @@ class PlanAttribute(models.Model):
     display_order = models.IntegerField(null=True, blank=True)
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True, default=1000)
-    weight = models.IntegerField(default=0)
+    weight = models.IntegerField(null=True, blank=True, default=0)
 
     # master attribute
     attributes_for_master = models.CharField('Source Attributes', max_length=256,

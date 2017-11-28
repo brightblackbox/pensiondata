@@ -255,6 +255,7 @@ def edit_gov_annual_attr(request):
 
 @staff_member_required
 def add_gov_annual_attr(request):
+    print(request.POST)
     attr_id = request.POST.get('attr_id')
     gov_id = request.POST.get('gov_id')
     year = request.POST.get('year')
@@ -298,6 +299,7 @@ def add_gov_annual_attr(request):
 
         return JsonResponse({'result': 'success'})
     except Exception as e:
+        print(e)
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 
 

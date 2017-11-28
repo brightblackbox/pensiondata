@@ -71,21 +71,13 @@ class Migration(migrations.Migration):
             name='line_item_code',
             field=models.CharField(blank=True, max_length=256, null=True),
         ),
-        migrations.AlterField(
-            model_name='governmentattribute',
-            name='multiplier',
-            field=models.DecimalField(blank=True, decimal_places=6, default=1000, max_digits=30, null=True),
-        ),
+
         migrations.AlterField(
             model_name='governmentattribute',
             name='name',
             field=models.CharField(blank=True, max_length=256, null=True),
         ),
-        migrations.AlterField(
-            model_name='governmentattribute',
-            name='weight',
-            field=models.IntegerField(default=0),
-        ),
+
         migrations.AlterUniqueTogether(
             name='governmentannualattribute',
             unique_together=set([('government', 'year', 'government_attribute')]),

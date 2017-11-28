@@ -27,6 +27,7 @@ def recalculate(sender, instance, **kwargs):
         ).select_related('plan_attribute', 'plan_attribute__data_source')
 
     elif sender is GovernmentAnnualAttribute:
+        # print('Signal in GovernmentAnnualAttribute')
         obj_list = GovernmentAnnualAttribute.objects.filter(
             government=instance.government,
             year=instance.year
@@ -39,14 +40,14 @@ def recalculate(sender, instance, **kwargs):
         if not instance.is_static:  # calculated
             obj_list = PlanAnnualAttribute.objects.filter(plan_attribute=instance)
         else:
-            obj_list = PlanAnnualAttribute.objects.filter(plan_attribute=instance, is_from_source=True)
+            obj_list = PlanAnnualAttribute.objects.filter(is_from_source=True)  # NOTE: maybe more efficient later
 
     elif sender is GovernmentAttribute:
-        print('Signal in GovernmentAttribute')
+        # print('Signal in GovernmentAttribute')
         if not instance.is_static:  # calculated
             obj_list = GovernmentAnnualAttribute.objects.filter(government_attribute=instance)
         else:
-            obj_list = GovernmentAnnualAttribute.objects.filter(government_attribute=instance, is_from_source=True)
+            obj_list = GovernmentAnnualAttribute.objects.filter(is_from_source=True)  # NOTE: maybe more efficient later
 
     else:
         obj_list = []
@@ -61,5 +62,9 @@ def recalculate(sender, instance, **kwargs):
     post_save.connect(recalculate, sender=GovernmentAttribute)
 
 
-
-
+# def get_annual_id_list_for_master(non_master_id):
+#     """
+#     get annual_id list
+#     condition: is_from_source=True AND attributes_for_master in its attr includes 'non_master_id'
+#     """
+#

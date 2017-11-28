@@ -428,7 +428,8 @@ function show_detail_for_add_new(attr_id){
     $('#attribute-source').text( selected_attr.data_source_name );
 
     $('#id-is_from_source-add-radio1').prop("checked", true);
-    if (selected_attr.data_source_id === '0'){ // NOTE: hardcoded !!!
+
+    if (selected_attr.data_source_id === 0){ // NOTE: hardcoded !!!
         $('#id-is_from_source-add-wrapper').show();
         $("input[name='is_from_source-add']").prop("disabled", false);
         $('#id-is_from_source-add-radio1').prop("checked", true).change();
