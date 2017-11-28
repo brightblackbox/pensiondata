@@ -31,3 +31,4 @@ workspace.xml
 
 settings/local.py
 /my_work/
+.env
