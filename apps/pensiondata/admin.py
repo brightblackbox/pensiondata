@@ -280,13 +280,13 @@ class GovernmentAttributeAdmin(admin.ModelAdmin):
             .select_related('data_source')  # NOTE: pension data
 
         try:
-            obj = PlanAttribute.objects.get(id=object_id)
+            obj = GovernmentAttribute.objects.get(id=object_id)
 
             extra_context['attrs_for_master'] = obj.attributes_for_master
             if obj.attributes_for_master is not None:
                 extra_context['attrs_for_master'] = obj.attributes_for_master.split(",")
 
-        except PlanAttribute.DoesNotExist:
+        except GovernmentAttribute.DoesNotExist:
             extra_context['attrs_for_master'] = []
 
         extra_context['static_attr_list'] = json.dumps(list(static_attr_list))

@@ -281,9 +281,9 @@ def add_gov_annual_attr(request):
             )
             return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
 
-        except PlanAnnualAttribute.DoesNotExist:
+        except GovernmentAnnualAttribute.DoesNotExist:
             pass
-        except PlanAnnualAttribute.MultipleObjectsReturned:
+        except GovernmentAnnualAttribute.MultipleObjectsReturned:
             return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
 
         new_gov_annual_attr_obj = GovernmentAnnualAttribute(
@@ -306,12 +306,16 @@ def save_checklist(request):
     save column-visiblity status in session.
     """
     try:
+        model_name = request.POST.get('model_name')
+        session_key = model_name + '_column_state'
 
-        request.session['category_checked_states'] = list(map(int, request.POST.getlist('category_checked_states[]')))
-        request.session['datasource_checked_states'] = list(map(int, request.POST.getlist('datasource_checked_states[]')))
-        request.session['attr_checked_states'] = list(map(int, request.POST.getlist('attr_checked_states[]')))
+        request.session[session_key] = {'category': [], 'source': [], 'attr': []}
+        checked_dict = request.session[session_key]
+        checked_dict['category'] = list(map(int, request.POST.getlist('category_checked_states[]')))
+        checked_dict['source'] = list(map(int, request.POST.getlist('datasource_checked_states[]')))
+        checked_dict['attr'] = list(map(int, request.POST.getlist('attr_checked_states[]')))
 
         return JsonResponse({'result': 'success'})
-    except:
+    except Exception as e:
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 

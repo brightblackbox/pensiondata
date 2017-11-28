@@ -193,7 +193,7 @@ function redraw_annual_table() {
 
 }
 
-// apply
+// save column-visiblity status in session.
 $('.poup-settings-wrap .button-apply').on("click", function () {
 
     redraw_annual_table();

@@ -193,7 +193,7 @@ function redraw_annual_table() {
 
 }
 
-// apply
+// save column-visiblity status in session.
 $('.poup-settings-wrap .button-apply').on("click", function () {
 
     redraw_annual_table();
@@ -329,16 +329,6 @@ $('.btn-update').click(function () {
             return;
         }
     }
-
-    // if ( is_from_source === '1' ){
-    //    new_val = ''
-    // }
-
-    // console.log("Edit result");
-    // console.log("-- new_val:" + new_val);
-    // console.log("-- is from source: " + is_from_source);
-    // console.log("-------------------");
-    // return;
 
     $.ajax({
       data:{
