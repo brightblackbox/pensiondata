@@ -1,12 +1,37 @@
 {
-  "AWSEBDockerrunVersion": "1",
-  "Image": {
-    "Name": "brightblackbox/pensiondata:latest",
-    "Update": "true"
-  },
-  "Ports": [
+  "AWSEBDockerrunVersion": "2",
+  "containerDefinitions": [
     {
-      "ContainerPort": "8002"
-    }
+      "name": "rabbitmq",
+      "image": "rabbitmq:latest",
+      "essential": true,
+      "memory": 128,
+      "portMappings": [{
+          "hostPort": 5672,
+          "containerPort": 5672
+      }]
+    },
+    {
+      "name": "web",
+      "image": "brightblackbox/pensiondata_web:latest",
+      "essential": true,
+      "memory": 128,
+      "portMappings": [{
+          "hostPort": 8000,
+          "containerPort": 8000
+      }],
+      "links": [
+        "rabbitmq"
+      ]
+    },
+    {
+      "name": "celery",
+      "image": "brightblackbox/pensiondata_celery:latest",
+      "essential": true,
+      "memory": 128,
+      "links": [
+        "rabbitmq"
+      ]
+    },
   ]
 }

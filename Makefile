@@ -1,5 +1,4 @@
-APPIMAGE=brightblackbox/pensiondata
-CELERYIMAGE=brightblackbox/pensiondata_celery
+NAME=brightblackbox/pensiondata
 VERSION=`git describe --abbrev=0 --tags`
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 CONTAINER_IP=$(shell echo $(docker-machine ip default))
@@ -70,13 +69,13 @@ build:
 clean:
 
 	rm -f docker/mysite.tar
-	docker rm -f $$(docker ps -a -q)
 	@$(PRINT_OK)
 
 push:
-	docker push :$(TAG)
-	docker push $(APPIMAGE):$(TAG)
-	docker push $(CELERYIMAGE):$(TAG)
+
+	docker push brightblackbox/pensiondata_web:latest
+	docker tag pensiondata_celery brightblackbox/pensiondata_celery
+	docker push brightblackbox/pensiondata_celery:latest
 
 .PHONY: ip
 ip:
