@@ -1,4 +1,5 @@
-NAME=brightblackbox/pensiondata
+APPIMAGE=brightblackbox/pensiondata
+CELERYIMAGE=brightblackbox/pensiondata_celery
 VERSION=`git describe --abbrev=0 --tags`
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 CONTAINER_IP=$(shell echo $(docker-machine ip default))
@@ -51,11 +52,11 @@ app: prepare build clean
 	@$(PRINT_OK)
 
 pull:
-	docker pull $(NAME):$(TAG)
+	docker pull $(APPIMAGE):$(TAG)
 	@$(PRINT_OK)
 
 run:
-	docker run --env-file docker/env.conf -p 80:8002 -d $(NAME):$(TAG)
+	docker-compose up -d
 	@$(PRINT_OK)
 
 prepare:
@@ -63,7 +64,7 @@ prepare:
 	@$(PRINT_OK)
 
 build:
-	docker build -t $(NAME):$(TAG) --rm docker
+	docker-compose build
 	@$(PRINT_OK)
 
 clean:
@@ -73,7 +74,9 @@ clean:
 	@$(PRINT_OK)
 
 push:
-	docker push $(NAME):$(TAG)
+	docker push :$(TAG)
+	docker push $(APPIMAGE):$(TAG)
+	docker push $(CELERYIMAGE):$(TAG)
 
 .PHONY: ip
 ip:
