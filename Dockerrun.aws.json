@@ -4,6 +4,16 @@
     {
       "name": "rabbitmq",
       "image": "rabbitmq:latest",
+      "environment": [
+        {
+          "name": "RABBITMQ_DEFAULT_USER",
+          "value": "admin"
+        },
+        {
+          "name": "RABBITMQ_DEFAULT_PASS",
+          "value": "mypass"
+        }
+      ],
       "essential": true,
       "memory": 128,
       "portMappings": [{
@@ -14,6 +24,12 @@
     {
       "name": "web",
       "image": "brightblackbox/pensiondata_web:latest",
+      "environment": [
+        {
+          "name": "DJANGO_SETTINGS_MODULE",
+          "value": "settings.prod"
+        }
+      ],
       "essential": true,
       "memory": 128,
       "portMappings": [{
@@ -27,6 +43,12 @@
     {
       "name": "celery",
       "image": "brightblackbox/pensiondata_celery:latest",
+      "environment": [
+        {
+          "name": "DJANGO_SETTINGS_MODULE",
+          "value": "settings.prod"
+        }
+      ],
       "essential": true,
       "memory": 128,
       "links": [
