@@ -30,3 +30,5 @@ workspace.xml
 *.sqlite3
 
 settings/local.py
+/my_work/
+.env

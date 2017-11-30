@@ -1,6 +1,7 @@
 
 {% extends "admin/base_site.html" %}
 {% load i18n admin_urls static admin_modify %}
+{% load annual_table_tags %}
 
 {% block extrahead %}
   {{ block.super }}
@@ -13,6 +14,7 @@
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/bootstrap.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/admin.css'%}" />
 {% endblock %}
 
 {% block coltype %}colM{% endblock %}
@@ -101,14 +103,17 @@
   </div>
 </form>
 
+<!-----------------------------------------------  Customized section  -------------------------------------------->
+
 {% if attr_list|length > 0 %}
-<h3 style="display: inline">Plan Annual Attributes:</h3>&nbsp;
+<div class="annual_title">Government Annual Attributes:</div>
 <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
 <!-- Selector Popup -->
 <div class="poup-settings-wrap panel panel-default">
   <div class="poup-settings">
   <form id="column_checklist_form">{% csrf_token %}
+    <input type="hidden" name="model_name" value="{{ opts.model_name }}">
     <div class="arrow"></div>
 {#        <div class="panel-heading"><h4>Choose columns</h4></div>#}
     <div class="panel-body">
@@ -124,7 +129,8 @@
                        name="datasource_checked_states[]"
                        class="column-check-box datasource-column"
                        data-source-id="{{ ds.id }}"
-                   {% if not request.session.datasource_checked_states or ds.id in request.session.datasource_checked_states %}
+                   {% get_checked_status request.session.government_column_state "source" ds.id as is_checked %}
+                   {% if is_checked %}
                        checked
                    {% endif %}
                        value={{ ds.id }}
@@ -146,31 +152,34 @@
                        name="category_checked_states[]"
                        class="column-check-box category-column"
                        data-category-id="{{ category.id }}"
-                   {% if not request.session.category_checked_states or category.id in request.session.category_checked_states %}
+                   {% get_checked_status request.session.government_column_state "category" category.id as is_checked %}
+                   {% if is_checked %}
                        checked
                    {% endif %}
                        value={{ category.id }}
                 >{{ category.name }}</label>
               <ul>
               {% for attr in attr_list %}
-                {% if attr.category_id == category.id %}
+                {% if attr.attribute_category_id == category.id %}
                   <li class="attr-level">
                     <label>
                       <input type="checkbox"
                              name="attr_checked_states[]"
                              class="column-check-box attr-column"
-                             data-attr-id="{{ attr.attribute_id }}"
+                             data-attr-id="{{ attr.id }}"
                              data-source-id="{{ attr.data_source_id }}"
-                         {% if not request.session.attr_checked_states or attr.attribute_id in request.session.attr_checked_states %}
+                         {% get_checked_status request.session.government_column_state "attr" attr.id as is_checked %}
+                         {% if is_checked %}
                              checked
                          {% endif %}
 
-                         {% if attr.data_source_id not in request.session.datasource_checked_states %}
+                         {% get_checked_status request.session.government_column_state "source" attr.data_source_id as is_checked %}
+                         {% if not is_checked %}
                              disabled="disabled"
                          {% endif %}
 
-                             value={{ attr.attribute_id }}
-                      >{{ attr.attribute_name }}</label></li>
+                             value={{ attr.id }}
+                      >{{ attr.name }}</label></li>
                 {% endif %}
               {% endfor %}
               </ul>
@@ -196,23 +205,23 @@
   <button class="btn btn-primary btn-delete-for-modal" data-toggle="modal" data-target="#delete-modal" disabled="disabled">Delete</button>
 </div>
 
-<!-- PlanAnnualAttribute Table -->
+<!-- Main Table -->
 <div class="annual_table_area" style="display: none;">
   <table class="table table-bordered table-striped" id="table-annual-data">
     <thead>
       <tr class="tr-category"></tr>
       <tr class="tr-datasource">
         {% for attr in attr_list %}
-          <th class="th-source-{{ attr.data_source_id }} td-attr-{{ attr.attribute_id }}"
-              data-category-id="{{ attr.category_id }}">
+          <th class="th-source-{{ attr.data_source_id }} td-attr-{{ attr.id }}"
+              data-category-id="{{ attr.attribute_category_id }}">
             {{ attr.data_source_name }}</th>
         {% endfor %}
       </tr>
       <tr class="tr-attribute">
         {% for attr in attr_list %}
-          <th class="th-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
-              data-category-id="{{ attr.category_id }}">
-            {{ attr.attribute_name }}</th>
+          <th class="th-attr-{{ attr.id }} td-source-{{ attr.data_source_id }}"
+              data-category-id="{{ attr.attribute_category_id }}">
+            {{ attr.name }}</th>
         {% endfor %}
       </tr>
     </thead>
@@ -221,8 +230,8 @@
       <tr class="tr-annual-data-per-year">
         <td>{{ year.year }}</td>
         {% for attr in attr_list %}
-        <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
-            id="td-id-{{ year.year }}-{{ attr.attribute_id }}"
+        <td class="td-attr-{{ attr.id }} td-source-{{ attr.data_source_id }}"
+            id="td-id-{{ year.year }}-{{ attr.id }}"
             data-annual-data-pk="-1" data-is-from-source="" data-source-pk="{{ attr.data_source_id }}"
         ></td>
         {% endfor %}
@@ -246,16 +255,16 @@
       <form id="add-new-form" method="post">{% csrf_token %}
       <div class="modal-body">
 
-        <p><label>plan:&nbsp;</label>{{ original }}</p>
-        <input type="hidden" name="plan" value="{{ original.pk }}" readonly>
+        <p><label>Government:&nbsp;</label>{{ original }}</p>
+        <input type="hidden" name="government" value="{{ original.pk }}" readonly>
         <p><label>Year:&nbsp;</label>
-          <select name="plan_attribute" id="year-selectbox">
+          <select name="go_year" id="year-selectbox">
             {% for year in year_range %}
               <option value="{{ year }}">{{ year }}</option>
             {% endfor %}
           </select>
         <p><label>Attribute:&nbsp;</label>
-          <select name="plan_attribute" id="attr-selectbox">
+          <select name="gov_attribute" id="attr-selectbox">
             <option value="">----------</option>
           </select>
         </p>
@@ -344,24 +353,24 @@
 
 <script type="text/javascript">
 
-  var plan_annual_data = "{{ plan_annual_data }}";
+  var gov_annual_data = "{{ gov_annual_data }}";
   var all_attr_list = "{{ all_attr_list }}";
   var save_checklist_url = '{% url "pensiondata:save_checklist" %}';
 
-  var add_annual_data_url = '{% url "pensiondata:add_plan_annual_attr" %}';
-  var edit_annual_data_url = '{% url "pensiondata:edit_plan_annual_attr" %}';
-  var delete_annual_data_url = '{% url "pensiondata:delete_plan_annual_attr" %}';
+  var add_annual_data_url = '{% url "pensiondata:add_gov_annual_attr" %}';
+  var edit_annual_data_url = '{% url "pensiondata:edit_gov_annual_attr" %}';
+  var delete_annual_data_url = '{% url "pensiondata:delete_gov_annual_attr" %}';
 
-  var plan_pk = {{ original.pk }};
+  var gov_pk = {{ original.pk }};
 
   // string -> JSON object
 
-  plan_annual_data = JSON.parse(plan_annual_data.replace(/&quot;/g, '"'));
+  gov_annual_data = JSON.parse(gov_annual_data.replace(/&quot;/g, '"'));
   all_attr_list = JSON.parse(all_attr_list.replace(/&quot;/g, '"'));
 
 
 </script>
-<script type="text/javascript" src="{% static 'js/admin/plan_detail.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/admin/gov_detail.js' %}"></script>
 {% endif %} {# if attr_list|length > 0 #}
 
 {% endblock %}

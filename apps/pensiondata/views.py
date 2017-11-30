@@ -9,7 +9,8 @@ from django.db.models.signals import pre_save, pre_delete, post_save, post_delet
 from django.db.models import F
 import json
 
-from .models import Plan, PlanAnnualAttribute, PlanAttributeCategory, PlanAttribute, DataSource
+from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, \
+                    Government, GovernmentAnnualAttribute, GovernmentAttribute
 from .tables import PlanTable
 from .signals import recalculate
 
@@ -49,7 +50,7 @@ class PlanListView(ListView):
 class PlanDetailView(DetailView):
     model = Plan
     context_object_name = 'plan'
-    template_name = 'plan-detail.html'
+    template_name = 'plan_detail.html'
     pk_url_kwarg = "PlanID"
 
     def get_context_data(self, **kwargs):
@@ -59,7 +60,7 @@ class PlanDetailView(DetailView):
         plan_annual_objs = PlanAnnualAttribute.objects \
             .filter(plan=plan) \
             .select_related('plan_attribute') \
-            .select_related('plan_attribute__plan_attribute_category') \
+            .select_related('plan_attribute__attribute_category') \
             .select_related('plan_attribute__data_source')
 
         year_list = plan_annual_objs.order_by('year').values('year').distinct()
@@ -71,13 +72,13 @@ class PlanDetailView(DetailView):
                     'plan_attribute__id',
                     'plan_attribute__multiplier',
                     'plan_attribute__data_source__id',
-                    'plan_attribute__plan_attribute_category__id',
+                    'plan_attribute__attribute_category__id',
                     'attribute_value') \
             .annotate(
                 attribute_id=F('plan_attribute__id'),
                 multiplier=F('plan_attribute__multiplier'),
                 data_source_id=F('plan_attribute__data_source__id'),
-                category_id=F('plan_attribute__plan_attribute_category__id')
+                category_id=F('plan_attribute__attribute_category__id')
             )
 
         attr_list = plan_annual_objs.values(
@@ -85,23 +86,23 @@ class PlanDetailView(DetailView):
             'plan_attribute__name',
             'plan_attribute__data_source__id',
             'plan_attribute__data_source__name',
-            'plan_attribute__plan_attribute_category__id',
-            'plan_attribute__plan_attribute_category__name'
+            'plan_attribute__attribute_category__id',
+            'plan_attribute__attribute_category__name'
         ).annotate(
             attribute_id=F('plan_attribute__id'),
             attribute_name=F('plan_attribute__name'),
             data_source_id=F('plan_attribute__data_source__id'),
             data_source_name=F('plan_attribute__data_source__name'),
-            category_id=F('plan_attribute__plan_attribute_category__id'),
-            category_name=F('plan_attribute__plan_attribute_category__name')
+            category_id=F('plan_attribute__attribute_category__id'),
+            category_name=F('plan_attribute__attribute_category__name')
         ).distinct().order_by('category_name', 'attribute_name')
 
         category_list = plan_annual_objs.values(
-            'plan_attribute__plan_attribute_category__id',
-            'plan_attribute__plan_attribute_category__name'
+            'plan_attribute__attribute_category__id',
+            'plan_attribute__attribute_category__name'
         ).annotate(
-            id=F('plan_attribute__plan_attribute_category__id'),
-            name=F('plan_attribute__plan_attribute_category__name')
+            id=F('plan_attribute__attribute_category__id'),
+            name=F('plan_attribute__attribute_category__name')
         ).distinct().order_by('name')
 
         datasource_list = DataSource.objects.order_by('name')
@@ -149,6 +150,7 @@ def edit_plan_annual_attr(request):
         obj.attribute_value = new_val
         obj.is_from_source = is_from_source
 
+        # disconnect signal becuase of moderation
         post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
         moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=obj)
         obj.save()
@@ -202,6 +204,7 @@ def add_plan_annual_attr(request):
             is_from_source=is_from_source
         )
 
+        # disconnect signal becuase of moderation
         post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
         moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=new_plan_annual_attr_obj)
         new_plan_annual_attr_obj.save()
@@ -215,14 +218,121 @@ def add_plan_annual_attr(request):
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 
 
-def save_checklist(request):
+@staff_member_required
+def delete_gov_annual_attr(request):
+    attr_id = request.POST.get('attr_id')
     try:
-
-        request.session['category_checked_states'] = list(map(int, request.POST.getlist('category_checked_states[]')))
-        request.session['datasource_checked_states'] = list(map(int, request.POST.getlist('datasource_checked_states[]')))
-        request.session['attr_checked_states'] = list(map(int, request.POST.getlist('attr_checked_states[]')))
+        obj = GovernmentAnnualAttribute.objects.get(id=attr_id)
+        # obj.delete()
+        moderation.pre_delete_handler(sender=GovernmentAnnualAttribute, instance=obj)
+        moderation.post_delete_handler(sender=GovernmentAnnualAttribute, instance=obj)
+        automoderate(obj, request.user)
 
         return JsonResponse({'result': 'success'})
-    except:
+    except GovernmentAnnualAttribute.DoesNotExist:
+        return JsonResponse({'result': 'fail', 'msg': 'There is no matching record.'})
+
+
+@staff_member_required
+def edit_gov_annual_attr(request):
+    attr_id = request.POST.get('attr_id')
+    new_val = request.POST.get('new_val')
+    is_from_source = request.POST.get('is_from_source')
+    if is_from_source == '1':
+        is_from_source = True
+    elif is_from_source == '0':
+        is_from_source = False
+    else:
+        is_from_source = None
+
+    try:
+        obj = GovernmentAnnualAttribute.objects.get(id=attr_id)
+        obj.attribute_value = new_val
+        obj.is_from_source = is_from_source
+
+        # disconnect signal becuase of moderation
+        post_save.disconnect(recalculate, sender=GovernmentAnnualAttribute)
+        moderation.pre_save_handler(sender=GovernmentAnnualAttribute, instance=obj)
+        obj.save()
+        moderation.post_save_handler(sender=GovernmentAnnualAttribute, instance=obj, created=False)
+        post_save.connect(recalculate, sender=GovernmentAnnualAttribute)
+
+        automoderate(obj, request.user)
+        return JsonResponse({'result': 'success'})
+    except GovernmentAnnualAttribute.DoesNotExist:
+        return JsonResponse({'result': 'fail', 'msg': 'There is no matching record.'})
+
+
+@staff_member_required
+def add_gov_annual_attr(request):
+    attr_id = request.POST.get('attr_id')
+    gov_id = request.POST.get('gov_id')
+    year = request.POST.get('year')
+    value = request.POST.get('value', '0')
+    is_from_source = request.POST.get('is_from_source')
+
+    if is_from_source == '1':
+        is_from_source = True
+    elif is_from_source == '0':
+        is_from_source = False
+    else:
+        is_from_source = None
+
+    try:
+        gov_attr_obj = GovernmentAttribute.objects.get(id=attr_id)
+        gov_obj = Government.objects.get(id=gov_id)
+
+        try:
+            # check if already exists
+            old_obj = GovernmentAnnualAttribute.objects.get(
+                government=gov_obj,
+                year=year,
+                government_attribute=gov_attr_obj
+            )
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
+        except GovernmentAnnualAttribute.DoesNotExist:
+            pass
+        except GovernmentAnnualAttribute.MultipleObjectsReturned:
+            return JsonResponse({'result': 'fail', 'msg': 'Already exists.'})
+
+        new_gov_annual_attr_obj = GovernmentAnnualAttribute(
+            government=gov_obj,
+            year=year,
+            government_attribute=gov_attr_obj,
+            attribute_value=value,
+            is_from_source=is_from_source
+        )
+
+        # disconnect signal becuase of moderation
+        post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
+        moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=new_gov_annual_attr_obj)
+        new_gov_annual_attr_obj.save()
+        moderation.post_save_handler(sender=PlanAnnualAttribute, instance=new_gov_annual_attr_obj, created=True)
+        post_save.connect(recalculate, sender=PlanAnnualAttribute)
+
+        automoderate(new_gov_annual_attr_obj, request.user)
+
+        return JsonResponse({'result': 'success'})
+    except Exception as e:
+        return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
+
+
+def save_checklist(request):
+    """
+    save column-visiblity status in session.
+    """
+    try:
+        model_name = request.POST.get('model_name')
+        session_key = model_name + '_column_state'
+
+        request.session[session_key] = {'category': [], 'source': [], 'attr': []}
+        checked_dict = request.session[session_key]
+        checked_dict['category'] = list(map(int, request.POST.getlist('category_checked_states[]')))
+        checked_dict['source'] = list(map(int, request.POST.getlist('datasource_checked_states[]')))
+        checked_dict['attr'] = list(map(int, request.POST.getlist('attr_checked_states[]')))
+
+        return JsonResponse({'result': 'success'})
+    except Exception as e:
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 

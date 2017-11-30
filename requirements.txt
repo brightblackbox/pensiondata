@@ -16,3 +16,4 @@ whitenoise==3.3
 
 django-model-utils==3.0.0
 celery
+python-decouple

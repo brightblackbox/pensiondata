@@ -1,4 +1,5 @@
 import os
+from decouple import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -8,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.9/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '+tb*r29ojm&cd4t!q*=&62q-n$9@lid!ct5xf-vq=n8o#q(s-l'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -87,11 +88,11 @@ WSGI_APPLICATION = 'wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'pension',
-        'USER': 'pensionadmin',
-        'PASSWORD': '8905b23fd2b43f3b8511f5bd7ab4a0a6',
-        'HOST': 'pension.copnrfzzns9f.us-east-1.rds.amazonaws.com',
-        'PORT': '5432',
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT'),
     }
 }
 
@@ -142,13 +143,13 @@ STATICFILES_DIRS = (
 
 # Email settings
 
-EMAIL_HOST = 'smtp.sendgrid.net'
-EMAIL_PORT = 587
-EMAIL_HOST_USER = 'apikey'
-EMAIL_HOST_PASSWORD = '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'
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
 
-DEFAULT_FROM_EMAIL = 'nick@brightblackbox.com'
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 MODERATION_MODERATORS = [DEFAULT_FROM_EMAIL, ]
 
 # Celery

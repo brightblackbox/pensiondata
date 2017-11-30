@@ -34,7 +34,7 @@ Annual Table Column Selector Popup
     display: none;
     z-index: 9;
     /*width: 700px;*/
-    margin-left: 100px;
+    margin-left: 138px;
     margin-top: 8px;
 }
 
@@ -106,6 +106,12 @@ li.attr-level>label {
 Annual Table
 ===============
 */
+.annual_title {
+    display: inline-block;
+    width: 280px;
+    font-size: 20px;
+}
+
 .annual_table_area {
     overflow-x: scroll;
     margin-top: 12px;

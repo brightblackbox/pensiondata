@@ -98,8 +98,8 @@ function initialize_annual_table() {
     // tbody attrs_len X years_len
     var $tbody = '';
 
-    $.each(plan_annual_data, function (i, annual_item) {
-      var $td_id = 'td-id-' + annual_item.year + '-' + annual_item.attribute_id;
+    $.each(gov_annual_data, function (i, annual_item) {
+      var $td_id = 'td-id-' + annual_item.year + '-' + annual_item.government_attribute__id;
       var $td_html = '<span class="annual-value">' + numberWithCommas(annual_item.attribute_value) + '</span>';
       $('#' + $td_id).html($td_html).attr({'data-annual-data-pk': annual_item.id, 'data-is-from-source': annual_item.is_from_source});
     });
@@ -425,10 +425,11 @@ $('#year-selectbox').change(function () {
 function show_detail_for_add_new(attr_id){
     var selected_attr = get_attr_by_id(attr_id);
     $('#attribute-type').text( selected_attr.attribute_type );
-    $('#attribute-source').text( selected_attr.data_source );
+    $('#attribute-source').text( selected_attr.data_source_name );
 
     $('#id-is_from_source-add-radio1').prop("checked", true);
-    if (selected_attr.data_source === 'pensiondata.org'){ // NOTE: hardcoded !!!
+
+    if (selected_attr.data_source_id === 0){ // NOTE: hardcoded !!!
         $('#id-is_from_source-add-wrapper').show();
         $("input[name='is_from_source-add']").prop("disabled", false);
         $('#id-is_from_source-add-radio1').prop("checked", true).change();
@@ -440,7 +441,7 @@ function show_detail_for_add_new(attr_id){
         $('#attr-val-input').prop("disabled", false);
     }
 
-    $('#attribute-category').text( selected_attr.category );
+    $('#attribute-category').text( selected_attr.attribute_category_name );
     $('#add-new-result').hide();
     var rule = selected_attr.calculated_rule;
     if(! rule){
@@ -471,7 +472,7 @@ function show_detail_for_add_new(attr_id){
         id = old_calc_items[i];
         name = get_attr_by_id(id).name;
         readable_rule += '<span style="background-color:#e4e4e4;">' + name + '</span>';
-        value = get_value(id, year);
+        value = get_value(name, year);
         if (! value){
             is_valid = false;
             calc_formula += '0';
@@ -502,8 +503,8 @@ function get_attr_by_id(id) {
 
 function get_value(id, year) {
     var selected_val = false;
-    $.each(plan_annual_data, function (i, annual_attr) {
-      if(annual_attr.attribute_id == id && annual_attr.year == year){
+    $.each(gov_annual_data, function (i, annual_attr) {
+      if(annual_attr.government_attribute__id == id && annual_attr.year == year){
         selected_val = annual_attr.attribute_value;
         return false;
       }
@@ -542,7 +543,7 @@ $('#add-new-form').on('submit', function (e) {
   $.ajax({
     data:{
       'attr_id': attr_id,
-      'plan_id': plan_pk,
+      'gov_id': gov_pk,
       'year': year,
       'value': value,
       'is_from_source': is_from_source,
@@ -582,7 +583,7 @@ $(document).ready(function() {
         $('#attr-selectbox').append('<option value="'+ attr.id +'">' + attr.name +'</option>');
     });
 
-    // draw plan_annual_attr table
+    // draw gov_annual_attr table
     initialize_annual_table();
     redraw_annual_table();
 });

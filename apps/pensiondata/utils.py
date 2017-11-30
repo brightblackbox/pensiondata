@@ -3,7 +3,7 @@ import random
 from django.contrib.auth.models import User
 from django.test import TestCase
 
-from .models import Plan, PlanAnnualAttribute, PlanAttribute, PlanAttributeCategory, DataSource, \
+from .models import Plan, PlanAnnualAttribute, PlanAttribute, AttributeCategory, DataSource, \
     State, Government
 
 
@@ -15,7 +15,7 @@ class BaseTestCase(TestCase):
         self.state = State.objects.create(name="test-state", state_abbreviation="xxx", retirement_census_state_code="xxx")
         self.govenment = Government.objects.create(name="test-goven", state=self.state)
         self.data_source = DataSource.objects.create(name="test-source", trust_level=1)
-        self.category = PlanAttributeCategory.objects.create(name="test-category")
+        self.category = AttributeCategory.objects.create(name="test-category")
         self.plan = Plan.objects.create(census_plan_id=1, name="test-plan", admin_gov=self.govenment)
 
         self.plan_attr = PlanAttribute.objects.create(name="test-attr", plan_attribute_category=self.category,

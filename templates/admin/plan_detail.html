@@ -1,0 +1,378 @@
+
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+{% load annual_table_tags %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script type="text/javascript" src="{% url 'admin:jsi18n' %}"></script>
+  <script type="text/javascript" src="{% static 'js/libs/bootstrap.min.js' %}"></script>
+  {{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/bootstrap.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/admin.css'%}" />
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}
+  {{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form
+{% endblock %}
+
+{% if not is_popup %}
+  {% block breadcrumbs %}
+    <div class="breadcrumbs">
+      <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+      &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+      &rsaquo; {% if has_change_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+      &rsaquo; {% if add %}{% blocktrans with name=opts.verbose_name %}Add {{ name }}{% endblocktrans %}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+    </div>
+  {% endblock %}
+{% endif %}
+
+{% block content %}
+  <div id="content-main">
+  {% block object-tools %}
+  {% if change %}
+    {% if not is_popup %}
+      <ul class="object-tools">
+      {% block object-tools-items %}
+        <li>
+          {% url opts|admin_urlname:'history' original.pk|admin_urlquote as history_url %}
+          <a href="{% add_preserved_filters history_url %}" class="historylink">{% trans "History" %}</a>
+        </li>
+
+        {% if has_absolute_url %}
+          <li><a href="{{ absolute_url }}" class="viewsitelink">{% trans "View on site" %}</a></li>
+        {% endif %}
+      {% endblock %}
+      </ul>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+<form action="{{ form_url }}" method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}
+  <div>
+    {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1" />{% endif %}
+    {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}" />{% endif %}
+    {% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+    {% if errors %}
+        <p class="errornote">
+        {% if errors|length == 1 %}{% trans "Please correct the error below." %}{% else %}{% trans "Please correct the errors below." %}{% endif %}
+        </p>
+        {{ adminform.form.non_field_errors }}
+    {% endif %}
+
+    {% block field_sets %}
+      {% for fieldset in adminform %}
+        {% include "admin/includes/fieldset.html" %}
+      {% endfor %}
+    {% endblock %}
+
+    {% block after_field_sets %}{% endblock %}
+
+{#    {% block inline_field_sets %}#}
+{#      {% for inline_admin_formset in inline_admin_formsets %}#}
+{#          {% include inline_admin_formset.opts.template %}#}
+
+{#      {% endfor %}#}
+{#    {% endblock %}#}
+
+
+    {% block after_related_objects %}{% endblock %}
+
+    {% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+    {% block admin_change_form_document_ready %}
+        <script type="text/javascript"
+                id="django-admin-form-add-constants"
+                src="{% static 'admin/js/change_form.js' %}"
+                {% if adminform and add %}
+                    data-model-name="{{ opts.model_name }}"
+                {% endif %}>
+        </script>
+    {% endblock %}
+
+    {# JavaScript for prepopulated fields #}
+    {% prepopulated_fields_js %}
+
+  </div>
+</form>
+
+<!-----------------------------------------------  Customized section  -------------------------------------------->
+
+{% if attr_list|length > 0 %}
+<div class="annual_title">Plan Annual Attributes:</div>
+<a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
+
+<!-- Selector Popup -->
+<div class="poup-settings-wrap panel panel-default">
+  <div class="poup-settings">
+  <form id="column_checklist_form">{% csrf_token %}
+    <input type="hidden" name="model_name" value="{{ opts.model_name }}">
+    <div class="arrow"></div>
+{#        <div class="panel-heading"><h4>Choose columns</h4></div>#}
+    <div class="panel-body">
+      <div class="clearfix">
+        <!-- DataSource selector -->
+        <div class="pull-left datasource-selector">
+          <h4>Data Sources</h4>
+          <ul class="list-group column-list datasource-list">
+          {% for ds in datasource_list %}
+            <li class="datasource-level">
+              <label>
+                <input type="checkbox"
+                       name="datasource_checked_states[]"
+                       class="column-check-box datasource-column"
+                       data-source-id="{{ ds.id }}"
+                   {% get_checked_status request.session.plan_column_state "source" ds.id as is_checked %}
+                   {% if is_checked %}
+                       checked
+                   {% endif %}
+                       value={{ ds.id }}
+                >{{ ds.name }}</label></li>
+          {% endfor %}
+          </ul>
+        </div>
+
+        <!-- Attribute selector -->
+        <div class="pull-left attr-selector">
+          <h4>Attributes</h4>
+          <input class="form-control input-search" type="text" placeholder="Search..">
+          <br>
+          <ul class="list-group column-list attr-list">
+          {% for category in category_list %}
+            <li class="category-level">
+              <label>
+                <input type="checkbox"
+                       name="category_checked_states[]"
+                       class="column-check-box category-column"
+                       data-category-id="{{ category.id }}"
+
+                   {% get_checked_status request.session.plan_column_state "category" category.id as is_checked %}
+                   {% if is_checked %}
+                       checked
+                   {% endif %}
+                       value={{ category.id }}
+                >{{ category.name }}</label>
+              <ul>
+              {% for attr in attr_list %}
+                {% if attr.category_id == category.id %}
+                  <li class="attr-level">
+                    <label>
+                      <input type="checkbox"
+                             name="attr_checked_states[]"
+                             class="column-check-box attr-column"
+                             data-attr-id="{{ attr.attribute_id }}"
+                             data-source-id="{{ attr.data_source_id }}"
+
+                         {% get_checked_status request.session.plan_column_state "attr" attr.attribute_id as is_checked %}
+                         {% if is_checked %}
+                             checked
+                         {% endif %}
+
+                         {% get_checked_status request.session.plan_column_state "source" attr.data_source_id as is_checked %}
+                         {% if not is_checked %}
+                             disabled="disabled"
+                         {% endif %}
+
+                             value={{ attr.attribute_id }}
+                      >{{ attr.attribute_name }}</label></li>
+                {% endif %}
+              {% endfor %}
+              </ul>
+            </li>
+          {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="panel-footer clearfix">
+{#          <button type="button" class="btn btn-default pull-left button-default">Default</button>#}
+      <button type="button" class="btn btn-success pull-right button-apply">Apply</button>
+      <button type="button" class="btn btn-default pull-right button-cancel">Cancel</button>
+    </div>
+  </form>
+  </div>
+</div>
+
+<!-- control buttons -->
+<div class="control-buttons" style="padding: 10px 0;">
+  <button class="btn btn-primary btn-add-for-modal" data-toggle="modal" data-target="#add-modal">Add New</button>
+  <button class="btn btn-primary btn-edit-for-modal" data-toggle="modal" data-target="#edit-modal" disabled="disabled">Edit</button>
+  <button class="btn btn-primary btn-delete-for-modal" data-toggle="modal" data-target="#delete-modal" disabled="disabled">Delete</button>
+</div>
+
+<!-- PlanAnnualAttribute Table -->
+<div class="annual_table_area" style="display: none;">
+  <table class="table table-bordered table-striped" id="table-annual-data">
+    <thead>
+      <tr class="tr-category"></tr>
+      <tr class="tr-datasource">
+        {% for attr in attr_list %}
+          <th class="th-source-{{ attr.data_source_id }} td-attr-{{ attr.attribute_id }}"
+              data-category-id="{{ attr.category_id }}">
+            {{ attr.data_source_name }}</th>
+        {% endfor %}
+      </tr>
+      <tr class="tr-attribute">
+        {% for attr in attr_list %}
+          <th class="th-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
+              data-category-id="{{ attr.category_id }}">
+            {{ attr.attribute_name }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for year in year_list %}
+      <tr class="tr-annual-data-per-year">
+        <td>{{ year.year }}</td>
+        {% for attr in attr_list %}
+        <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
+            id="td-id-{{ year.year }}-{{ attr.attribute_id }}"
+            data-annual-data-pk="-1" data-is-from-source="" data-source-pk="{{ attr.data_source_id }}"
+        ></td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Add/Edit/Delete Moal -->
+<!-- Add Modal -->
+<div id="add-modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Add New</h4>
+      </div>
+      <form id="add-new-form" method="post">{% csrf_token %}
+      <div class="modal-body">
+
+        <p><label>plan:&nbsp;</label>{{ original }}</p>
+        <input type="hidden" name="plan" value="{{ original.pk }}" readonly>
+        <p><label>Year:&nbsp;</label>
+          <select name="plan_year" id="year-selectbox">
+            {% for year in year_range %}
+              <option value="{{ year }}">{{ year }}</option>
+            {% endfor %}
+          </select>
+        <p><label>Attribute:&nbsp;</label>
+          <select name="plan_attribute" id="attr-selectbox">
+            <option value="">----------</option>
+          </select>
+        </p>
+        <p><label>Type:&nbsp;</label><span id="attribute-type"></span></p>
+
+        <p><label>Category:&nbsp;</label><span id="attribute-category"></span></p>
+
+        <p><label>Source:&nbsp;</label><span id="attribute-source"></span></p>
+
+        <div id="id-is_from_source-add-wrapper" class="is_from_source-wrapper">
+          <input type="radio" id="id-is_from_source-add-radio1" name="is_from_source-add" value="1" checked>
+          <label for="id-is_from_source-add-radio1">Is from DataSource</label>
+
+          <input type="radio" id="id-is_from_source-add-radio0" name="is_from_source-add" value="0">
+          <label for="id-is_from_source-add-radio0">Directly Input</label>
+        </div>
+
+        <div id="attribute-rule"></div>
+
+        <div id="id-value-wrapper">
+          <p><label>Value:&nbsp;</label><input type="text" name="attribute_value" id="attr-val-input"></p>
+        </div>
+
+        <div id="add-new-result" style="display: none"></div>
+      </div>
+      <div class="modal-footer">
+        <input type="submit" class="btn btn-default btn-primary" value="Save">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Edit Attribute Value</h4>
+      </div>
+      <div class="modal-body">
+        <div id="id-is_from_source-edit-wrapper" class="is_from_source-wrapper">
+          <input type="radio" id="id-is_from_source-edit-radio1" name="is_from_source-edit" value="1" checked>
+          <label for="id-is_from_source-edit-radio1">Is from DataSource</label>
+
+          <input type="radio" id="id-is_from_source-edit-radio0" name="is_from_source-edit" value="0">
+          <label for="id-is_from_source-edit-radio0">Directly Input</label>
+        </div>
+
+        <label>Value:&nbsp;</label>
+        <input type="text" id="annual-new-val" onkeypress='return event.charCode >= 48 && event.charCode <= 57'>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default btn-update" data-dismiss="modal">Update</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="delete-modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Delete</h4>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you wish to delete this record?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default btn-delete" data-dismiss="modal">Delete</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="text/javascript">
+
+  var plan_annual_data = "{{ plan_annual_data }}";
+  var all_attr_list = "{{ all_attr_list }}";
+  var save_checklist_url = '{% url "pensiondata:save_checklist" %}';
+
+  var add_annual_data_url = '{% url "pensiondata:add_plan_annual_attr" %}';
+  var edit_annual_data_url = '{% url "pensiondata:edit_plan_annual_attr" %}';
+  var delete_annual_data_url = '{% url "pensiondata:delete_plan_annual_attr" %}';
+
+  var plan_pk = {{ original.pk }};
+
+  // string -> JSON object
+
+  plan_annual_data = JSON.parse(plan_annual_data.replace(/&quot;/g, '"'));
+  all_attr_list = JSON.parse(all_attr_list.replace(/&quot;/g, '"'));
+
+
+</script>
+<script type="text/javascript" src="{% static 'js/admin/plan_detail.js' %}"></script>
+{% endif %} {# if attr_list|length > 0 #}
+
+{% endblock %}
