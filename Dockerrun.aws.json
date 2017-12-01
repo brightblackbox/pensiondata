@@ -20,17 +20,17 @@
           "hostPort": 5672,
           "containerPort": 5672
       }]
-    },
+    },    
     {
       "name": "web",
-      "image": "brightblackbox/pensiondata_web:latest",
+      "image": "brightblackbox/pensiondata_web",
+      "command": ["./conf/commands/run_webapp.sh"],
       "environment": [
         {
           "name": "DJANGO_SETTINGS_MODULE",
           "value": "settings.prod"
         }
       ],
-      "essential": true,
       "memory": 128,
       "portMappings": [{
           "hostPort": 8000,
@@ -42,7 +42,8 @@
     },
     {
       "name": "celery",
-      "image": "brightblackbox/pensiondata_celery:latest",
+      "image": "brightblackbox/pensiondata_celery",
+      "command": ["./conf/commands/run_celery.sh"],
       "environment": [
         {
           "name": "DJANGO_SETTINGS_MODULE",
