@@ -1,0 +1,135 @@
+td.original p {
+  visibility: hidden
+}
+
+.inline-group .tabular tr.has_original td {
+    padding-top: 5px;
+}
+
+#content.colM td.original {
+    width: 1px !important; 
+}
+
+/*=================================================*/
+/*                    Modal                        */
+/*=================================================*/
+.modal label {
+    min-width: 85px;
+}
+.modal input {
+    width: 300px;
+}
+.modal select {
+    background-color: white;
+}
+
+.is_from_source-wrapper input {
+    width: 20px;
+    margin: 0 10px 0 0;
+}
+
+.is_from_source-wrapper label {
+    width: 150px;
+}
+
+#attribute-rule {
+    margin: 10px 0;
+}
+/*=================================================*/
+/*                  Minor fix                      */
+/*=================================================*/
+.submit-row a.deletelink {
+    height: auto !important;
+}
+
+/*=================================================*/
+/*                 Calculated Rule                 */
+/*=================================================*/
+.ui-autocomplete {
+    max-height: 100px;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+}
+
+.validation-result {
+    color: red;
+}
+.calc-rule-container {
+    background-color: white;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    cursor: text;
+    float: left;
+    box-sizing: border-box;
+    /* cursor: pointer; */
+    display: block;
+    min-height: 32px;
+    /* user-select: none; */
+    -webkit-user-select: none;
+}
+
+.calc-rendered {
+    list-style: none;
+    margin: 0!important;
+    padding: 0 5px!important;
+
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calc-item {
+    float: left;
+    margin-right: 5px;
+    margin-top: 5px;
+    padding: 0 5px;
+}
+
+.calc-operand {
+    background-color: #e4e4e4;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    cursor: default;
+}
+
+
+.calc-operator {
+    border: none;
+    color: green;
+    background: none;
+}
+
+.calc-static {
+	background-color: #e4e4e4;
+    border-radius: 4px;
+    color: blue;
+}
+
+.calc-input__field {
+    background: transparent;
+    border: none!important;
+    outline: 0;
+    font-size: 100%;
+    margin-top: 5px;
+    -webkit-appearance: none;
+
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+.calc-input-inline {
+    float: left;
+}
+
+/*
+================================
+select2 for master attribute
+================================
+ */
+#id_attrs_for_master-selectbox .info-datasource {
+    color: #999999;
+}
+
+
