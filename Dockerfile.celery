@@ -1,0 +1,16 @@
+FROM python:3.6
+
+RUN apt-get update
+RUN apt-get -y install postgresql-client
+
+ENV PORT 8000
+EXPOSE 8000
+
+RUN mkdir -p /usr/myapp
+ADD . /usr/myapp
+RUN chmod +x /usr/myapp/run_celery.sh
+
+WORKDIR /usr/myapp/
+RUN pip install -r requirements.txt
+
+CMD /usr/myapp/run_celery.sh

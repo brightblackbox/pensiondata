@@ -1,0 +1,33 @@
+# Inherit from Heroku's stack
+FROM heroku/heroku:16
+
+RUN apt-get update
+RUN apt-get -y install postgresql-client
+
+ENV PORT 8000
+EXPOSE 8000
+
+# Which version of Python?
+ENV PYTHON_VERSION python-3.6.1
+
+# Add Python binaries to path.
+ENV PATH /app/.heroku/python/bin/:$PATH
+
+# Create some needed directories
+RUN mkdir -p /app/.heroku/python /app/.profile.d
+WORKDIR /app/user
+
+# Install Python
+RUN curl -s https://lang-python.s3.amazonaws.com/cedar-14/runtimes/$PYTHON_VERSION.tar.gz | tar zx -C /app/.heroku/python
+
+# Install Pip & Setuptools
+RUN curl -s https://bootstrap.pypa.io/get-pip.py | /app/.heroku/python/bin/python
+
+RUN mkdir -p /usr/myapp
+ADD . /usr/myapp
+RUN chmod +x /usr/myapp/run_web.sh
+
+WORKDIR /usr/myapp/
+RUN pip install -r requirements.txt
+
+CMD /usr/myapp/run_web.sh
