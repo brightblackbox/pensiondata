@@ -4,6 +4,8 @@ RUN apt-get update
 RUN apt-get -y install postgresql-client
 
 ENV PORT 8000
+ENV DJANGO_SETTINGS_MODULE=settings.prod
+
 EXPOSE 8000
 
 RUN mkdir -p /usr/myapp

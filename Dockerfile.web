@@ -4,6 +4,8 @@ FROM heroku/heroku:16
 RUN apt-get update
 RUN apt-get -y install postgresql-client
 
+ENV DJANGO_SETTINGS_MODULE=settings.prod
+
 ENV PORT 8000
 EXPOSE 8000
 
