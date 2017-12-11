@@ -17,3 +17,5 @@ whitenoise==3.3
 django-model-utils==3.0.0
 celery
 python-decouple
+
+dj-database-url==0.4.2
