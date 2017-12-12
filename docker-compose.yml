@@ -22,7 +22,7 @@ services:
     volumes:
       - .:/pensiondata  # mount current directory inside container
     environment:
-      - DJANGO_SETTINGS_MODULE=settings.local
+      - DJANGO_SETTINGS_MODULE=settings.prod
     ports:
       - "8000:8000"
     # set up links so that web knows about db, rabbit and redis
@@ -42,7 +42,7 @@ services:
       - .:/pensiondata
 
     environment:
-      - DJANGO_SETTINGS_MODULE=settings.local
+      - DJANGO_SETTINGS_MODULE=settings.prod
 
     links:
       - rabbit

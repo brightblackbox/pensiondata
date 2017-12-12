@@ -20,8 +20,18 @@ Once installed, you can navigate to the project root directory (where the docker
 
 This will build the docker images for the app on your local machine and then start them up in detached mode. More options for docker-compose cna be found here - https://docs.docker.com/compose/reference/up/v                                                            
 
-The app should now be running 
+The app can now be accessed at http://127.0.0.1:8000
 
+Deploying to Heroku
+-------------------
+To deploy to heroku you will need the Heroku CLI (Toolbelt) - https://devcenter.heroku.com/articles/heroku-cli
 
+To deploy the app push the web and celery containers to heroku - https://devcenter.heroku.com/articles/container-registry-and-runtime#pushing-multiple-images
 
+```  heroku container:push web celery --recursive --app pensiondata ```
 
+Heroku has a resource CloudAMQP that will replace the RabbitMQ service when deployed
+
+Domain
+------
+The DNS settings are managed using CloudFlare, the domain is registered with Google Domains
