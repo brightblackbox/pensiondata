@@ -16,12 +16,13 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile.web
+      dockerfile: /conf/dockerfiles/django
     hostname: web
+    command: ./conf/commands/run_webapp.sh
     volumes:
       - .:/pensiondata  # mount current directory inside container
     environment:
-      - DJANGO_SETTINGS_MODULE=settings.prod
+      - DJANGO_SETTINGS_MODULE=settings.local
     ports:
       - "8000:8000"
     # set up links so that web knows about db, rabbit and redis
@@ -34,13 +35,14 @@ services:
   celery:
     build:
       context: .
-      dockerfile: Dockerfile.celery
+      dockerfile: /conf/dockerfiles/celery
+    command: ./conf/commands/run_celery.sh
 
     volumes:
       - .:/pensiondata
 
     environment:
-      - DJANGO_SETTINGS_MODULE=settings.prod
+      - DJANGO_SETTINGS_MODULE=settings.local
 
     links:
       - rabbit
