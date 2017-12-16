@@ -323,6 +323,7 @@ def save_checklist(request):
     save column-visiblity status in session.
     """
     try:
+
         model_name = request.POST.get('model_name')
         session_key = model_name + '_column_state'
 

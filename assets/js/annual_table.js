@@ -231,11 +231,17 @@ function numberWithCommas(x) {
  * @result: $1,234,567 or 0
  */
 function format_annual_value(v, m){
-   money = v * m;
-   if (money != 0){
-       return '$'+ numberWithCommas(money);
-   }
-   return 0;
+    if (v === null || m ===null){
+        return 0;
+    }
+
+    money = v * m;
+    if (money > 0){
+        return '$'+ numberWithCommas(money);
+    }else if (money < 0){
+        return '-$'+ numberWithCommas(money*(-1));
+    }
+    return 0;
 }
 
 
