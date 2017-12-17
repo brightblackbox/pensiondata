@@ -3,6 +3,8 @@
 
 {% block extra-styles %}
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/jquery.dataTables.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/colReorder.dataTables.min.css' %}" />
+  <link rel="stylesheet" type="text/css" href="{% static 'css/libs/fixedColumns.dataTables.min.css' %}" />
 {% endblock %}
 
 {% block content %}
@@ -38,15 +40,15 @@
   {% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list attr_list=attr_list model_name="plan" %}
 
   <!-- PlanAnnualAttribute Table -->
-  <div class="annual_table_area" style="display:none;">
+  <div class="annual_table_area" style="display:none; overflow: hidden">
     <table class="table table-bordered table-striped" id="table-annual-data">
       <thead>
-        <tr class="tr-category"></tr>
         <tr class="tr-attribute">
+          <th style="vertical-align: middle;">Year</th>
           {% for attr in attr_list %}
-            <th class="th-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
-                data-category-id="{{ attr.category_id }}">
-              {{ attr.attribute_name|capfirst }}</th>
+          <th class="th-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
+              data-category-id="{{ attr.category_id }}">
+            {{ attr.attribute_name|capfirst }}</th>
           {% endfor %}
         </tr>
       </thead>
@@ -72,6 +74,8 @@
 
 {% block extra-scripts %}
   <script src="{% static 'js/libs/jquery.dataTables.min.js' %}"></script>
+  <script src="{% static 'js/libs/dataTables.colReorder.min.js' %}"></script>
+  <script src="{% static 'js/libs/dataTables.fixedColumns.min.js' %}"></script>
 
   <script type="text/javascript">
     var plan_annual_data = "{{ plan_annual_data }}";

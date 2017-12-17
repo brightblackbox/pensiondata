@@ -114,7 +114,16 @@ Annual Table
 
 .annual_table_area {
     overflow-x: scroll;
-    margin-top: 12px;
+    margin: 12px 0;
+}
+
+table.dataTable {
+    margin: 0 !important;
+    /*min-width: 100% !important;*/
+}
+
+.dataTables_wrapper.no-footer .dataTables_scrollBody {
+     border-bottom: none;
 }
 
 #table-annual-data th {
