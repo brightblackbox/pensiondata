@@ -44,7 +44,7 @@
     <table class="table table-bordered table-striped" id="table-annual-data">
       <thead>
         <tr class="tr-attribute">
-          <th style="vertical-align: middle;">Year</th>
+          <th style="vertical-align: middle; width: 45px;">Year</th>
           {% for attr in attr_list %}
           <th class="th-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
               data-category-id="{{ attr.category_id }}">
@@ -78,11 +78,14 @@
   <script src="{% static 'js/libs/dataTables.fixedColumns.min.js' %}"></script>
 
   <script type="text/javascript">
+    console.log('script start');
     var plan_annual_data = "{{ plan_annual_data }}";
     var save_checklist_url = '{% url "pensiondata:save_checklist" %}';
 
     // string -> JSON object
     plan_annual_data = JSON.parse(plan_annual_data.replace(/&quot;/g, '"'));
+
+    console.log('JSON parse');
 
   </script>
   <script type="text/javascript" src="{% static 'js/annual_table.js' %}"></script>

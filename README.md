@@ -28,6 +28,8 @@ To deploy to heroku you will need the Heroku CLI (Toolbelt) - https://devcenter.
 
 To deploy the app push the web and celery containers to heroku - https://devcenter.heroku.com/articles/container-registry-and-runtime#pushing-multiple-images
 
+``` heroku container: login```
+
 ```  heroku container:push web celery --recursive --app pensiondata ```
 
 Heroku has a resource CloudAMQP that will replace the RabbitMQ service when deployed

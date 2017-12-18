@@ -122,6 +122,11 @@ table.dataTable {
     /*min-width: 100% !important;*/
 }
 
+/*table.dataTable th, table.dataTable td {*/
+    /*width: 100px !important;*/
+    /*!*word-break: break-word;*!*/
+/*}*/
+
 .dataTables_wrapper.no-footer .dataTables_scrollBody {
      border-bottom: none;
 }
@@ -131,6 +136,7 @@ table.dataTable {
     background: #f6f6f6;
     font-weight: normal;
     font-size: 14px;
+
 }
 
 #table-annual-data td {

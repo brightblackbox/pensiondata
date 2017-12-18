@@ -1,3 +1,5 @@
+var datatable = null;
+
 // display popup for selectors
 $(".start-settings").on("click", function(e) {
     e.preventDefault();
@@ -136,13 +138,21 @@ function redraw_annual_table() {
     });
 
     // data table
-    $('#table-annual-data').resize();
+    if (datatable != null){
+        console.log('resize start: ' + $.now());
+        datatable.columns.adjust().draw();
+        console.log('resize end: ' + $.now());
+        // $('#table-annual-data').resize();
+    }
+
 }
 
 // apply
 $('.poup-settings-wrap .button-apply').on("click", function () {
-
+    console.log("click apply: " + $.now() );
+    $('body').addClass('loading');
     redraw_annual_table();
+    console.log("--- redrawed_click apply: " +  $.now() );
 
     $.ajax({
         type: "POST",
@@ -194,20 +204,37 @@ function format_annual_value(v, m){
 
 $(document).ready(function() {
     // draw plan_annual_attr table
+    console.log("ready : " + $.now() );
+
     initialize_annual_table();
+
+    console.log("start redraw:" + $.now() );
     redraw_annual_table();
 
-    $('#table-annual-data').DataTable( {
+    datatable = $('#table-annual-data').DataTable( {
         colReorder: {
             fixedColumnsLeft: 1
         },
+        deferRender: true,
         scrollX: true,
+        scrollY: "500px",
         paging: false,
         info: false,
         searching: false,
         fixedColumns: {
             leftColumns:1
         },
-        responsive: true
+        preDrawCallback: function( settings ) {
+            console.log('I am preDraw');
+        },
+        drawCallback: function( settings ) {
+            console.log('I am DrawCallback');
+        }
+
+        // autoWidth: false,
+        // responsive: true
     });
+
+    console.log("ready done: " + $.now() );
+
 });
