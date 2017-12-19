@@ -33,6 +33,79 @@ class PlanListView(ListView):
     context_object_name = 'plans'
     template_name = 'index.html'
 
+    # Added by Marc - 2017-12-19
+    def ExportFile(file_type, plan_id):
+
+        print("In Here")
+        file_type = "csv" 
+        plan_id = 222
+
+        # Connection to Azure Postgres Database requires SSH tunneling
+        # conn = psycopg2.connect(host="51.141.162.6",database="pension",user="postgres",password="postgres")
+
+        # Connection to Heroku Database
+        conn = psycopg2.connect(host="ec2-54-235-177-45.compute-1.amazonaws.com",database="d47an5cjnv5mjb",user="viliygpvlizwel",password="5c26e3ddd0b2682b5c71a4230547677007d7f9fcfe1ed1c29ee45d6375a7475d")
+
+        # Get Date Stamp for the File Name
+        now = time.strftime("%Y-%m-%d")
+
+        # Get Plan Display Name for the File Name
+        cur = conn.cursor()
+        cur.execute("select display_name from plan where id = " + plan_id + ";")
+        plan_display_name = cur.fetchone()[0]
+
+        # Get Plan Attributes for the Specified Plan and Store in a DataFrame
+        cur.execute("select year, attribute_column_name, attribute_value from plan_annual_attribute inner join plan_attribute on plan_attribute.id = plan_annual_attribute.plan_attribute_id where plan_id = " + plan_id + ";")
+        df = pandas.DataFrame(cur.fetchall(), columns=['year','attribute_column_name','attribute_value'])
+
+        # Create pivot table
+        pivoted = df.pivot(index='year', columns='attribute_column_name', values='attribute_value')
+	
+        if file_type == "csv":
+
+                # Output DataFrame to CSV
+                file_name = plan_display_name + ' ' + now + '.csv'
+                pivoted.to_csv(path_or_buf = file_name)
+                file_like = open(file_name, "rb")
+                wrapper = FileWrapper(file_like)
+                response = HttpResponse(wrapper, content_type='application/csv')
+                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+
+        elif file_type == "json":
+
+                # Output DataFrame to JSON
+                file_name = plan_display_name + ' ' + now + '.json'
+                pivoted.to_json(path_or_buf = file_name)
+                file_like = open(file_name, "rb")
+                wrapper = FileWrapper(file_like)
+                response = HttpResponse(wrapper, content_type='application/json')
+                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+
+        elif file_type == "stata":
+
+                # Output DataFrame to JSON
+                file_name = plan_display_name + ' ' + now + '.dta'
+                pivoted.to_stata(file_name)
+                file_like = open(file_name, "rb")
+                wrapper = FileWrapper(file_like)
+                response = HttpResponse(wrapper, content_type='application/stata')
+                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+		
+        elif file_type == "xlsx":	
+		
+                # Output DataFrame to XSLX
+                writer = pandas.ExcelWriter(plan_display_name + ' ' + now + '.xlsx', engine='xlsxwriter', options={'strings_to_numbers': True})
+                file_name = plan_display_name + ' ' + now + '.xlsx'
+                pivoted.to_excel(writer, sheet_name='Sheet1')
+                writer.save()
+                file_like = open(file_name, "rb")
+                wrapper = FileWrapper(file_like)
+                response = HttpResponse(wrapper, content_type='application/ms-excel')
+                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+
+
+        return response
+
     def get_context_data(self, **kwargs):
         context = super(PlanListView, self).get_context_data(**kwargs)
         context['nav_plan'] = True
@@ -45,7 +118,7 @@ class PlanListView(ListView):
         RequestConfig(self.request, paginate={'per_page': 10}).configure(table)
         context['table'] = table
         return context
-
+        # End code added by Marc
 
 class PlanDetailView(DetailView):
     model = Plan
