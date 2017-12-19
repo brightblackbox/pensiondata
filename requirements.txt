@@ -19,3 +19,5 @@ celery
 python-decouple
 
 dj-database-url==0.4.2
+
+pandas==0.21.1
