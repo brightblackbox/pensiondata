@@ -7,7 +7,6 @@ To support asynchronous processing for uploaded files there are several services
 
 To build the app you will need Docker (tested using version 17.09.0-ce) - https://docs.docker.com/engine/installation/
 
-
 Cloing the Project
 ------------------
 The project is on github here - https://github.com/brightblackbox/pensiondata
@@ -15,7 +14,6 @@ The project is on github here - https://github.com/brightblackbox/pensiondata
 To clone the project to a local directory run the following command. This will create a new *pensiondata* directory in the current working directory.
 
 ``` git clone https://github.com/brightblackbox/pensiondata ```
-
 
 Running Locally
 ---------------
@@ -41,11 +39,9 @@ To run, navigate to the project root directory (where the docker-compose.yml fil
 
 ``` docker-compose build ```
 
-
 ``` docker-compose up -d ```
 
-
-This will build the docker images for the app on your local machine and then start them up in detached mode. More options for docker-compose cna be found here - https://docs.docker.com/compose/reference/up/v                                                       
+This will build the docker images for the app on your local machine and then start them up in detached mode. More options for docker-compose can be found here - https://docs.docker.com/glossary/?term=Compose
 
 The app can now be accessed at http://127.0.0.1:8000
 
@@ -56,7 +52,9 @@ To deploy to heroku you will need the Heroku CLI (Toolbelt) - https://devcenter.
 To deploy the app push the web and celery containers to heroku - https://devcenter.heroku.com/articles/container-registry-and-runtime#pushing-multiple-images
 
 ``` heroku login ```
+
 ``` heroku container:login ```
+
 ```  heroku container:push web celery --recursive --app pensiondata ```
 
 
