@@ -218,9 +218,10 @@ $(document).ready(function() {
         deferRender: true,
         scrollX: true,
         scrollY: "500px",
-        paging: false,
+        paging: true,
         info: false,
         searching: false,
+        order: [[ 0, 'desc' ]],
         fixedColumns: {
             leftColumns:1
         },
