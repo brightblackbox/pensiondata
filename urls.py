@@ -1,7 +1,7 @@
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.conf import settings
-from pensiondata.views import HomeView, PlanListView, PlanDetailView
+from pensiondata.views import HomeView, PlanListView, PlanDetailView, export_file
 
 admin.autodiscover()
 
@@ -10,6 +10,7 @@ urlpatterns = [
     url(r'^$',  PlanListView.as_view(), name='home'),
     url(r'^/pension/', include('pensiondata.urls')),
     url(r'^plan-detail/(?P<PlanID>\d+)$', PlanDetailView.as_view(), name='plan-detail'),
+    url(r'^plan-detail/ExportFile$', export_file),
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
