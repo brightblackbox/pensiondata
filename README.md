@@ -41,6 +41,8 @@ To run, navigate to the project root directory (where the docker-compose.yml fil
 
 ``` docker-compose up -d ```
 
+On Linux, you may need to prefix each of the above docker-compose calls with sudo.
+
 This will build the docker images for the app on your local machine and then start them up in detached mode. More options for docker-compose can be found here - https://docs.docker.com/glossary/?term=Compose
 
 The app can now be accessed at http://127.0.0.1:8000
