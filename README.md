@@ -59,6 +59,7 @@ To deploy the app push the web and celery containers to heroku - https://devcent
 
 ```  heroku container:push web celery --recursive --app pensiondata ```
 
+On Linux, you may need to prefix each of the above heroku calls with sudo.
 
 Heroku has a resource CloudAMQP that will replace the RabbitMQ service when deployed
 
