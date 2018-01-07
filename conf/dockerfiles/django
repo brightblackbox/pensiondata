@@ -1,11 +1,16 @@
 FROM python:3.6
+ENV PYTHONUNBUFFERED 1
 
 RUN apt-get update
 RUN apt-get -y install postgresql-client
 
-# add requirements.txt to the image
-ADD requirements.txt /pensiondata/requirements.txt
+RUN mkdir /pensiondata
 
-WORKDIR /pensiondata/
+WORKDIR /pensiondata
+
+# add requirements.txt to the image
+ADD requirements.txt /pensiondata/
 
 RUN pip install -r requirements.txt
+
+ADD . /pensiondata/

@@ -149,10 +149,11 @@ function redraw_annual_table() {
 
 // apply
 $('.poup-settings-wrap .button-apply').on("click", function () {
-    console.log("click apply: " + $.now() );
-    $('body').addClass('loading');
-    redraw_annual_table();
-    console.log("--- redrawed_click apply: " +  $.now() );
+
+    // console.log("click apply: " + $.now() );
+    // $('body').addClass('loading');
+    // redraw_annual_table();
+    // console.log("--- redrawed_click apply: " +  $.now() );
 
     $.ajax({
         type: "POST",
@@ -166,7 +167,9 @@ $('.poup-settings-wrap .button-apply').on("click", function () {
         }
     });
 
-  $(".poup-settings-wrap").removeClass("active");
+    $(this).closest('form').submit();
+
+  // $(".poup-settings-wrap").removeClass("active");
 
 });
 

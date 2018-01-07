@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models.signals import pre_save, pre_delete, post_save, post_delete
-from django.db.models import F
+from django.db.models import F, Case, When, Value, BooleanField
 import json
 import os
 import psycopg2
@@ -33,7 +33,6 @@ class HomeView(TemplateView):
         context['plans'] = Plan.objects.all().order_by('-id')[:10]
         return context
 
-
 class PlanListView(ListView):
     model = Plan
     paginate_by = 10
@@ -55,40 +54,73 @@ class PlanListView(ListView):
 
 
 class PlanDetailView(DetailView):
+
     model = Plan
     context_object_name = 'plan'
     template_name = 'plan_detail.html'
     pk_url_kwarg = "PlanID"
 
     def get_context_data(self, **kwargs):
+
         context = super(PlanDetailView, self).get_context_data(**kwargs)
         plan = self.object
 
+        # constants for default attribute IDs that need to be fetched
+        CONTRIB_STATE_EMPL = 1
+        CONTRIB_LOCAL_EMPL = 2
+        CONTRIB_LOCAL_GOVT = 4
+        TOTAL_CONTRIB_STATE = 5
+        TOT_BEN_PAYM = 16
+        ADMIN_EXP = 22
+        TOT_CASH_SEC = 42
+        TOT_ACT_MEM = 43
+
+        selected_attr_list = []
+
+        # getting columns from the POST request
+        if self.request.method == 'POST':
+            print ("This is a POST request")
+            selected_attr_list = self.request.POST.getlist('attr_checked_states[]')
+        # getting columns from session
+        elif (self.request.session.get('plan_column_state')):
+            selected_attr_list = self.request.session['plan_column_state']['attr']
+        # using default columns if got nothing from POST request or saved session
+        else:
+            selected_attr_list = [CONTRIB_STATE_EMPL,  \
+                                 CONTRIB_LOCAL_EMPL,  \
+                                 CONTRIB_LOCAL_GOVT,  \
+                                 TOTAL_CONTRIB_STATE, \
+                                 TOT_BEN_PAYM,        \
+                                 ADMIN_EXP,           \
+                                 TOT_CASH_SEC,        \
+                                 TOT_ACT_MEM]
+
         plan_annual_objs = PlanAnnualAttribute.objects \
-            .filter(plan=plan) \
             .select_related('plan_attribute') \
             .select_related('plan_attribute__attribute_category') \
-            .select_related('plan_attribute__data_source')
+            .select_related('plan_attribute__data_source') \
+            .filter(plan=plan)
 
-        year_list = plan_annual_objs.order_by('year').values('year').distinct()
+        plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
 
-        plan_annual_data \
-            = plan_annual_objs \
-            .values('id',
-                    'year',
-                    'plan_attribute__id',
-                    'plan_attribute__multiplier',
-                    'plan_attribute__data_source__id',
-                    'plan_attribute__attribute_category__id',
-                    'attribute_value') \
-            .annotate(
-                attribute_id=F('plan_attribute__id'),
-                multiplier=F('plan_attribute__multiplier'),
-                data_source_id=F('plan_attribute__data_source__id'),
-                category_id=F('plan_attribute__attribute_category__id')
-            )
+        year_list = plan_annual_objs_filtered_attributes.order_by('year').values('year').distinct()
 
-        attr_list = plan_annual_objs.values(
+        plan_annual_data = plan_annual_objs_filtered_attributes \
+                            .values('id',
+                                    'year',
+                                    'plan_attribute__id',
+                                    'plan_attribute__multiplier',
+                                    'plan_attribute__data_source__id',
+                                    'plan_attribute__attribute_category__id',
+                                    'attribute_value') \
+                            .annotate(
+                                attribute_id=F('plan_attribute__id'),
+                                multiplier=F('plan_attribute__multiplier'),
+                                data_source_id=F('plan_attribute__data_source__id'),
+                                category_id=F('plan_attribute__attribute_category__id')
+                            )
+
+        full_attr_list = plan_annual_objs.values(
             'plan_attribute__id',
             'plan_attribute__name',
             'plan_attribute__data_source__id',
@@ -101,7 +133,10 @@ class PlanDetailView(DetailView):
             data_source_id=F('plan_attribute__data_source__id'),
             data_source_name=F('plan_attribute__data_source__name'),
             category_id=F('plan_attribute__attribute_category__id'),
-            category_name=F('plan_attribute__attribute_category__name')
+            category_name=F('plan_attribute__attribute_category__name'),
+            # selected=Q(plan_attribute_id__in=selected_attr_list) # not using Q expression because of a bug in Django with Q and annotate (which seems to be very recently fixed)
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(When(plan_attribute_id__in=selected_attr_list, then=Value(True)),default=Value(False),output_field=BooleanField())
         ).distinct().order_by('category_name', 'attribute_name')
 
         category_list = plan_annual_objs.values(
@@ -109,12 +144,21 @@ class PlanDetailView(DetailView):
             'plan_attribute__attribute_category__name'
         ).annotate(
             id=F('plan_attribute__attribute_category__id'),
-            name=F('plan_attribute__attribute_category__name')
-        ).distinct().order_by('name')
+            name=F('plan_attribute__attribute_category__name'),
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(When(plan_attribute_id__in=selected_attr_list, then=Value(True)),default=Value(False),output_field=BooleanField())
+        ).distinct().order_by('name','-selected') # -selected is to put True values on top so that later we can remove any False values (which also has True value somewhere)
 
-        datasource_list = DataSource.objects.order_by('name')
+        category_list=category_list.distinct('name') # this is to remove the selected=False values where selected=True is already there
 
-        context['attr_list'] = attr_list
+        # fetching the data source list and marking selected based on selected attribute list
+        datasource_list = DataSource.objects.all().annotate( \
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(When(id__in=[PlanAttribute.objects.get(id=x).data_source_id for x in selected_attr_list], then=Value(True)),default=Value(False),output_field=BooleanField())
+        ).order_by('name')
+
+        # context['attr_list'] = attr_list
+        context['full_attr_list'] = full_attr_list
         context['category_list'] = category_list
         context['datasource_list'] = datasource_list
         context['year_list'] = year_list
@@ -123,6 +167,11 @@ class PlanDetailView(DetailView):
 
         return context
 
+    # this is to enable the DetailView to process POST requests (when the user selects different checkboxes than default)
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context=context)
 
 # NOTE:  This part should be changed/optimized to Class based View later
 @staff_member_required
@@ -350,7 +399,7 @@ def export_file(request):
         file_type, plan_id = request.GET['file_type'], request.GET['plan_id']
 
         #print("In Here")
-        #file_type = "csv" 
+        #file_type = "csv"
         #plan_id = 222
 
         # Connection to Azure Postgres Database requires SSH tunneling
@@ -373,7 +422,7 @@ def export_file(request):
 
         # Create pivot table
         pivoted = df.pivot(index='year', columns='attribute_column_name', values='attribute_value')
-	
+
         if file_type == "csv":
 
                 # Output DataFrame to CSV
@@ -403,9 +452,9 @@ def export_file(request):
                 wrapper = FileWrapper(file_like)
                 response = HttpResponse(wrapper, content_type='application/stata')
                 response['Content-Disposition'] = 'attachment; filename=%s' % file_name
-		
-        elif file_type == "xlsx":	
-		
+
+        elif file_type == "xlsx":
+
                 # Output DataFrame to XSLX
                 writer = pandas.ExcelWriter(plan_display_name + ' ' + now + '.xlsx', engine='xlsxwriter', options={'strings_to_numbers': True})
                 file_name = plan_display_name + ' ' + now + '.xlsx'
@@ -418,7 +467,3 @@ def export_file(request):
 
 
         return response
-
-
-
-

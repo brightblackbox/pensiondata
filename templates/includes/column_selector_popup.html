@@ -2,7 +2,8 @@
 
 <div class="poup-settings-wrap panel panel-default">
   <div class="poup-settings">
-  <form id="column_checklist_form">{% csrf_token %}
+  <form id="column_checklist_form" method = "post" action="">
+    {% csrf_token %}
     <input type="hidden" name="model_name" value="{{ model_name }}">
     <div class="arrow"></div>
       <div class="panel-body">
@@ -18,11 +19,16 @@
                        name="datasource_checked_states[]"
                        class="column-check-box datasource-column"
                        data-source-id="{{ ds.id }}"
-                   {% get_checked_status request.session.plan_column_state "source" ds.id as is_checked %}
+                   {% comment %}{% get_checked_status request.session.plan_column_state "source" ds.id as is_checked %}
                    {% if is_checked %}
                        checked
+                   {% endif %}{% endcomment %}
+
+                   {% if ds.selected %}
+                       checked
                    {% endif %}
-                       value={{ ds.id }}
+
+                   value={{ ds.id }}
                 >{{ ds.name }}</label></li>
           {% endfor %}
           </ul>
@@ -42,14 +48,19 @@
                        class="column-check-box category-column"
                        data-category-id="{{ category.id }}"
 
-                   {% get_checked_status request.session.plan_column_state "category" category.id as is_checked %}
+                   {% comment %}{% get_checked_status request.session.plan_column_state "category" category.id as is_checked %}
                    {% if is_checked %}
                        checked
+                   {% endif %}{% endcomment %}
+
+                   {% if category.selected %}
+                       checked
                    {% endif %}
+
                        value="{{ category.id|none2number }}"
                 >{{ category.name }}</label>
               <ul>
-              {% for attr in attr_list %}
+              {% for attr in full_attr_list %}
                 {% if attr.category_id == category.id %}
                   <li class="attr-level">
                     <label>
@@ -59,8 +70,12 @@
                              data-attr-id="{{ attr.attribute_id }}"
                              data-source-id="{{ attr.data_source_id }}"
 
-                         {% get_checked_status request.session.plan_column_state "attr" attr.attribute_id as is_checked %}
+                         {% comment %}{% get_checked_status request.session.plan_column_state "attr" attr.attribute_id as is_checked %}
                          {% if is_checked %}
+                             checked
+                         {% endif %}{% endcomment %}
+
+                         {% if attr.selected %}
                              checked
                          {% endif %}
 
