@@ -151,10 +151,24 @@ class PlanDetailView(DetailView):
 
         category_list=category_list.distinct('name') # this is to remove the selected=False values where selected=True is already there
 
+        # making a list of selected_data_sources
+        # (not doing it inline (in the datasource_list query) to avoid exceptions in case the selected attribute
+        # is not  present in the universal list for some reason)
+        selected_data_sources = []
+        for attr_id in selected_attr_list:
+            try:
+                selected_data_sources.append(PlanAttribute.objects.get(id=attr_id).data_source_id)
+            except PlanAttribute.DoesNotExist:
+                pass
+        # removing any duplicates from the list
+        selected_data_sources = list(set(selected_data_sources))
+
+
         # fetching the data source list and marking selected based on selected attribute list
         datasource_list = DataSource.objects.all().annotate( \
             # 'selected' is helpful in checking the options in the checkboxes
-            selected=Case(When(id__in=[PlanAttribute.objects.get(id=x).data_source_id for x in selected_attr_list], then=Value(True)),default=Value(False),output_field=BooleanField())
+            # selected=Case(When(id__in=[PlanAttribute.objects.get(id=x).data_source_id for x in selected_attr_list], then=Value(True)),default=Value(False),output_field=BooleanField())
+            selected=Case(When(id__in=selected_data_sources, then=Value(True)),default=Value(False),output_field=BooleanField())
         ).order_by('name')
 
         # context['attr_list'] = attr_list
