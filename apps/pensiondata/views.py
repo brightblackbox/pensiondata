@@ -544,7 +544,7 @@ def export_file(request):
             order_col = list(PlanAttribute.objects.filter(id__in=order_columns).values_list(
                 'id', 'attribute_column_name'
             ))
-            order_col.sort(key=lambda (x, y): order_columns.index(int(x)))
+            order_col.sort(key=lambda x: order_columns.index(int(x[0])))
             order_col_names = list(i[1] for i in order_col)
 
         # Get Plan Attributes for the Specified Plan and Store in a DataFrame
