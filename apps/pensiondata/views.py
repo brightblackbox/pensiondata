@@ -539,11 +539,13 @@ def export_file(request):
         plan_display_name = Plan.objects.get(id=plan_id).display_name
 
         # Get columns names
-        order_col = list(PlanAttribute.objects.filter(id__in=order_columns).values_list(
-            'id', 'attribute_column_name'
-        ))
-        order_col.sort(key=lambda (x, y): order_columns.index(int(x)))
-        order_col_names = list(i[1] for i in order_col)
+        order_col_names = []
+        if order_columns:
+            order_col = list(PlanAttribute.objects.filter(id__in=order_columns).values_list(
+                'id', 'attribute_column_name'
+            ))
+            order_col.sort(key=lambda (x, y): order_columns.index(int(x)))
+            order_col_names = list(i[1] for i in order_col)
 
         # Get Plan Attributes for the Specified Plan and Store in a DataFrame
         query = PlanAnnualAttribute.objects.filter(plan=plan_id)
