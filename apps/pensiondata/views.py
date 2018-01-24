@@ -10,6 +10,7 @@ from django.db.models import F, Case, When, Value, BooleanField
 import json
 import os
 import psycopg2
+import traceback
 import csv
 import sys
 import time
@@ -32,6 +33,7 @@ class HomeView(TemplateView):
         context = super(HomeView, self).get_context_data(**kwargs)
         context['plans'] = Plan.objects.all().order_by('-id')[:10]
         return context
+
 
 class PlanListView(ListView):
     model = Plan
@@ -186,6 +188,121 @@ class PlanDetailView(DetailView):
         self.object = self.get_object()
         context = self.get_context_data(**kwargs)
         return self.render_to_response(context=context)
+
+
+class GovernmentDetailView(DetailView):
+
+    model = Government
+    context_object_name = 'government'
+    template_name = 'government_detail.html'
+    pk_url_kwarg = "GovernmentID"
+
+    def get_context_data(self, **kwargs):
+        context = super(GovernmentDetailView, self).get_context_data(**kwargs)
+
+        CONTRIB_STATE_EMPL = 1
+        CONTRIB_LOCAL_EMPL = 2
+        CONTRIB_LOCAL_GOVT = 4
+        TOTAL_CONTRIB_STATE = 5
+        TOT_BEN_PAYM = 16
+        ADMIN_EXP = 22
+        TOT_CASH_SEC = 42
+        TOT_ACT_MEM = 43
+
+        selected_attr_list = []
+        selected_data_sources = []
+        if self.request.method == 'POST':
+            print ("This is a POST request")
+            selected_attr_list = self.request.POST.getlist('attr_checked_states[]')
+        # getting columns from session
+        elif (self.request.session.get('plan_column_state')):
+            selected_attr_list = self.request.session['plan_column_state']['attr']
+        # using default columns if got nothing from POST request or saved session
+        else:
+            selected_attr_list = [
+                CONTRIB_STATE_EMPL, CONTRIB_LOCAL_EMPL, CONTRIB_LOCAL_GOVT, TOTAL_CONTRIB_STATE, TOT_BEN_PAYM,
+                ADMIN_EXP, TOT_CASH_SEC, TOT_ACT_MEM
+            ]
+
+        government = self.object
+
+        government_annual_objs = GovernmentAnnualAttribute.objects \
+            .select_related('government_attribute') \
+            .filter(government=government)
+
+        government_annual_objs_filtered_attributes = government_annual_objs#.filter(plan_attribute_id__in=selected_attr_list)
+
+        year_list = government_annual_objs_filtered_attributes.order_by('year').values('year').distinct()
+
+        government_annual_data = government_annual_objs_filtered_attributes\
+            .values(
+                'id',
+                'year',
+                'government_attribute__id',
+                'government_attribute__multiplier',
+                'government_attribute__data_source__id',
+                'government_attribute__attribute_category__id',
+                'attribute_value').\
+            annotate(
+                attribute_id=F('government_attribute__id'),
+                multiplier=F('government_attribute__multiplier'),
+                data_source_id=F('government_attribute__data_source__id'),
+                category_id=F('government_attribute__attribute_category__id')
+            )
+
+        category_list = government_annual_objs.values(
+            'government_attribute__attribute_category__id',
+            'government_attribute__attribute_category__name'
+        ).annotate(
+            id=F('government_attribute__attribute_category__id'),
+            name=F('government_attribute__attribute_category__name'),
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(When(government_attribute_id__in=selected_attr_list, then=Value(True)), default=Value(False),
+                          output_field=BooleanField())
+        ).distinct().order_by('name', '-selected')
+
+        category_list = category_list.distinct('name')
+
+        full_attr_list = government_annual_objs.values(
+            'government_attribute__id',
+            'government_attribute__name',
+            'government_attribute__data_source__id',
+            'government_attribute__data_source__name',
+            'government_attribute__attribute_category__id',
+            'government_attribute__attribute_category__name'
+        ).annotate(
+            attribute_id=F('government_attribute__id'),
+            attribute_name=F('government_attribute__name'),
+            data_source_id=F('government_attribute__data_source__id'),
+            data_source_name=F('government_attribute__data_source__name'),
+            category_id=F('government_attribute__attribute_category__id'),
+            category_name=F('government_attribute__attribute_category__name'),
+            # selected=Q(plan_attribute_id__in=selected_attr_list) # not using Q expression because of a bug in Django with Q and annotate (which seems to be very recently fixed)
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(When(government_attribute_id__in=selected_attr_list, then=Value(True)), default=Value(False),
+                          output_field=BooleanField())
+        ).distinct().order_by('category_name', 'attribute_name')
+
+        datasource_list = DataSource.objects.all().annotate( \
+            # 'selected' is helpful in checking the options in the checkboxes
+            # selected=Case(When(id__in=[PlanAttribute.objects.get(id=x).data_source_id for x in selected_attr_list], then=Value(True)),default=Value(False),output_field=BooleanField())
+            selected=Case(When(id__in=selected_data_sources, then=Value(True)), default=Value(False),
+                          output_field=BooleanField())
+        ).order_by('name')
+
+        context['full_attr_list'] = full_attr_list
+        context['category_list'] = category_list
+        context['year_list'] = year_list
+        context['datasource_list'] = datasource_list
+        context['government_annual_data'] = json.dumps(list(government_annual_data))
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        context = self.get_context_data(**kwargs)
+        return self.render_to_response(context=context)
+
 
 # NOTE:  This part should be changed/optimized to Class based View later
 @staff_member_required
@@ -411,73 +528,98 @@ def save_checklist(request):
 # Added by Marc - 2017-12-19
 def export_file(request):
         file_type, plan_id = request.GET['file_type'], request.GET['plan_id']
-
-        #print("In Here")
-        #file_type = "csv"
-        #plan_id = 222
-
-        # Connection to Azure Postgres Database requires SSH tunneling
-        # conn = psycopg2.connect(host="51.141.162.6",database="pension",user="postgres",password="postgres")
-
-        # Connection to Heroku Database
-        conn = psycopg2.connect(host="ec2-54-235-177-45.compute-1.amazonaws.com",database="d47an5cjnv5mjb",user="viliygpvlizwel",password="5c26e3ddd0b2682b5c71a4230547677007d7f9fcfe1ed1c29ee45d6375a7475d")
+        order_columns = []
+        if request.GET.get('order_columns'):
+            order_columns = [int(v) for v in request.GET.get('order_columns').split(',') or []]
 
         # Get Date Stamp for the File Name
         now = time.strftime("%Y-%m-%d")
 
         # Get Plan Display Name for the File Name
-        cur = conn.cursor()
-        cur.execute("select display_name from plan where id = " + plan_id + ";")
-        plan_display_name = cur.fetchone()[0]
+        plan_display_name = Plan.objects.get(id=plan_id).display_name
+
+        # Get columns names
+        order_col = list(PlanAttribute.objects.filter(id__in=order_columns).values_list(
+            'id', 'attribute_column_name'
+        ))
+        order_col.sort(key=lambda (x, y): order_columns.index(int(x)))
+        order_col_names = list(i[1] for i in order_col)
 
         # Get Plan Attributes for the Specified Plan and Store in a DataFrame
-        cur.execute("select year, attribute_column_name, attribute_value from plan_annual_attribute inner join plan_attribute on plan_attribute.id = plan_annual_attribute.plan_attribute_id where plan_id = " + plan_id + ";")
-        df = pandas.DataFrame(cur.fetchall(), columns=['year','attribute_column_name','attribute_value'])
+        query = PlanAnnualAttribute.objects.filter(plan=plan_id)
+        # Include to file only specified fields if required
+        if request.GET.get('fields', 'all') == 'selected':
+            query = query.filter(
+                plan_attribute__id__in=request.session.get('plan_column_state', {}).get('attr', [])
+            )
+
+        data = list(query.values_list('year', 'plan_attribute__attribute_column_name', 'attribute_value'))
+
+        # Fix duplicate keys
+        for index, item in enumerate(data):
+            try:
+                if item[1] in ('year'):
+                    new_tp = tuple([item[0], u'year_1', item[2]])
+                    data[index] = new_tp
+            except Exception as e:
+                traceback.print_exc()
+
+        df = pandas.DataFrame(data, columns=['year', 'attribute_column_name', 'attribute_value'])
 
         # Create pivot table
         pivoted = df.pivot(index='year', columns='attribute_column_name', values='attribute_value')
 
-        if file_type == "csv":
+        # Change order of columns if required
+        if order_col_names and len(pivoted.columns) == len(order_col_names):
+            pivoted = pivoted.reindex(order_col_names, axis=1)
 
-                # Output DataFrame to CSV
-                file_name = plan_display_name + ' ' + now + '.csv'
-                pivoted.to_csv(path_or_buf = file_name)
-                file_like = open(file_name, "rb")
-                wrapper = FileWrapper(file_like)
-                response = HttpResponse(wrapper, content_type='application/csv')
-                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+        if file_type == "csv":
+            # Output DataFrame to CSV
+            file_name = plan_display_name + ' ' + now + '.csv'
+            pivoted.to_csv(path_or_buf = file_name)
+            file_like = open(file_name, "rb")
+            wrapper = FileWrapper(file_like)
+            response = HttpResponse(wrapper, content_type='application/csv')
+            response['Content-Disposition'] = 'attachment; filename=%s' % file_name.replace(',', '')
 
         elif file_type == "json":
-
-                # Output DataFrame to JSON
-                file_name = plan_display_name + ' ' + now + '.json'
-                pivoted.to_json(path_or_buf = file_name)
-                file_like = open(file_name, "rb")
-                wrapper = FileWrapper(file_like)
-                response = HttpResponse(wrapper, content_type='application/json')
-                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+            # Output DataFrame to JSON
+            file_name = plan_display_name + ' ' + now + '.json'
+            pivoted.to_json(path_or_buf = file_name)
+            file_like = open(file_name, "rb")
+            wrapper = FileWrapper(file_like)
+            response = HttpResponse(wrapper, content_type='application/json')
+            response['Content-Disposition'] = 'attachment; filename=%s' % file_name.replace(',', '')
 
         elif file_type == "stata":
+            # Convert values to string, because 'stata' can't use some formats
+            for colname in list(pivoted.select_dtypes(include=['object']).columns):
+                try:
+                    pivoted[colname] = pivoted[colname].astype('str')
+                except Exception as e:
+                    traceback.print_exc()
 
-                # Output DataFrame to Stata
-                file_name = plan_display_name + ' ' + now + '.dta'
-                pivoted.to_stata(fname = file_name)
-                file_like = open(file_name, "rb")
-                wrapper = FileWrapper(file_like)
-                response = HttpResponse(wrapper, content_type='application/stata')
-                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+            # Output DataFrame to Stata
+            file_name = plan_display_name + ' ' + now + '.dta'
+            pivoted.to_stata(fname=file_name)
+            file_like = open(file_name, "rb")
+            wrapper = FileWrapper(file_like)
+            response = HttpResponse(wrapper, content_type='application/stata')
+            response['Content-Disposition'] = 'attachment; filename=%s' % file_name.replace(',', '')
 
         elif file_type == "xlsx":
-
-                # Output DataFrame to XSLX
-                writer = pandas.ExcelWriter(plan_display_name + ' ' + now + '.xlsx', engine='xlsxwriter', options={'strings_to_numbers': True})
-                file_name = plan_display_name + ' ' + now + '.xlsx'
-                pivoted.to_excel(writer, sheet_name='Sheet1')
-                writer.save()
-                file_like = open(file_name, "rb")
-                wrapper = FileWrapper(file_like)
-                response = HttpResponse(wrapper, content_type='application/ms-excel')
-                response['Content-Disposition'] = 'attachment; filename=%s' % file_name
-
+            # Output DataFrame to XSLX
+            writer = pandas.ExcelWriter(
+                plan_display_name + ' ' + now + '.xlsx',
+                engine='xlsxwriter',
+                options={'strings_to_numbers': True}
+            )
+            file_name = plan_display_name + ' ' + now + '.xlsx'
+            pivoted.to_excel(writer, sheet_name='Sheet1')
+            writer.save()
+            file_like = open(file_name, "rb")
+            wrapper = FileWrapper(file_like)
+            response = HttpResponse(wrapper, content_type='application/ms-excel')
+            response['Content-Disposition'] = 'attachment; filename=%s' % file_name.replace(',', '')
 
         return response

@@ -14,26 +14,26 @@
   <div id="breadcrumbs">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="/">Plans</a></li>
-      <li class="breadcrumb-item active">{{plan.display_name }}</li>
+      <li class="breadcrumb-item active">{{ government.display_name }}</li>
     </ol>
   </div>
 
-  <h3>Plan Details</h3>
+  <h3>Government Details</h3>
   <table class="table table-hover table-bordered table-striped">
     <tr>
-      <td>Census Plan Id</td><td>{{ plan.census_plan_id }}</td>
+      <td>Name</td><td>{{ government.name }}</td>
     </tr>
     <tr>
-      <td>Name</td><td>{{ plan.display_name }}</td>
+      <td>State</td><td><a href="">{{ government.state }}</a></td>
     </tr>
     <tr>
-      <td>Administering Government</td><td><a href="/government-detail/{{ plan.admin_gov.id }}">{{ plan.admin_gov.name }}</a></td>
+      <td>Type</td><td>{{ government.government_type.level }}</td>
     </tr>
 
   </table>
 
   <!-- Plan Annual Attributes -->
-  <div class="annual_title">Plan Annual Attributes:</div>
+  <div class="annual_title">Government Annual Attributes:</div>
   <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
   <!-- Selector Popup -->
@@ -47,7 +47,7 @@
           {% for attr in full_attr_list %}
             {% if attr.selected %}
           <th class="th-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
-              data-category-id="{{ attr.category_id }}" data-attr-id="{{ attr.attribute_id }}">
+              data-category-id="{{ attr.category_id }}">
             {{ attr.attribute_name|capfirst }}</th>
             {% endif %}
           {% endfor %}
@@ -55,28 +55,29 @@
       </thead>
       <tbody>
         {% for year in year_list %}
-        <tr class="tr-annual-data-per-year">
-          <td>{{ year.year }}</td>
-          {% for attr in full_attr_list %}
-            {% if attr.selected %}
-          <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
-              id="td-id-{{ year.year }}-{{ attr.attribute_id }}"
-              data-annual-data-pk="-1"
-          ></td>
-            {% endif %}
-          {% endfor %}
-        </tr>
+            <tr class="tr-annual-data-per-year">
+              <td>{{ year.year }}</td>
+              {% for attr in full_attr_list %}
+                {% if attr.selected %}
+                  <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
+                      id="td-id-{{ year.year }}-{{ attr.attribute_id }}"
+                      data-annual-data-pk="-1"
+                  ></td>
+                {% endif %}
+              {% endfor %}
+            </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 
-Export:
-<a href="ExportFile?file_type=csv&plan_id={{ plan.id }}&fields=all" class="export-file-link"> CSV </a>
-<a href="ExportFile?file_type=json&plan_id={{ plan.id }}&fields=all" class="export-file-link"> JSON </a>
-<a href="ExportFile?file_type=stata&plan_id={{ plan.id }}&fields=all" class="export-file-link"> Stata </a>
-<a href="ExportFile?file_type=xlsx&plan_id={{ plan.id }}&fields=all" class="export-file-link"> Excel </a>
-| <label><input id="exportFile" type="checkbox" checked value="all"> All fields</label>
+<!-- Export:
+<a href="ExportFile?file_type=csv&plan_id={{ plan.id }}"> CSV </a>
+<a href="ExportFile?file_type=json&plan_id={{ plan.id }}"> JSON </a>
+<a href="ExportFile?file_type=stata&plan_id={{ plan.id }}"> Stata </a>
+<a href="ExportFile?file_type=xlsx&plan_id={{ plan.id }}"> Excel </a>
+
+-->
 
 </div><!-- end of content -->
 {% endblock %}
@@ -88,29 +89,17 @@ Export:
 
   <script type="text/javascript">
     console.log('script start');
-    var plan_annual_data = "{{ plan_annual_data }}";
+    var government_annual_data = "{{ government_annual_data }}";
     var save_checklist_url = '{% url "pensiondata:save_checklist" %}';
 
     // string -> JSON object
-    plan_annual_data = JSON.parse(plan_annual_data.replace(/&quot;/g, '"'));
-
+    var plan_annual_data = JSON.parse(government_annual_data.replace(/&quot;/g, '"'));
     console.log('JSON parse');
-
-    $('#exportFile').change(function() {
-        var links = $('.export-file-link');
-        if ($(this).is(":checked")) {
-            links.each(function () {
-                var url = $(this).attr('href').replace('&fields=selected', '&fields=all')
-                $(this).attr('href', url);
-            });
-        } else {
-            links.each(function () {
-                var url = $(this).attr('href').replace('&fields=all', '&fields=selected')
-                $(this).attr('href', url);
-            });
-        }
-    });
 
   </script>
   <script type="text/javascript" src="{% static 'js/annual_table.js' %}"></script>
+  <script type="text/javascript">
+    var is_government = true;
+    console.log('G: ', is_government);
+  </script>
 {% endblock %}

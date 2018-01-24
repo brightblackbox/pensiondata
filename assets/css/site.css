@@ -51,7 +51,7 @@ input[type="checkbox"].input-validation-error {
 /*=================================================*/
 div#topnav{
 	background:#fff;
-	height:30px;
+	height:75px;
 	box-sizing: unset;
     border-bottom: 6px solid #010036;
 }

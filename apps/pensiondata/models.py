@@ -29,6 +29,7 @@ class County(models.Model):
 
     class Meta:
         db_table = 'county'
+        verbose_name_plural = 'Counties'
 
     def __str__(self):
         return self.name
@@ -334,7 +335,7 @@ class PlanAnnualAttribute(models.Model):
         unique_together = ('plan', 'year', 'plan_attribute',)
         db_table = 'plan_annual_attribute'
         verbose_name = 'Plan Annual Attribute'
-        verbose_name_plural = 'Plan Annual Attributes'
+        verbose_name_plural = 'Import Plan Annual Attributes'
 
     def __str__(self):
         return "Plan Annual Attribute(%s)" % self.year
