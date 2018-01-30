@@ -52,11 +52,11 @@ class PlanListView(ListView):
             table = Plan.objects.all()
 
             splited_search = search.split(' ')
-            if splited_search > 1:
+            if len(splited_search) > 1:
                 for i in splited_search:
                     table = table.filter(display_name__icontains=i)
             else:
-                table = table.filter(display_name__icontains=search)
+                table = table.filter(display_name__icontains=search[0])
 
             table = PlanTable(table.order_by('display_name'))
 
