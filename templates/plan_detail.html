@@ -1,10 +1,17 @@
 {% extends "base.html" %}
 {% load static %}
+{% load annual_table_tags %}
 
 {% block extra-styles %}
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/jquery.dataTables.min.css' %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/colReorder.dataTables.min.css' %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/fixedColumns.dataTables.min.css' %}" />
+  <link rel="stylesheet" type="text/css", href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css" />
+  <style>
+      .ui-datepicker-calendar {
+          display: none;
+      }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -37,7 +44,8 @@
   <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
   <!-- Selector Popup -->
-  {% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list full_attr_list=full_attr_list model_name="plan" %}
+  {% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list full_attr_list=full_attr_list model_name="plan" is_admin_page=False  %}
+
   <!-- PlanAnnualAttribute Table -->
   <div class="annual_table_area" style="display:none; overflow: hidden">
     <table class="table table-bordered table-striped" id="table-annual-data">
@@ -72,11 +80,19 @@
   </div>
 
 Export:
-<a href="ExportFile?file_type=csv&plan_id={{ plan.id }}&fields=all" class="export-file-link"> CSV </a>
-<a href="ExportFile?file_type=json&plan_id={{ plan.id }}&fields=all" class="export-file-link"> JSON </a>
-<a href="ExportFile?file_type=stata&plan_id={{ plan.id }}&fields=all" class="export-file-link"> Stata </a>
-<a href="ExportFile?file_type=xlsx&plan_id={{ plan.id }}&fields=all" class="export-file-link"> Excel </a>
+
+<a href="{% build_export_url 'csv' plan.id year_from year_to %}" class="export-file-link"> CSV </a>
+<a href="{% build_export_url 'json' plan.id year_from year_to %}" class="export-file-link"> JSON </a>
+<a href="{% build_export_url 'stata' plan.id year_from year_to %}" class="export-file-link"> Stata </a>
+<a href="{% build_export_url 'xlsx' plan.id year_from year_to %}" class="export-file-link"> Excel </a>
 | <label><input id="exportFile" type="checkbox" checked value="all"> All fields</label>
+
+<br/>
+Presentations export:
+
+{% for export in presentations_exports %}
+    <a href="{% build_export_url export.export_type plan.id year_from year_to export.name %}" class="export-file-link"> {{ export.name }} </a>
+{% endfor %}
 
 </div><!-- end of content -->
 {% endblock %}
@@ -85,6 +101,9 @@ Export:
   <script src="{% static 'js/libs/jquery.dataTables.min.js' %}"></script>
   <script src="{% static 'js/libs/dataTables.colReorder.min.js' %}"></script>
   <script src="{% static 'js/libs/dataTables.fixedColumns.min.js' %}"></script>
+  <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+          integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+          crossorigin="anonymous"></script>
 
   <script type="text/javascript">
     console.log('script start');
@@ -96,21 +115,30 @@ Export:
 
     console.log('JSON parse');
 
+    function changeLinkUrl(links, replace, insert) {
+        if (!links.length) {return;}
+        var regex = new RegExp(replace, 'g');
+        links.each(function () {
+            var url = $(this).attr('href')
+            if (url.match(regex) !== null) {
+                url = url.replace(regex, insert);
+            } else {
+                url += insert;
+            }
+            $(this).attr('href', url);
+        });
+    }
+
     $('#exportFile').change(function() {
         var links = $('.export-file-link');
         if ($(this).is(":checked")) {
-            links.each(function () {
-                var url = $(this).attr('href').replace('&fields=selected', '&fields=all')
-                $(this).attr('href', url);
-            });
+            changeLinkUrl(links, '&fields=selected', '&fields=all');
         } else {
-            links.each(function () {
-                var url = $(this).attr('href').replace('&fields=all', '&fields=selected')
-                $(this).attr('href', url);
-            });
+            changeLinkUrl(links, '&fields=all', '&fields=selected');
         }
     });
 
   </script>
+  <script type="text/javascript" src="{% static 'js/settings_datatable.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annual_table.js' %}"></script>
 {% endblock %}

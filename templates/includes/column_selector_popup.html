@@ -23,7 +23,6 @@
                    {% if is_checked %}
                        checked
                    {% endif %}{% endcomment %}
-
                    {% if ds.selected %}
                        checked
                    {% endif %}
@@ -39,6 +38,12 @@
           <h4>Attributes</h4>
           <input class="form-control input-search" type="text" placeholder="Search...">
           <br>
+          {% if not is_admin_page %}
+              <h4>Years:</h4>
+              <label>From: <input id="start_year" type="text" value="{{ year_from }}" name="from"></label>
+              <label>To: <input id="end_year" type="text" value="{{ year_to }}" name="to"></label>
+              <br><br>
+          {% endif %}
           <ul class="list-group column-list attr-list">
           {% for category in category_list %}
             <li class="category-level">
@@ -79,7 +84,14 @@
                              checked
                          {% endif %}
 
-                         {% get_checked_status request.session.plan_column_state "source" attr.data_source_id as is_checked %}
+                         {% if is_admin_page %}
+                             {% get_attribute request.session model_name '_column_state_admin' as ddata %}
+                             {% get_checked_status ddata "source" attr.data_source_id as is_checked %}
+                         {% else %}
+                             {% get_attribute request.session model_name '_column_state' as ddata %}
+                             {% get_checked_status ddata "source" attr.data_source_id as is_checked %}
+                         {% endif %}
+
                          {% if not is_checked %}
                              disabled="disabled"
                          {% endif %}

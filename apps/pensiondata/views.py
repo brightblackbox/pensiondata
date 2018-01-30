@@ -17,8 +17,8 @@ import time
 import pandas
 from wsgiref.util import FileWrapper
 
-from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, \
-                    Government, GovernmentAnnualAttribute, GovernmentAttribute
+from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, PlanAnnual, \
+                    Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup
 from .tables import PlanTable
 from .signals import recalculate
 
@@ -45,13 +45,24 @@ class PlanListView(ListView):
         context = super(PlanListView, self).get_context_data(**kwargs)
         context['nav_plan'] = True
 
-        if self.request.GET.get('search') is None or self.request.GET.get('search') == '':
+        search = self.request.GET.get('search')
+        if search is None or search == '':
             table = PlanTable(Plan.objects.all().order_by('display_name'))
         else:
-            table = PlanTable(Plan.objects.all().filter(display_name__icontains = self.request.GET.get('search')).order_by('display_name'))
+            table = Plan.objects.all()
+
+            splited_search = search.split(' ')
+            if splited_search > 1:
+                for i in splited_search:
+                    table = table.filter(display_name__icontains=i)
+            else:
+                table = table.filter(display_name__icontains=search)
+
+            table = PlanTable(table.order_by('display_name'))
 
         RequestConfig(self.request, paginate={'per_page': 10}).configure(table)
         context['table'] = table
+        context['search'] = self.request.GET.get('search', '')
         return context
 
 
@@ -63,6 +74,9 @@ class PlanDetailView(DetailView):
     pk_url_kwarg = "PlanID"
 
     def get_context_data(self, **kwargs):
+
+        year_from = self.request.POST.get('from', '')
+        year_to = self.request.POST.get('to', '')
 
         context = super(PlanDetailView, self).get_context_data(**kwargs)
         plan = self.object
@@ -76,8 +90,6 @@ class PlanDetailView(DetailView):
         ADMIN_EXP = 22
         TOT_CASH_SEC = 42
         TOT_ACT_MEM = 43
-
-        selected_attr_list = []
 
         # getting columns from the POST request
         if self.request.method == 'POST':
@@ -105,7 +117,9 @@ class PlanDetailView(DetailView):
 
         plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
 
-        year_list = plan_annual_objs_filtered_attributes.order_by('year').values('year').distinct()
+        year_list = plan_annual_objs_filtered_attributes.filter(
+            year__range=(year_from or '1950', year_to or '2050')
+        ).order_by('year').values('year').distinct()
 
         plan_annual_data = plan_annual_objs_filtered_attributes \
                             .values('id',
@@ -136,9 +150,12 @@ class PlanDetailView(DetailView):
             data_source_name=F('plan_attribute__data_source__name'),
             category_id=F('plan_attribute__attribute_category__id'),
             category_name=F('plan_attribute__attribute_category__name'),
-            # selected=Q(plan_attribute_id__in=selected_attr_list) # not using Q expression because of a bug in Django with Q and annotate (which seems to be very recently fixed)
             # 'selected' is helpful in checking the options in the checkboxes
-            selected=Case(When(plan_attribute_id__in=selected_attr_list, then=Value(True)),default=Value(False),output_field=BooleanField())
+            selected=Case(
+                When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
         ).distinct().order_by('category_name', 'attribute_name')
 
         category_list = plan_annual_objs.values(
@@ -148,7 +165,11 @@ class PlanDetailView(DetailView):
             id=F('plan_attribute__attribute_category__id'),
             name=F('plan_attribute__attribute_category__name'),
             # 'selected' is helpful in checking the options in the checkboxes
-            selected=Case(When(plan_attribute_id__in=selected_attr_list, then=Value(True)),default=Value(False),output_field=BooleanField())
+            selected=Case(
+                When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
         ).distinct().order_by('name','-selected') # -selected is to put True values on top so that later we can remove any False values (which also has True value somewhere)
 
         category_list=category_list.distinct('name') # this is to remove the selected=False values where selected=True is already there
@@ -157,27 +178,32 @@ class PlanDetailView(DetailView):
         # (not doing it inline (in the datasource_list query) to avoid exceptions in case the selected attribute
         # is not  present in the universal list for some reason)
         selected_data_sources = []
-        for attr_id in selected_attr_list:
-            try:
-                selected_data_sources.append(PlanAttribute.objects.get(id=attr_id).data_source_id)
-            except PlanAttribute.DoesNotExist:
-                pass
+        get_attr_ids = [attr_id for attr_id in selected_attr_list]
+        for paid in PlanAttribute.objects.filter(id__in=get_attr_ids).values_list('data_source_id'):
+            selected_data_sources.append(paid[0])
         # removing any duplicates from the list
         selected_data_sources = list(set(selected_data_sources))
-
 
         # fetching the data source list and marking selected based on selected attribute list
         datasource_list = DataSource.objects.all().annotate( \
             # 'selected' is helpful in checking the options in the checkboxes
-            # selected=Case(When(id__in=[PlanAttribute.objects.get(id=x).data_source_id for x in selected_attr_list], then=Value(True)),default=Value(False),output_field=BooleanField())
-            selected=Case(When(id__in=selected_data_sources, then=Value(True)),default=Value(False),output_field=BooleanField())
+            selected=Case(
+                When(id__in=selected_data_sources, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
         ).order_by('name')
+
+        presentations_exports = ExportGroup.objects.filter(active=True)
 
         # context['attr_list'] = attr_list
         context['full_attr_list'] = full_attr_list
         context['category_list'] = category_list
         context['datasource_list'] = datasource_list
         context['year_list'] = year_list
+        context['year_from'] = year_from
+        context['year_to'] = year_to
+        context['presentations_exports'] = presentations_exports
 
         context['plan_annual_data'] = json.dumps(list(plan_annual_data))
 
@@ -200,6 +226,9 @@ class GovernmentDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super(GovernmentDetailView, self).get_context_data(**kwargs)
 
+        year_from = self.request.POST.get('from', '')
+        year_to = self.request.POST.get('to', '')
+
         CONTRIB_STATE_EMPL = 1
         CONTRIB_LOCAL_EMPL = 2
         CONTRIB_LOCAL_GOVT = 4
@@ -210,13 +239,12 @@ class GovernmentDetailView(DetailView):
         TOT_ACT_MEM = 43
 
         selected_attr_list = []
-        selected_data_sources = []
         if self.request.method == 'POST':
             print ("This is a POST request")
             selected_attr_list = self.request.POST.getlist('attr_checked_states[]')
         # getting columns from session
-        elif (self.request.session.get('plan_column_state')):
-            selected_attr_list = self.request.session['plan_column_state']['attr']
+        elif (self.request.session.get('government_column_state')):
+            selected_attr_list = self.request.session['government_column_state']['attr']
         # using default columns if got nothing from POST request or saved session
         else:
             selected_attr_list = [
@@ -230,9 +258,12 @@ class GovernmentDetailView(DetailView):
             .select_related('government_attribute') \
             .filter(government=government)
 
-        government_annual_objs_filtered_attributes = government_annual_objs#.filter(plan_attribute_id__in=selected_attr_list)
+        government_annual_objs_filtered_attributes = government_annual_objs.filter(
+            government_attribute_id__in=selected_attr_list)
 
-        year_list = government_annual_objs_filtered_attributes.order_by('year').values('year').distinct()
+        year_list = government_annual_objs_filtered_attributes.filter(
+            year__range=(year_from or '1950', year_to or '2050')
+        ).order_by('year').values('year').distinct()
 
         government_annual_data = government_annual_objs_filtered_attributes\
             .values(
@@ -277,22 +308,35 @@ class GovernmentDetailView(DetailView):
             data_source_name=F('government_attribute__data_source__name'),
             category_id=F('government_attribute__attribute_category__id'),
             category_name=F('government_attribute__attribute_category__name'),
-            # selected=Q(plan_attribute_id__in=selected_attr_list) # not using Q expression because of a bug in Django with Q and annotate (which seems to be very recently fixed)
             # 'selected' is helpful in checking the options in the checkboxes
-            selected=Case(When(government_attribute_id__in=selected_attr_list, then=Value(True)), default=Value(False),
-                          output_field=BooleanField())
+            selected=Case(
+                When(government_attribute_id__in=selected_attr_list, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
         ).distinct().order_by('category_name', 'attribute_name')
+
+        selected_data_sources = []
+        get_attr_ids = [attr_id for attr_id in selected_attr_list]
+        for paid in GovernmentAttribute.objects.filter(id__in=get_attr_ids).values_list('data_source_id'):
+            selected_data_sources.append(paid[0])
+        # removing any duplicates from the list
+        selected_data_sources = list(set(selected_data_sources))
 
         datasource_list = DataSource.objects.all().annotate( \
             # 'selected' is helpful in checking the options in the checkboxes
-            # selected=Case(When(id__in=[PlanAttribute.objects.get(id=x).data_source_id for x in selected_attr_list], then=Value(True)),default=Value(False),output_field=BooleanField())
-            selected=Case(When(id__in=selected_data_sources, then=Value(True)), default=Value(False),
-                          output_field=BooleanField())
+            selected=Case(
+                When(id__in=selected_data_sources, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
         ).order_by('name')
 
         context['full_attr_list'] = full_attr_list
         context['category_list'] = category_list
         context['year_list'] = year_list
+        context['year_from'] = year_from
+        context['year_to'] = year_to
         context['datasource_list'] = datasource_list
         context['government_annual_data'] = json.dumps(list(government_annual_data))
 
@@ -391,7 +435,7 @@ def add_plan_annual_attr(request):
             is_from_source=is_from_source
         )
 
-        # disconnect signal becuase of moderation
+        # disconnect signal because of moderation
         post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
         moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=new_plan_annual_attr_obj)
         new_plan_annual_attr_obj.save()
@@ -402,6 +446,7 @@ def add_plan_annual_attr(request):
 
         return JsonResponse({'result': 'success'})
     except Exception as e:
+        traceback.print_exc()
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})
 
 
@@ -511,8 +556,13 @@ def save_checklist(request):
     """
     try:
 
+        is_admin_page = request.POST.get('is_admin_page', False)
+
         model_name = request.POST.get('model_name')
-        session_key = model_name + '_column_state'
+        if is_admin_page and request.user.is_superuser:
+            session_key = model_name + '_column_state_admin'
+        else:
+            session_key = model_name + '_column_state'
 
         request.session[session_key] = {'category': [], 'source': [], 'attr': []}
         checked_dict = request.session[session_key]
@@ -527,6 +577,9 @@ def save_checklist(request):
 
 # Added by Marc - 2017-12-19
 def export_file(request):
+        year_from = request.GET.get('from', '')
+        year_to = request.GET.get('to', '')
+
         file_type, plan_id = request.GET['file_type'], request.GET['plan_id']
         order_columns = []
         if request.GET.get('order_columns'):
@@ -548,11 +601,21 @@ def export_file(request):
             order_col_names = list(i[1] for i in order_col)
 
         # Get Plan Attributes for the Specified Plan and Store in a DataFrame
-        query = PlanAnnualAttribute.objects.filter(plan=plan_id)
+        query = PlanAnnualAttribute.objects.filter(plan=plan_id, year__range=(year_from or '1950', year_to or '2050'))
         # Include to file only specified fields if required
         if request.GET.get('fields', 'all') == 'selected':
             query = query.filter(
                 plan_attribute__id__in=request.session.get('plan_column_state', {}).get('attr', [])
+            )
+        elif request.GET.get('fields') not in ('all', 'selected'):
+            pr_export = list(PresentationExport.objects.filter(export_group__name=request.GET.get('fields')))
+            plan_attr_ids = []
+            if pr_export:
+                pr_export.sort(key=lambda x: x.order)
+                plan_attr_ids = [i.plan_field.id for i in pr_export]
+                order_col_names = [i.plan_field.attribute_column_name for i in pr_export]
+            query = query.filter(
+                plan_attribute__id__in=plan_attr_ids
             )
 
         data = list(query.values_list('year', 'plan_attribute__attribute_column_name', 'attribute_value'))

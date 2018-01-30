@@ -110,7 +110,7 @@
 <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
 <!-- Selector Popup -->
-{% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list attr_list=attr_list model_name=opts.model_name %}
+{% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list attr_list=attr_list model_name=opts.model_name is_admin_page=True %}
 
 <!-- control buttons -->
 <div class="control-buttons" style="padding: 10px 0;">
@@ -147,6 +147,7 @@
         <td class="td-attr-{{ attr.attribute_id }} td-source-{{ attr.data_source_id }}"
             id="td-id-{{ year.year }}-{{ attr.attribute_id }}"
             data-annual-data-pk="-1" data-is-from-source="" data-source-pk="{{ attr.data_source_id }}"
+            data-attribute-id="{{ attr.attribute_id }}" data-year="{{ year.year }}"
         ></td>
         {% endfor %}
       </tr>
@@ -265,11 +266,13 @@
   </div>
 </div>
 
+
 <script type="text/javascript">
 
   var plan_annual_data = "{{ plan_annual_data }}";
   var all_attr_list = "{{ all_attr_list }}";
   var save_checklist_url = '{% url "pensiondata:save_checklist" %}';
+  var add_plan_annual_url = '{% url "pensiondata:add_plan_annual" %}';
 
   var add_annual_data_url = '{% url "pensiondata:add_plan_annual_attr" %}';
   var edit_annual_data_url = '{% url "pensiondata:edit_plan_annual_attr" %}';

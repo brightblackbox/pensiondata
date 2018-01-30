@@ -110,7 +110,7 @@
 <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
 <!-- Selector Popup -->
-{% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list attr_list=attr_list model_name=opts.model_name %}
+{% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list attr_list=attr_list model_name=opts.model_name is_admin_page=True %}
 
 <!-- control buttons -->
 <div class="control-buttons" style="padding: 10px 0;">

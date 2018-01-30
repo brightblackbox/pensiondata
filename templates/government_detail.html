@@ -5,6 +5,12 @@
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/jquery.dataTables.min.css' %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/colReorder.dataTables.min.css' %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/fixedColumns.dataTables.min.css' %}" />
+  <link rel="stylesheet" type="text/css", href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css" />
+  <style>
+      .ui-datepicker-calendar {
+          display: none;
+      }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -37,7 +43,7 @@
   <a class="start-settings" href="#"><i class="fa fa-cog" aria-hidden="true"></i></a>
 
   <!-- Selector Popup -->
-  {% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list full_attr_list=full_attr_list model_name="plan" %}
+  {% include 'includes/column_selector_popup.html' with datasource_list=datasource_list category_list=category_list full_attr_list=full_attr_list model_name="government" is_admin_page=False %}
   <!-- PlanAnnualAttribute Table -->
   <div class="annual_table_area" style="display:none; overflow: hidden">
     <table class="table table-bordered table-striped" id="table-annual-data">
@@ -86,6 +92,9 @@
   <script src="{% static 'js/libs/jquery.dataTables.min.js' %}"></script>
   <script src="{% static 'js/libs/dataTables.colReorder.min.js' %}"></script>
   <script src="{% static 'js/libs/dataTables.fixedColumns.min.js' %}"></script>
+  <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
+          integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
+          crossorigin="anonymous"></script>
 
   <script type="text/javascript">
     console.log('script start');
@@ -97,9 +106,9 @@
     console.log('JSON parse');
 
   </script>
+  <script type="text/javascript" src="{% static 'js/settings_datatable.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annual_table.js' %}"></script>
   <script type="text/javascript">
     var is_government = true;
-    console.log('G: ', is_government);
   </script>
 {% endblock %}

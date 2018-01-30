@@ -4,7 +4,7 @@ import json
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, DataSource, \
     PlanAnnualAttribute, AttributeCategory, \
-    GovernmentAttribute, GovernmentAnnualAttribute
+    GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup
 
 from .models import GovernmentAttrSummary
 
@@ -409,3 +409,5 @@ class PlanAnnualAttributeAdmin(ImportMixin, admin.ModelAdmin):
 
 admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
 
+admin.site.register(PresentationExport)
+admin.site.register(ExportGroup)

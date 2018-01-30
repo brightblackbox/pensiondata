@@ -22,14 +22,17 @@
 
 					<tr>              
 						<th colspan="5">                                         
-								<form method="get" class="form-inline form-search">
+								<form method="get" class="form-inline form-search index-search">
 									{% csrf_token %}
 										<div>
 											<input id="plan-search-form" name="search" type="text" class="form-control col-md-3" placeholder="Plan Name"{% if search %} value="{{ search }}"{% endif %}>
 											<button type="submit" class="btn btn-small btn-dark btn-primary"><i class="fa fa-search"></i> Search</button>
 										</div>              
 								</form>
-						</th>                  
+                                {% if search %}
+                                    <a href="/" class="search-show-all">Show All Plans</a>
+                                {% endif %}
+						</th>
 					</tr>
 
 					<tr>

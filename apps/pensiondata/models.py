@@ -19,6 +19,10 @@ ATTRIBUTE_TYPE_CHOICES = (
     ('calculated', 'calculated'),
 )
 
+PRESENTATIONS_EXROPT_CHOICES = (
+    ('xlsx', 'xlsx'),
+)
+
 
 class County(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -526,3 +530,36 @@ class State(models.Model):
     def __str__(self):
         return self.name
 
+
+class ExportGroup(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=100, default='Presentation Export')
+    export_type = models.CharField(max_length=30, choices=PRESENTATIONS_EXROPT_CHOICES, default='xlsx')
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return "{name}: {format}".format(name=self.name, format=self.export_type)
+
+
+class PresentationExport(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    export_group = models.ForeignKey(ExportGroup, default=1)
+    plan_field = models.ForeignKey(PlanAttribute, null=True, blank=True)
+    government_field = models.ForeignKey(GovernmentAttribute, null=True, blank=True)
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'presentation_export'
+        unique_together = (
+            ('export_group', 'plan_field'),
+            ('export_group', 'government_field')
+        )
+
+    def __str__(self):
+        name = "{name}: {field} - {order}"
+        field = ''
+        if self.plan_field:
+            field = self.plan_field.name
+        elif self.government_field:
+            field = self.government_field.name
+        return name.format(name=self.export_group.name, field=field, order=self.order)
