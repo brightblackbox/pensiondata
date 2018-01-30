@@ -1,5 +1,7 @@
 $(function () {
 
+    var remove_datepicker_elems = null;
+
     $("#start_year").datepicker({
         changeMonth: false,
         changeYear: true,
@@ -23,7 +25,10 @@ $(function () {
             changeLinkUrl($('.export-file-link'), /&from=[^&]*/, '&from=' + year);
         }
     }).focus(function () {
-        $(".ui-datepicker-prev, .ui-datepicker-next, .ui-datepicker-month").remove();
+        clearInterval(remove_datepicker_elems);
+        remove_datepicker_elems = setInterval(function () {
+            $(".ui-datepicker-prev, .ui-datepicker-next, .ui-datepicker-month").remove();
+        }, 50);
     });
 
     $( "#end_year" ).datepicker({
@@ -48,7 +53,7 @@ $(function () {
 
             changeLinkUrl($('.export-file-link'), /&to=[^&]*/, '&to=' + year);
         }
-    }).focus(function () {
+    }).on('focus', function () {
         $(".ui-datepicker-prev, .ui-datepicker-next, .ui-datepicker-month").remove();
     });
 
