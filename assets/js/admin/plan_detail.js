@@ -296,34 +296,24 @@ $('#table-annual-data td').on("click", function () {
     }
 });
 
+$('#add-modal').on('hidden.bs.modal', function () {
+    $('#attr-selectbox').val('').attr('disabled', false).change();
+    $('#year-selectbox').val('').attr('disabled', false).change();
+    $('#add-new-form .btn-primary').prop('disabled', false);
+    $('#add-new-form button').prop('disabled', false);
+})
+
 $('#table-annual-data td').on("dblclick", function () {
     console.log('double click');
     var annual_data_pk = $(this).data('annual-data-pk');
     if (annual_data_pk !== -1){
         $('.btn-edit-for-modal').click();
     } else {
-        // var attr_id = $(this).data('attribute-id');
-        // var year = $(this).data('year');
-        // $('#attr-selectbox').val(attr_id).attr('disabled', true).change();
-        // $('#year-selectbox').val(year).attr('disabled', true).change();
-        // $('.btn-add-for-modal').click();
-
-        // var data = {
-        //     plan_id: plan_pk,
-        //     year: $(this).data('year'),
-        //     csrfmiddlewaretoken: $("input[name='csrfmiddlewaretoken']").val(),
-        // };
-        // $.ajax({
-        //     type: "POST",
-        //     url: add_plan_annual_url,
-        //     data: data,
-        //     success: function (response) {
-        //         console.log(response);
-        //     },
-        //     error: function (XMLHttpRequest, textStatus, err) {
-        //         console.log(err);
-        //     }
-        // });
+        var attr_id = $(this).data('attribute-id');
+        var year = $(this).data('year');
+        $('#attr-selectbox').val(attr_id).attr('disabled', true).change();
+        $('#year-selectbox').val(year).attr('disabled', true).change();
+        $('.btn-add-for-modal').click();
     }
 });
 
@@ -585,6 +575,8 @@ $('#add-new-form').on('submit', function (e) {
       console.log(resp);
       if(resp.result == 'success'){
         $('#add-new-result').html('Successfully added').css('color','green').show();
+        var td_html = '<span class="annual-value">' + numberWithCommas(value) + '</span>';
+        $('#td-id-' + year + '-' + attr_id).html(td_html).data('annual-data-pk', resp.id);
         // setTimeout(
         //   function()
         //   {

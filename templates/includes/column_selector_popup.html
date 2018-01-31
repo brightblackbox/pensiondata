@@ -40,8 +40,20 @@
           <br>
           {% if not is_admin_page %}
               <h4>Years:</h4>
-              <label>From: <input id="start_year" type="text" value="{{ year_from }}" name="from"></label>
-              <label>To: <input id="end_year" type="text" value="{{ year_to }}" name="to"></label>
+              <label>From:
+                  <select id="start_year" name="from">
+                      {% for y in year_range %}
+                         <option value="{{y}}" {% if year_from == y|stringformat:"s" %}selected="selected"{% endif %}>{{ y }}</option>
+                      {% endfor %}
+                  </select>
+              </label>
+              <label>To:
+                  <select id="end_year" name="to">
+                      {% for y in year_range %}
+                         <option value="{{y}}" {% if year_to == y|stringformat:"s" %}selected="selected"{% endif %}>{{ y }}</option>
+                      {% endfor %}
+                  </select>
+              </label>
               <br><br>
           {% endif %}
           <ul class="list-group column-list attr-list">

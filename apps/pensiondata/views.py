@@ -56,7 +56,7 @@ class PlanListView(ListView):
                 for i in splited_search:
                     table = table.filter(display_name__icontains=i)
             else:
-                table = table.filter(display_name__icontains=search[0])
+                table = table.filter(display_name__icontains=search)
 
             table = PlanTable(table.order_by('display_name'))
 
@@ -76,7 +76,7 @@ class PlanDetailView(DetailView):
     def get_context_data(self, **kwargs):
 
         year_from = self.request.POST.get('from', '')
-        year_to = self.request.POST.get('to', '')
+        year_to = self.request.POST.get('to', '2021')
 
         context = super(PlanDetailView, self).get_context_data(**kwargs)
         plan = self.object
@@ -203,6 +203,7 @@ class PlanDetailView(DetailView):
         context['year_list'] = year_list
         context['year_from'] = year_from
         context['year_to'] = year_to
+        context['year_range'] = range(1932, 2022)
         context['presentations_exports'] = presentations_exports
 
         context['plan_annual_data'] = json.dumps(list(plan_annual_data))
@@ -213,7 +214,8 @@ class PlanDetailView(DetailView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         context = self.get_context_data(**kwargs)
-        return self.render_to_response(context=context)
+        result = self.render_to_response(context=context)
+        return result
 
 
 class GovernmentDetailView(DetailView):
@@ -227,7 +229,7 @@ class GovernmentDetailView(DetailView):
         context = super(GovernmentDetailView, self).get_context_data(**kwargs)
 
         year_from = self.request.POST.get('from', '')
-        year_to = self.request.POST.get('to', '')
+        year_to = self.request.POST.get('to', '2021')
 
         CONTRIB_STATE_EMPL = 1
         CONTRIB_LOCAL_EMPL = 2
@@ -337,6 +339,7 @@ class GovernmentDetailView(DetailView):
         context['year_list'] = year_list
         context['year_from'] = year_from
         context['year_to'] = year_to
+        context['year_range'] = range(1932, 2022)
         context['datasource_list'] = datasource_list
         context['government_annual_data'] = json.dumps(list(government_annual_data))
 
@@ -439,12 +442,13 @@ def add_plan_annual_attr(request):
         post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
         moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=new_plan_annual_attr_obj)
         new_plan_annual_attr_obj.save()
-        moderation.post_save_handler(sender=PlanAnnualAttribute, instance=new_plan_annual_attr_obj, created=True)
+        moderation.post_save_handler(
+            sender=PlanAnnualAttribute, instance=new_plan_annual_attr_obj, created=True, view_able=True)
         post_save.connect(recalculate, sender=PlanAnnualAttribute)
 
         automoderate(new_plan_annual_attr_obj, request.user)
 
-        return JsonResponse({'result': 'success'})
+        return JsonResponse({'result': 'success', 'id': new_plan_annual_attr_obj.id})
     except Exception as e:
         traceback.print_exc()
         return JsonResponse({'result': 'fail', 'msg': 'Something went wrong.'})

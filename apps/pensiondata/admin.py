@@ -140,7 +140,7 @@ class GovernmentAdmin(ModerationAdmin):
         extra_context['category_list'] = category_list
         extra_context['datasource_list'] = datasource_list
         extra_context['year_list'] = year_list
-        extra_context['year_range'] = range(1990, 2020)
+        extra_context['year_range'] = range(1932, 2020)
 
         extra_context['all_attr_list'] = json.dumps(list(all_attr_list))
         extra_context['gov_annual_data'] = json.dumps(list(gov_annual_objs))
@@ -248,13 +248,12 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
         extra_context['category_list'] = category_list
         extra_context['datasource_list'] = datasource_list
         extra_context['year_list'] = year_list
-        extra_context['year_range'] = range(1990, 2020)
+        extra_context['year_range'] = range(1932, 2020)
 
         extra_context['plan_annual_data'] = json.dumps(list(plan_annual_data))
         extra_context['all_attr_list'] = json.dumps(list(all_attr_list))
 
         return super(PlanAdmin, self).change_view(request, object_id, form_url, extra_context)
-
 
 admin.site.register(Plan, PlanAdmin)
 
@@ -411,3 +410,7 @@ admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
 
 admin.site.register(PresentationExport)
 admin.site.register(ExportGroup)
+
+###############################################################################
+# To register new model, you also need to add it to ADMIN_REORDER at settings.
+###############################################################################

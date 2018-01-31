@@ -10,7 +10,8 @@ from django.utils.translation import ugettext as _
 from . import moderation
 from .constants import (MODERATION_STATUS_REJECTED,
                         MODERATION_STATUS_APPROVED,
-                        MODERATION_STATUS_PENDING)
+                        MODERATION_STATUS_PENDING,
+                        MODERATION_STATUS_VIEW_ABLE_PENDING)
 from .diff import get_changes_between_models
 try:
     from .filterspecs import RegisteredContentTypeListFilter
@@ -125,6 +126,9 @@ class ModerationAdmin(admin.ModelAdmin):
         elif status == MODERATION_STATUS_APPROVED:
             return _("Object has been approved by moderator "
                      "and is visible on site")
+        elif status == MODERATION_STATUS_VIEW_ABLE_PENDING:
+            return _("Object is viewable on site, "
+                     "it will be removed if moderator rejects it")
         elif status is None:
             return _("This object is not registered with "
                      "the moderation system.")
@@ -225,3 +229,7 @@ class ModeratedObjectAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ModeratedObject, ModeratedObjectAdmin)
+
+###############################################################################
+# To register new model, you also need to add it to ADMIN_REORDER at settings.
+###############################################################################

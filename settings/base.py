@@ -1,5 +1,4 @@
 import os
-from decouple import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,6 +20,27 @@ INTERNAL_IPS = ['0.0.0.0']
 # Application definition
 os.sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
+ADMIN_REORDER = (
+    # Reorder app models
+    {'app': 'auth', 'models': ('auth.Groups', 'auth.Users')},
+    {'app': 'moderation', 'models': ('moderation.ModeratedObject',)},
+    {'app': 'pensiondata', 'models': (
+        'pensiondata.AttributeCategory',
+        'pensiondata.County',
+        'pensiondata.DataSource',
+        'pensiondata.GovernmentAttribute',
+        'pensiondata.GovernmentType',
+        'pensiondata.State',
+        'pensiondata.Government',
+        'pensiondata.PlanAnnualAttribute',
+        'pensiondata.PlanAttribute',
+        'pensiondata.Plan',
+        'pensiondata.ExportGroup',
+        'pensiondata.PresentationExport',
+    )},
+    {'app': 'sites', 'models': ('sites.Site',)},
+)
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -32,6 +52,7 @@ INSTALLED_APPS = [
 
     'django.contrib.sites',
 
+    'admin_reorder',
     'nested_admin',
     'bootstrap3',
     'django_tables2',
@@ -55,6 +76,7 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
+    'admin_reorder.middleware.ModelAdminReorder',
     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 

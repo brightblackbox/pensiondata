@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from . import moderation
-from .constants import MODERATION_STATUS_APPROVED
+from .constants import MODERATION_STATUS_APPROVED, MODERATION_STATUS_VIEW_ABLE_PENDING
 from .queryset import ModeratedObjectQuerySet
 from .utils import django_17, django_18, django_110
 
@@ -51,7 +51,7 @@ class ModerationObjectsManager(Manager):
         # }
 
         only_approved = {
-            '_relation_object__status': MODERATION_STATUS_APPROVED,
+            '_relation_object__status__in': [MODERATION_STATUS_APPROVED, MODERATION_STATUS_VIEW_ABLE_PENDING],
         }
 
         # return queryset.filter(Q(**only_no_relation_objects) | Q(**only_ready)).distinct()

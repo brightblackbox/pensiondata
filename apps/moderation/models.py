@@ -19,7 +19,8 @@ from .constants import (MODERATION_READY_STATE,
 
                         MODERATION_STATUS_REJECTED,
                         MODERATION_STATUS_APPROVED,
-                        MODERATION_STATUS_PENDING)
+                        MODERATION_STATUS_PENDING,
+                        MODERATION_STATUS_VIEW_ABLE_PENDING)
 from .diff import get_changes_between_models
 from .fields import SerializedObjectField
 from .managers import ModeratedObjectManager
@@ -39,6 +40,7 @@ STATUS_CHOICES = Choices(
     (MODERATION_STATUS_REJECTED, 'rejected', _("Rejected")),
     (MODERATION_STATUS_APPROVED, 'approved', _("Approved")),
     (MODERATION_STATUS_PENDING, 'pending', _("Pending")),
+    (MODERATION_STATUS_VIEW_ABLE_PENDING, 'views_able_pending', _("View Able Pending")),
 )
 
 

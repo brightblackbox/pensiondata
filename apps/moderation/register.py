@@ -8,7 +8,8 @@ from django.utils.six import with_metaclass
 
 from .constants import (MODERATION_DRAFT_STATE, MODERATION_ADD_STATE, MODERATION_DELETE_STATE,
                         MODERATION_STATUS_APPROVED,
-                        MODERATION_STATUS_PENDING)
+                        MODERATION_STATUS_PENDING,
+                        MODERATION_STATUS_VIEW_ABLE_PENDING)
 from .models import ModeratedObject, STATUS_CHOICES
 from .moderator import GenericModerator
 from .utils import django_110
@@ -386,7 +387,10 @@ class ModerationManager(with_metaclass(ModerationManagerSingleton, object)):
 
         if kwargs['created']:
             old_object = sender._default_unmoderated_manager.get(pk=pk)
-            moderated_obj = ModeratedObject(content_object=old_object)
+            kw = dict(content_object=old_object)
+            if kwargs.get('view_able', False):
+                kw['status'] = MODERATION_STATUS_VIEW_ABLE_PENDING
+            moderated_obj = ModeratedObject(**kw)
             if not moderator.visible_until_rejected:
                 # Hide it by placing in draft state
                 moderated_obj.state = MODERATION_ADD_STATE

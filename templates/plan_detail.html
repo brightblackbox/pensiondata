@@ -6,12 +6,6 @@
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/jquery.dataTables.min.css' %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/colReorder.dataTables.min.css' %}" />
   <link rel="stylesheet" type="text/css" href="{% static 'css/libs/fixedColumns.dataTables.min.css' %}" />
-  <link rel="stylesheet" type="text/css", href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css" />
-  <style>
-      .ui-datepicker-calendar, .ui-datepicker-prev, .ui-datepicker-next, .ui-datepicker-month {
-          display: none;
-      }
-  </style>
 {% endblock %}
 
 {% block content %}
@@ -101,9 +95,6 @@ Presentations export:
   <script src="{% static 'js/libs/jquery.dataTables.min.js' %}"></script>
   <script src="{% static 'js/libs/dataTables.colReorder.min.js' %}"></script>
   <script src="{% static 'js/libs/dataTables.fixedColumns.min.js' %}"></script>
-  <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"
-          integrity="sha256-eGE6blurk5sHj+rmkfsGYeKyZx3M4bG+ZlFyA7Kns7E="
-          crossorigin="anonymous"></script>
 
   <script type="text/javascript">
     console.log('script start');
@@ -115,30 +106,7 @@ Presentations export:
 
     console.log('JSON parse');
 
-    function changeLinkUrl(links, replace, insert) {
-        if (!links.length) {return;}
-        var regex = new RegExp(replace, 'g');
-        links.each(function () {
-            var url = $(this).attr('href')
-            if (url.match(regex) !== null) {
-                url = url.replace(regex, insert);
-            } else {
-                url += insert;
-            }
-            $(this).attr('href', url);
-        });
-    }
-
-    $('#exportFile').change(function() {
-        var links = $('.export-file-link');
-        if ($(this).is(":checked")) {
-            changeLinkUrl(links, '&fields=selected', '&fields=all');
-        } else {
-            changeLinkUrl(links, '&fields=all', '&fields=selected');
-        }
-    });
-
   </script>
-  <script type="text/javascript" src="{% static 'js/settings_datatable.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/detail_actions.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annual_table.js' %}"></script>
 {% endblock %}
