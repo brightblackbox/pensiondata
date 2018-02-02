@@ -128,7 +128,7 @@ class PlanDetailView(DetailView):
                                     'plan_attribute__multiplier',
                                     'plan_attribute__data_source__id',
                                     'plan_attribute__attribute_category__id',
-                                    'attribute_value') \
+                                    'attribute_value',) \
                             .annotate(
                                 attribute_id=F('plan_attribute__id'),
                                 multiplier=F('plan_attribute__multiplier'),
@@ -275,7 +275,8 @@ class GovernmentDetailView(DetailView):
                 'government_attribute__multiplier',
                 'government_attribute__data_source__id',
                 'government_attribute__attribute_category__id',
-                'attribute_value').\
+                'attribute_value',
+                'government_attribute__datatype').\
             annotate(
                 attribute_id=F('government_attribute__id'),
                 multiplier=F('government_attribute__multiplier'),
