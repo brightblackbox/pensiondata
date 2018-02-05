@@ -23,6 +23,16 @@ PRESENTATIONS_EXROPT_CHOICES = (
     ('xlsx', 'xlsx'),
 )
 
+ATTRIBUTE_DATATYPES_CHOICES = {
+    ('real', 'real'),
+    ('int', 'int'),
+    ('text', 'text'),
+    ('percentage', 'percentage'),
+    ('percentage2', 'percentage2'),
+    ('percentage4', 'percentage4'),
+    ('yesno', 'yesno'),
+}
+
 
 class County(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -95,7 +105,7 @@ class GovernmentAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256, null=True, blank=True)
     data_source = models.ForeignKey('DataSource', models.DO_NOTHING, blank=True, null=True)
-    datatype = models.CharField(max_length=256, null=True, blank=True)
+    datatype = models.CharField(max_length=256, choices=ATTRIBUTE_DATATYPES_CHOICES, null=True, blank=True)
     attribute_category = models.ForeignKey('AttributeCategory', models.DO_NOTHING, blank=True, null=True)
     line_item_code = models.CharField(max_length=256, null=True, blank=True)
     display_order = models.IntegerField(null=True, blank=True)

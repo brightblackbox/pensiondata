@@ -1,4 +1,5 @@
 var datatable = null;
+var is_government = false;
 
 // display popup for selectors
 $(".start-settings").on("click", function(e) {
@@ -87,7 +88,13 @@ function initialize_annual_table() {
 
     $.each(plan_annual_data, function (i, annual_item) {
       var $td_id = 'td-id-' + annual_item.year + '-' + annual_item.attribute_id;
-      var $td_html = '<span class="annual-value">' + format_annual_value(annual_item.attribute_value, annual_item.multiplier) + '</span>';
+      if (is_government === true) {
+          var value = multiply_value(annual_item.attribute_value, annual_item.multiplier);
+          value = type_converters[annual_item.government_attribute__datatype](value);
+      } else {
+          var value = format_annual_value(annual_item.attribute_value, annual_item.multiplier);
+      }
+      var $td_html = '<span class="annual-value">' + value + '</span>';
       $('#' + $td_id).html($td_html).data('annual-data-pk', annual_item.id);
     });
 
@@ -188,14 +195,24 @@ function numberWithCommas(x) {
 /**
  * @v: plan_annual_attribute.value
  * @m: plan_attribute.multiplier
- * @result: $1,234,567 or 0
+ * @returns {number}
  */
-function format_annual_value(v, m){
+function multiply_value(v, m) {
     if (v === null || m ===null){
         return 0;
     }
+    return m * v;
+}
 
-    money = v * m;
+
+/**
+ * @v: plan_annual_attribute.value
+ * @m: plan_attribute.multiplier
+ * @result: $1,234,567 or 0
+ */
+function format_annual_value(v, m){
+    var money = multiply_value(v, m);
+
     if (money > 0){
         return '$'+ numberWithCommas(money);
     }else if (money < 0){
