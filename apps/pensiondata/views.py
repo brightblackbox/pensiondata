@@ -185,7 +185,7 @@ class PlanDetailView(DetailView):
         selected_data_sources = list(set(selected_data_sources))
 
         # fetching the data source list and marking selected based on selected attribute list
-        datasource_list = DataSource.objects.all().annotate( \
+        datasource_list = DataSource.objects.all().exclude(private=True).annotate( \
             # 'selected' is helpful in checking the options in the checkboxes
             selected=Case(
                 When(id__in=selected_data_sources, then=Value(True)),
@@ -326,7 +326,7 @@ class GovernmentDetailView(DetailView):
         # removing any duplicates from the list
         selected_data_sources = list(set(selected_data_sources))
 
-        datasource_list = DataSource.objects.all().annotate( \
+        datasource_list = DataSource.objects.all().exclude(private=True).annotate( \
             # 'selected' is helpful in checking the options in the checkboxes
             selected=Case(
                 When(id__in=selected_data_sources, then=Value(True)),
