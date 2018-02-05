@@ -3,6 +3,7 @@ FROM heroku/heroku:16
 
 RUN apt-get update
 RUN apt-get -y install postgresql-client
+RUN apt-get -y install vim
 
 ENV DJANGO_SETTINGS_MODULE=settings.prod
 

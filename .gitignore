@@ -31,3 +31,4 @@ workspace.xml
 
 /my_work/
 .env
+config.env
