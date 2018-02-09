@@ -41,6 +41,7 @@ ADMIN_REORDER = (
         'pensiondata.Plan',
         'pensiondata.ExportGroup',
         'pensiondata.PresentationExport',
+        'pensiondata.GenerateCalculatedAttributeData',
     )},
     {'app': 'sites', 'models': ('sites.Site',)},
 )

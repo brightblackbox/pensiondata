@@ -1,6 +1,8 @@
+import re
 from django.contrib import admin
 from django.db.models import F, Count
 import json
+from django.db.models.query import QuerySet
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, DataSource, \
     PlanAnnualAttribute, AttributeCategory, \
@@ -371,7 +373,119 @@ class PlanAttributeAdmin(admin.ModelAdmin):
         return super(PlanAttributeAdmin, self).add_view(request, form_url, extra_context)
 
 
+class GenerateCalculatedAttributeData(PlanAttribute):
+    class Meta:
+        proxy = True
+        verbose_name_plural = "Generate Calculated Attribute Data"
+
+
 admin.site.register(PlanAttribute, PlanAttributeAdmin)
+
+
+def calculate(modeladmin, request, queryset):
+    """
+    This function is used for parsing string like:
+
+    #611##-##587##*##%2%#
+    (Total Number of Members - Total Number of actives * 2)
+    In this format field calculated_rule is stared in database.
+    +,-,/,* - math operations,
+    #611# - id of Plan Attribute,
+    %2% - digit
+
+    Note, that position of ID's Plan Attribute could change!
+
+    We convert string #611##-##587##*##%2%#
+    to list ['611', '-', '587', '*', '%2%']
+
+    Get indexies of ID's Plan Attribute - [0,2]
+
+
+
+    """
+    dict_id_plan_attributes = {}
+    for qs in queryset:
+        print(qs.id)
+        calculated_rule = qs.calculated_rule
+        print(calculated_rule)
+        calculated_rule = re.sub('[#]', '', calculated_rule)
+        parsed_list = re.findall(r"\%\d+\%|\d+|[\s+-/*]", calculated_rule)
+
+
+        list_data = []
+        list_index_queryset = []
+
+        for item in parsed_list:
+            if item.isdigit():
+                plan_annual_attribute = PlanAnnualAttribute.objects.filter(plan_attribute_id=int(item))
+                list_data.append(plan_annual_attribute)
+                list_index_queryset.append(parsed_list.index(item))
+            else:
+                list_data.append(item)
+
+        print(parsed_list)
+
+        # !!!important ===>
+        print(list_index_queryset)
+        list_result_string = []
+
+        for x in list_data[list_index_queryset[0]]:
+            dict_data = {}
+            year = x.year
+            plan = x.plan
+            attribute_value = x.attribute_value
+            dict_data[list_index_queryset[0]] = {
+                        "attribute_value": attribute_value,
+                        "plan": plan,
+                        "year": year
+            }
+
+            #print(dict_data)
+
+            for y in list_index_queryset[1:]:
+                for z in list_data[y]:
+                    if (z.year == year) and (z.plan == plan):
+
+                        dict_data[y] = {
+                            "attribute_value": z.attribute_value,
+                            "plan": z.plan,
+                            "year": z.year
+                        }
+                if list(dict_data.keys()) == list_index_queryset:
+                    #print(dict_data)
+                    result_string = ""
+                    for t in parsed_list:
+                        if parsed_list.index(t) in list_index_queryset:
+                            attribute_value = dict_data.get(parsed_list.index(t)).get("attribute_value")
+                            # print(attribute_value)
+                            if not attribute_value:
+                                result_string = ""
+                                break
+                            result_string = result_string + attribute_value
+                        elif "%" in t:
+                            t = re.findall(r"\d+", t)[0]
+                            result_string = result_string + t
+                        else:
+                            result_string = result_string + t
+                    print(result_string)
+
+                    if result_string:
+                        result = eval(result_string)
+                        list_result_string.append(result_string)
+        print(len(list_result_string))
+
+
+calculate.short_description = "Calculate selected items"
+
+
+class PlanAttributeCalculatedAdmin(PlanAttributeAdmin):
+    actions = [calculate]
+
+    def get_queryset(self, request):
+        return self.model.objects.filter(attribute_type='calculated')
+
+
+admin.site.register(GenerateCalculatedAttributeData, PlanAttributeCalculatedAdmin)
 
 
 class AttributeCategoryAdmin(admin.ModelAdmin):
