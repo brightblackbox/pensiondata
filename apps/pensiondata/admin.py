@@ -401,16 +401,11 @@ def calculate(modeladmin, request, queryset):
     Get indexies of ID's Plan Attribute - [0,2]
 
 
-
     """
-    dict_id_plan_attributes = {}
     for qs in queryset:
-        print(qs.id)
         calculated_rule = qs.calculated_rule
-        print(calculated_rule)
         calculated_rule = re.sub('[#]', '', calculated_rule)
         parsed_list = re.findall(r"\%\d+\%|\d+|[\s+-/*]", calculated_rule)
-
 
         list_data = []
         list_index_queryset = []
@@ -423,12 +418,6 @@ def calculate(modeladmin, request, queryset):
             else:
                 list_data.append(item)
 
-        print(parsed_list)
-
-        # !!!important ===>
-        print(list_index_queryset)
-        list_result_string = []
-
         for x in list_data[list_index_queryset[0]]:
             dict_data = {}
             year = x.year
@@ -440,8 +429,6 @@ def calculate(modeladmin, request, queryset):
                         "year": year
             }
 
-            #print(dict_data)
-
             for y in list_index_queryset[1:]:
                 for z in list_data[y]:
                     if (z.year == year) and (z.plan == plan):
@@ -452,12 +439,10 @@ def calculate(modeladmin, request, queryset):
                             "year": z.year
                         }
                 if list(dict_data.keys()) == list_index_queryset:
-                    #print(dict_data)
                     result_string = ""
                     for t in parsed_list:
                         if parsed_list.index(t) in list_index_queryset:
                             attribute_value = dict_data.get(parsed_list.index(t)).get("attribute_value")
-                            # print(attribute_value)
                             if not attribute_value:
                                 result_string = ""
                                 break
@@ -467,12 +452,12 @@ def calculate(modeladmin, request, queryset):
                             result_string = result_string + t
                         else:
                             result_string = result_string + t
-                    print(result_string)
 
                     if result_string:
                         result = eval(result_string)
-                        list_result_string.append(result_string)
-        print(len(list_result_string))
+                        PlanAnnualAttribute.objects.get_or_create(
+                            plan=plan, year=year, plan_attribute_id=qs.id, attribute_value=result
+                        )
 
 
 calculate.short_description = "Calculate selected items"
