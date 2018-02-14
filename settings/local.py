@@ -51,6 +51,13 @@ if IS_TESTING:
 
 # Celery
 
+# my local triubleshot - http://docs.celeryproject.org/en/latest/getting-started/brokers/rabbitmq.html
+# BROKER_URL = 'amqp://admin:mypass@localhost:5672/rabbit'
+# CELERY_RESULT_BACKEND = 'amqp://admin:mypass@localhost:5672/rabbit'
+# sudo rabbitmqctl add_user myuser mypassword
+# sudo rabbitmqctl add_vhost myvhost
+# sudo rabbitmqctl set_user_tags myuser mytag
+# sudo rabbitmqctl set_permissions -p myvhost myuser ".*" ".*" ".*"
 BROKER_URL = 'amqp://admin:mypass@rabbit//'
 CELERY_RESULT_BACKEND = 'amqp://admin:mypass@rabbit//'
 CELERY_ACCEPT_CONTENT = ['json']
