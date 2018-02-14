@@ -358,10 +358,8 @@ def delete_plan_annual_attr(request):
     attr_id = request.POST.get('attr_id')
     try:
         obj = PlanAnnualAttribute.objects.get(id=attr_id)
-        # obj.delete()
+        obj.delete()
         moderation.pre_delete_handler(sender=PlanAnnualAttribute, instance=obj)
-        moderation.post_delete_handler(sender=PlanAnnualAttribute, instance=obj)
-        automoderate(obj, request.user)
 
         return JsonResponse({'result': 'success'})
     except PlanAnnualAttribute.DoesNotExist:
@@ -460,10 +458,9 @@ def delete_gov_annual_attr(request):
     attr_id = request.POST.get('attr_id')
     try:
         obj = GovernmentAnnualAttribute.objects.get(id=attr_id)
-        # obj.delete()
+        obj.delete()
         moderation.pre_delete_handler(sender=GovernmentAnnualAttribute, instance=obj)
-        moderation.post_delete_handler(sender=GovernmentAnnualAttribute, instance=obj)
-        automoderate(obj, request.user)
+
 
         return JsonResponse({'result': 'success'})
     except GovernmentAnnualAttribute.DoesNotExist:
