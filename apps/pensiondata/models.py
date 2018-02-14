@@ -58,7 +58,7 @@ class DataSource(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True)
     trust_level = models.IntegerField()
-    private = models.BooleanField(default=False)
+    private = models.BooleanField(default=False, blank=True)
 
     class Meta:
         managed = True
