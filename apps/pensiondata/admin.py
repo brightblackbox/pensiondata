@@ -9,6 +9,7 @@ from .models import Plan, Government, County, State, GovernmentType, PlanAttribu
     GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup
 
 from .models import GovernmentAttrSummary
+from .tasks import generate_calculated_fields, generate_calculated_fields_null
 
 
 from moderation.admin import ModerationAdmin
@@ -402,69 +403,21 @@ def calculate(modeladmin, request, queryset):
 
 
     """
-    for qs in queryset:
-        calculated_rule = qs.calculated_rule
-        calculated_rule = re.sub('[#]', '', calculated_rule)
-        parsed_list = re.findall(r"\%\d+\%|\d+|[\s+-/*]", calculated_rule)
+    list_ids = [qs.id for qs in queryset]
+    generate_calculated_fields.delay(list_ids=list_ids)
 
-        list_data = []
-        list_index_queryset = []
 
-        for item in parsed_list:
-            if item.isdigit():
-                plan_annual_attribute = PlanAnnualAttribute.objects.filter(plan_attribute_id=int(item))
-                list_data.append(plan_annual_attribute)
-                list_index_queryset.append(parsed_list.index(item))
-            else:
-                list_data.append(item)
-
-        for x in list_data[list_index_queryset[0]]:
-            dict_data = {}
-            year = x.year
-            plan = x.plan
-            attribute_value = x.attribute_value
-            dict_data[list_index_queryset[0]] = {
-                        "attribute_value": attribute_value,
-                        "plan": plan,
-                        "year": year
-            }
-
-            for y in list_index_queryset[1:]:
-                for z in list_data[y]:
-                    if (z.year == year) and (z.plan == plan):
-
-                        dict_data[y] = {
-                            "attribute_value": z.attribute_value,
-                            "plan": z.plan,
-                            "year": z.year
-                        }
-                if list(dict_data.keys()) == list_index_queryset:
-                    result_string = ""
-                    for t in parsed_list:
-                        if parsed_list.index(t) in list_index_queryset:
-                            attribute_value = dict_data.get(parsed_list.index(t)).get("attribute_value")
-                            if not attribute_value:
-                                result_string = ""
-                                break
-                            result_string = result_string + attribute_value
-                        elif "%" in t:
-                            t = re.findall(r"\d+", t)[0]
-                            result_string = result_string + t
-                        else:
-                            result_string = result_string + t
-
-                    if result_string:
-                        result = eval(result_string)
-                        PlanAnnualAttribute.objects.get_or_create(
-                            plan=plan, year=year, plan_attribute_id=qs.id, attribute_value=result
-                        )
+def null_recalculate(modeladmin, request, queryset):
+    list_ids = [qs.id for qs in queryset]
+    generate_calculated_fields_null.delay(list_ids=list_ids)
 
 
 calculate.short_description = "Calculate selected items"
+null_recalculate.short_description = "ReCalculate with NULL selected items"
 
 
 class PlanAttributeCalculatedAdmin(PlanAttributeAdmin):
-    actions = [calculate]
+    actions = [calculate, null_recalculate]
 
     def get_queryset(self, request):
         return self.model.objects.filter(attribute_type='calculated')

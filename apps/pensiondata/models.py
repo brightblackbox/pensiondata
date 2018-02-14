@@ -414,6 +414,9 @@ class PlanAnnualAttribute(models.Model):
                         plan_attribute__id=pk
                     ).attribute_value
 
+                    if not item_val:
+                        item_val = ""
+
                     calculated_rule += item_val
                 except PlanAnnualAttribute.DoesNotExist:
                     # print('Invalid: no operand')

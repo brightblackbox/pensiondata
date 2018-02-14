@@ -1,6 +1,112 @@
-from celery import shared_task, current_task
+import re
+from celery import shared_task, current_task, task
 
 from .models import PlanAnnualAttribute, PlanAttribute, Plan, DataSource
+
+
+def parse_calculate_rule_string(qs, attribute_value=False):
+    calculated_rule = qs.calculated_rule
+    calculated_rule = re.sub('[#]', '', calculated_rule)
+    parsed_list = re.findall(r"\%\d+\%|\d+|[\s+-/*]", calculated_rule)
+
+    list_data = []
+    list_index_queryset = []
+
+    for item in parsed_list:
+        if item.isdigit():
+            if not attribute_value:
+                plan_annual_attribute = PlanAnnualAttribute.objects.filter(plan_attribute_id=int(item))
+            else:
+                plan_annual_attribute = PlanAnnualAttribute.objects.filter(
+                    plan_attribute_id=int(item), attribute_value=None)
+            list_data.append(plan_annual_attribute)
+            list_index_queryset.append(parsed_list.index(item))
+        else:
+            list_data.append(item)
+
+    list_all_parsed_digits = []
+    for it in parsed_list:
+        for letter in it:
+            if any(char.isdigit() for char in letter):
+                list_all_parsed_digits.append(it)
+    list_all_parsed_digits = list(set(list_all_parsed_digits))
+
+    return list_data, list_index_queryset, parsed_list, list_all_parsed_digits
+
+
+def get_result_string(parsed_list, list_index_queryset, dict_data, plan, year, qs):
+    result_string = ""
+    for t in parsed_list:
+        if parsed_list.index(t) in list_index_queryset:
+            attribute_value = dict_data.get(parsed_list.index(t)).get("attribute_value")
+            if not attribute_value:
+                attribute_value = ""
+                result_string = result_string + attribute_value
+            result_string = result_string + attribute_value
+        elif "%" in t:
+            t = re.findall(r"\d+", t)[0]
+            result_string = result_string + t
+        else:
+            result_string = result_string + t
+    return result_string
+
+
+def parse_list_data(x, qs, list_data, list_index_queryset, parsed_list, list_all_parsed_digits):
+    dict_data = {}
+    year = x.year
+    plan = x.plan
+    attribute_value = x.attribute_value
+    dict_data[list_index_queryset[0]] = {
+        "attribute_value": attribute_value,
+        "plan": plan,
+        "year": year
+    }
+
+    for y in list_index_queryset[1:]:
+        for z in list_data[y]:
+            if (z.year == year) and (z.plan == plan):
+                dict_data[y] = {
+                    "attribute_value": z.attribute_value,
+                    "plan": z.plan,
+                    "year": z.year
+                }
+        if list(dict_data.keys()) == list_index_queryset:
+            result_string = get_result_string(parsed_list, list_index_queryset, dict_data, plan, year, qs)
+            total_digits = re.findall('\d+', result_string)
+            try:
+                result = eval(result_string)
+            except SyntaxError:
+                result = 0
+            if PlanAnnualAttribute.objects.filter(plan=plan, year=year, plan_attribute_id=qs.id).exists():
+                new = PlanAnnualAttribute.objects.get(
+                    plan=plan, year=year, plan_attribute_id=qs.id)
+                new.attribute_value = result
+                new.save()
+            else:
+                PlanAnnualAttribute.objects.get_or_create(
+                    plan=plan, year=year, plan_attribute_id=qs.id)
+
+
+@shared_task
+def generate_calculated_fields(list_ids):
+    queryset = PlanAttribute.objects.filter(id__in=list_ids)
+    print("in task")
+    print(queryset)
+    for qs in queryset:
+        list_data, list_index_queryset, parsed_list, list_all_parsed_digits = parse_calculate_rule_string(qs=qs)
+        print(list_data, list_index_queryset, parsed_list, list_all_parsed_digits)
+        for x in list_data[list_index_queryset[0]]:
+            parse_list_data(x, qs, list_data, list_index_queryset, parsed_list, list_all_parsed_digits)
+
+
+@shared_task
+def generate_calculated_fields_null(list_ids):
+    queryset = PlanAttribute.objects.filter(id__in=list_ids)
+    for qs in queryset:
+        list_data, list_index_queryset, parsed_list, list_all_parsed_digits = parse_calculate_rule_string(
+            qs=qs, attribute_value=True)
+        for x in list_data[list_index_queryset[0]]:
+            parse_list_data(x, qs, list_data, list_index_queryset, parsed_list, list_all_parsed_digits)
 
 
 @shared_task
