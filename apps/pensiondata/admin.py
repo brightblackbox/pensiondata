@@ -129,7 +129,7 @@ class GovernmentAdmin(ModerationAdmin):
             return super(GovernmentAdmin, self).change_view(request, object_id, form_url, extra_context)
 
         category_list = AttributeCategory.objects.order_by('name')
-        datasource_list = DataSource.objects.order_by('name').exclude(private=True)
+        datasource_list = DataSource.objects.order_by('name')
         year_list = gov_annual_objs.order_by('year').values('year').distinct()
 
         attr_id_list = gov_annual_objs.values_list('government_attribute__id', flat=True).distinct()
@@ -194,7 +194,7 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
         #     .select_related('attribute_category', 'data_source').distinct()
 
         category_list = AttributeCategory.objects.order_by('name')
-        datasource_list = DataSource.objects.order_by('name').exclude(private=True)
+        datasource_list = DataSource.objects.order_by('name')
 
         plan_annual_objs = PlanAnnualAttribute.objects \
             .filter(plan=plan) \
