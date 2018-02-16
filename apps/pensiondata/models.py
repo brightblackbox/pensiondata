@@ -433,7 +433,7 @@ class PlanAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
     name = models.CharField(max_length=256, unique=True, null=True, blank=True)
     data_source = models.ForeignKey('DataSource', models.DO_NOTHING, null=True, blank=True)
-    datatype = models.CharField(max_length=256, null=True, blank=True)
+    datatype = models.CharField(max_length=256, choices=SORTED_ATTRIBUTE_DATATYPES_CHOICES, null=True, blank=True)
     attribute_category = models.ForeignKey('AttributeCategory', models.DO_NOTHING, null=True, blank=True)
     line_item_code = models.CharField(max_length=256)
     display_order = models.IntegerField(null=True, blank=True)
