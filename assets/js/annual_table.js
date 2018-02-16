@@ -94,7 +94,13 @@ function initialize_annual_table() {
       } else {
           var value = format_annual_value(annual_item.attribute_value, annual_item.multiplier);
       }
-      var $td_html = '<span class="annual-value">' + value + '</span>';
+      // annual_item.category_id == "362" is file links Attribute category for Plan Attribute
+      if (annual_item.category_id == "362"){
+          var $td_html = '<span class="annual-value"> <a href="'+ (annual_item.attribute_value) + '" target="_blank" > <i class="fa fa-folder" aria-hidden="true"></i> </a> </span>';
+      } else {
+          var $td_html = '<span class="annual-value">' + value + '</span>';
+      }
+
       $('#' + $td_id).html($td_html).data('annual-data-pk', annual_item.id);
     });
 
