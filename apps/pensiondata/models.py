@@ -32,6 +32,8 @@ ATTRIBUTE_DATATYPES_CHOICES = (
     ('percentage2', 'percentage2'),
     ('percentage4', 'percentage4'),
     ('yesno', 'yesno'),
+    ('shortdate', 'shortdate')
+
 )
 
 SORTED_ATTRIBUTE_DATATYPES_CHOICES = sorted(

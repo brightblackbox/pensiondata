@@ -2,6 +2,11 @@ var type_converters = {
     '': convertToText,
     'real': convertToReal,
     'int': convertToInt,
+    'bigint': convertToInt,
+    'varchar': convertToText,
+    '#N/A': convertToText,
+    'date': convertToDate,
+    'shortdate': convertToDate,
     'int_separated3': convertToInt3,
     'text': convertToText,
     'percentage': convertToPercentage,
@@ -54,7 +59,18 @@ function convertToInt3(value) {
 
 
 function convertToText(value) {
+    if (typeof (value) != 'string'){
+        return '';
+    }
     return value.toString();
+}
+
+function convertToDate(value) {
+    var s = value.toString();
+    var mounth = s.slice(5,7);
+    var day = s.slice(8,10);
+    var year = s.slice(0,4);
+    return mounth + '/' + day + '/' + year;
 }
 
 function convertToPercentage(value) {

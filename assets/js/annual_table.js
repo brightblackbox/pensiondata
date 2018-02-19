@@ -88,12 +88,36 @@ function initialize_annual_table() {
 
     $.each(plan_annual_data, function (i, annual_item) {
       var $td_id = 'td-id-' + annual_item.year + '-' + annual_item.attribute_id;
+      var arr_special_datatype = ['varchar', 'yesno', 'date', 'shortdate', 'text', '#N/A'];
       if (is_government === true) {
-          var value = multiply_value(annual_item.attribute_value, annual_item.multiplier);
-          value = type_converters[annual_item.government_attribute__datatype](value);
+          if (arr_special_datatype.indexOf(annual_item.government_attribute__datatype) > -1){
+              var value = type_converters[annual_item.government_attribute__datatype](annual_item.attribute_value)
+          }
+          else {
+              var value = multiply_value(annual_item.attribute_value, annual_item.multiplier);
+              value = type_converters[annual_item.government_attribute__datatype](value);
+          }
       } else {
-          var value = format_annual_value(annual_item.attribute_value, annual_item.multiplier);
+          if (arr_special_datatype.indexOf(annual_item.plan_attribute__datatype) > -1){
+              var value = type_converters[annual_item.plan_attribute__datatype](annual_item.attribute_value)
+          }
+          else {
+              var value = multiply_value(annual_item.attribute_value, annual_item.multiplier);
+              value = type_converters[annual_item.plan_attribute__datatype](value);
+          }
       }
+      // if (is_government === true) {
+      //     var value = multiply_value(annual_item.attribute_value, annual_item.multiplier);
+      //     value = type_converters[annual_item.government_attribute__datatype](value);
+      // } else {
+      //     // if (annual_item.plan_attribute__datatype == 'date' || annual_item.plan_attribute__datatype == 'shortdate' ){
+      //     //     var value = type_converters[annual_item.plan_attribute__datatype](annual_item.attribute_value)
+      //     // } else {
+      //     //     var value = format_annual_value(annual_item.attribute_value, annual_item.multiplier);
+      //     // }
+      //     var value = format_annual_value(annual_item.attribute_value, annual_item.multiplier);
+      // }
+
       // annual_item.category_id == "362" is file links Attribute category for Plan Attribute
       if (annual_item.category_id == "362"){
           var $td_html = '<span class="annual-value"> <a href="'+ (annual_item.attribute_value) + '" target="_blank" > <i class="fa fa-folder" aria-hidden="true"></i> </a> </span>';
