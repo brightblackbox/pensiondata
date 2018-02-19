@@ -377,7 +377,7 @@ class PlanAttributeAdmin(admin.ModelAdmin):
 class GenerateCalculatedAttributeData(PlanAttribute):
     class Meta:
         proxy = True
-        verbose_name_plural = "Generate Calculated Attribute Data"
+        verbose_name = "Calculated Attribute"
 
 
 admin.site.register(PlanAttribute, PlanAttributeAdmin)
