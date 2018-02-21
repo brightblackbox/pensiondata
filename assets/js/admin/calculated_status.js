@@ -16,7 +16,6 @@ if (current_url.indexOf(sub_url) !== -1) {
                 contentType: 'application/json',
                 url: "/pension/plan_calculated_status?plan_attribute_id=" + myid,
                 success: function (data) {
-                    console.log(data);
                     var status = data.status;
                     var name = data.name;
 
