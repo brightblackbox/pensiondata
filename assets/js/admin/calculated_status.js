@@ -1,17 +1,13 @@
 
-console.log('in my script');
-
 var current_url = window.location.href;
-console.log(current_url);
 
 var sub_url = "generatecalculatedattributedata"
 
 if (current_url.indexOf(sub_url) !== -1) {
-    console.log("yes! in generatecalculatedattributedata");
+
 
     $("[name ='_selected_action']").each(function(){
         var myid = $(this).val();
-        console.log("myid " + myid);
 
         setInterval(function() {
 
