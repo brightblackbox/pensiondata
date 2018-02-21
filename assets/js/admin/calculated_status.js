@@ -21,7 +21,6 @@ if (current_url.indexOf(sub_url) !== -1) {
                     var name = data.name;
 
                     if (status == "in progress") {
-                        console.log(myid + " - in progress");
                         $(".status_in_progress").remove();
                         $("#status_calculated").append("<p class='status_in_progress'>" + name + " -  in progress" + "</p>");
                     }
@@ -34,7 +33,7 @@ if (current_url.indexOf(sub_url) !== -1) {
                     // }
                 }
             });
-        }, 7000);
+        }, 10000);
     });
 }
 
