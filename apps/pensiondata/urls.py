@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from .views import edit_plan_annual_attr, delete_plan_annual_attr, add_plan_annual_attr, save_checklist, \
-                    edit_gov_annual_attr, delete_gov_annual_attr, add_gov_annual_attr
+                    edit_gov_annual_attr, delete_gov_annual_attr, add_gov_annual_attr,plan_calculated_status
 
 
 app_name = 'pensiondata'
@@ -17,4 +17,5 @@ urlpatterns = [
     url(r'^gov_annual_attr/add/$', add_gov_annual_attr, name='add_gov_annual_attr'),
 
     url(r'^save_checklist/$', save_checklist, name='save_checklist'),
+    url(r'^plan_calculated_status/$', plan_calculated_status, name='plan_calculated_status'),
 ]

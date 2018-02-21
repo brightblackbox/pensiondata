@@ -90,13 +90,14 @@ def parse_list_data(x, qs, list_data, list_index_queryset, parsed_list, list_all
 @shared_task
 def generate_calculated_fields(list_ids):
     queryset = PlanAttribute.objects.filter(id__in=list_ids)
-    print("in task")
-    print(queryset)
     for qs in queryset:
+        qs.status_calculated = 'in progress'
+        qs.save()
         list_data, list_index_queryset, parsed_list, list_all_parsed_digits = parse_calculate_rule_string(qs=qs)
-        print(list_data, list_index_queryset, parsed_list, list_all_parsed_digits)
         for x in list_data[list_index_queryset[0]]:
             parse_list_data(x, qs, list_data, list_index_queryset, parsed_list, list_all_parsed_digits)
+        qs.status_calculated = "done"
+        qs.save()
 
 
 @shared_task

@@ -40,6 +40,11 @@ SORTED_ATTRIBUTE_DATATYPES_CHOICES = sorted(
     ATTRIBUTE_DATATYPES_CHOICES, key=lambda x: x[1]
 )
 
+CALCULATED_STATUS_CHOICES = (
+    ('in progress', 'in progress'),
+    ('done', 'done')
+)
+
 
 class County(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -442,6 +447,7 @@ class PlanAttribute(models.Model):
     attribute_column_name = models.CharField(max_length=256, null=True, blank=True)
     multiplier = models.DecimalField(max_digits=30, decimal_places=6, null=True, blank=True, default=1000)
     weight = models.IntegerField(null=True, blank=True, default=0)
+    status_calculated = models.CharField(max_length=255, null=True, blank=True, choices=CALCULATED_STATUS_CHOICES)
 
     # master attribute
     attributes_for_master = models.CharField('Source Attributes', max_length=256,

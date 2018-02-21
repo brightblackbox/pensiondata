@@ -354,6 +354,19 @@ class GovernmentDetailView(DetailView):
         return self.render_to_response(context=context)
 
 
+@staff_member_required
+def plan_calculated_status(request):
+    plan_attribute_id = request.GET.get('plan_attribute_id')
+    plan_attribute = PlanAttribute.objects.get(id=plan_attribute_id)
+    status = plan_attribute.status_calculated
+    name = plan_attribute.name
+    return JsonResponse({
+        'result': 'success',
+        'plan_attribute_id': plan_attribute_id,
+        'status': status,
+        'name': name
+    })
+
 # NOTE:  This part should be changed/optimized to Class based View later
 @staff_member_required
 def delete_plan_annual_attr(request):

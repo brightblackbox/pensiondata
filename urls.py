@@ -8,7 +8,7 @@ admin.autodiscover()
 urlpatterns = [
     url(r'^', include('common.urls')),
     url(r'^$',  PlanListView.as_view(), name='home'),
-    url(r'^/pension/', include('pensiondata.urls')),
+    url(r'^pension/', include('pensiondata.urls')),
     url(r'^plan-detail/(?P<PlanID>\d+)$', PlanDetailView.as_view(), name='plan-detail'),
     url(r'^government-detail/(?P<GovernmentID>\d+)$', GovernmentDetailView.as_view(), name='government-detail'),
     url(r'^plan-detail/ExportFile$', export_file),
