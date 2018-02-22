@@ -6,10 +6,12 @@ python-monkey-business==1.0.0
 pytz==2017.2
 six==1.11.0
 sqlparse==0.2.3
+ipython==6.2.1
 
 django-modeladmin-reorder==0.2
 django-bootstrap3==9.0.0
 django-tables2==1.11.0
+django-extensions==2.0.0
 
 gunicorn==19.4.3
 gevent==1.2.2

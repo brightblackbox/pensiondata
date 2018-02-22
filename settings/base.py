@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'nested_admin',
     'bootstrap3',
     'django_tables2',
+    'django_extensions',
 
     'common',
     'pensiondata',
