@@ -1,4 +1,9 @@
 import re
+import os
+import time
+
+import pandas as pd
+from django.db.utils import  IntegrityError
 from celery import shared_task, current_task, task
 
 from .models import PlanAnnualAttribute, PlanAttribute, Plan, DataSource
@@ -244,3 +249,148 @@ def import_census_plan_annual(record):
         return False
 
     return True
+
+
+def get_df_documentation(xl):
+    if "Documentation" in xl.sheet_names:
+        df_documentation = xl.parse("Documentation")
+        return df_documentation
+
+
+def preparse_sheets(xl, sheet):
+    df_sheet = xl.parse(sheet)
+    # create headers with 2 names - one name is not always unique
+    header_shot = df_sheet.iloc[1].tolist()
+    header_full = df_sheet.iloc[0].tolist()
+    tuple_multi_headrs = list(zip(header_full,header_shot))
+    multi_headers = pd.MultiIndex.from_tuples(tuple_multi_headrs, names=['full_name', 'short_name'])
+    df_sheet.columns = multi_headers
+
+    # check for first empty row in sheet
+    index_nan = None
+    for row in df_sheet.itertuples():
+        row_unique_values = list(set(row))
+        if len(row_unique_values) == 2:
+            for item in row_unique_values:
+                if any(i.isdigit() for i in str(item)):
+                    index_nan = item
+                    break
+        if index_nan:
+            break
+    df_sheet = df_sheet.loc[2:(index_nan-1), :]
+    return df_sheet
+
+
+def get_dict_preparsed_data(list_unique_sheet_name, xl):
+    dict_preparsed_data = {}
+    for sheet in list_unique_sheet_name:
+        df_preparsed = preparse_sheets(xl, sheet)
+        dict_preparsed_data[sheet] = df_preparsed
+    return dict_preparsed_data
+
+
+def convert_list_attribute_values(list_attribute_values, datatype):
+    new_list_attribute_values = []
+    if datatype == "shortdate":
+        for item in list_attribute_values:
+            if isinstance(item, float):
+                return list_attribute_values
+            if item.month < 10:
+                month = "0%s" % str(item.month)
+            else:
+                month = "%s" % str(item.month)
+            result = "%s-%s-%s" % (str(item.year), month, str(item.day))
+            new_list_attribute_values.append(result)
+    else:
+        for item in list_attribute_values:
+            new_list_attribute_values.append(str(item))
+    return new_list_attribute_values
+
+
+def create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name):
+    current_sheet = dict_preparsed_data.get(sheet)
+    # get Plans:
+    # by name - column Full_Name
+
+    list_plans_full_name = current_sheet[('Formal Plan Name', 'Full_Name')].tolist()
+    list_years = current_sheet[('Fiscal Year End', 'FYE')].tolist()
+    list_plans = []
+    for item in list_plans_full_name:
+        plan = Plan.objects.get(name__iexact=item)
+        list_plans.append(plan)
+    try:
+        # create total_list - with all row's data for creating new PlanAnnualAttribute
+        list_attribute_values = current_sheet[(name, field)].tolist()
+        list_attribute_values_nan = current_sheet[(name, field)].isnull().tolist()
+        list_attribute_values = convert_list_attribute_values(list_attribute_values, datatype)
+        total_list = list(zip(list_attribute_values_nan, list_attribute_values, list_plans, list_years))
+
+        # aList - data for bulk_create
+        aList = [PlanAnnualAttribute(
+            plan=val[2], year=str(val[3]),
+            plan_attribute=current_plan_attribute, attribute_value=val[1]) for val in total_list if val[0] == False]
+        try:
+            PlanAnnualAttribute.objects.bulk_create(aList)
+        except IntegrityError:
+            # if you try to create PlanAnnualAttribute that already exists
+            # print("PlanAnnualAttribute with this (plan_id, year, plan_attribute_id) already exists!  ")
+            pass
+    except KeyError:
+        # KeyError may arise when we have row in sheet "Documentation" but no column with same data in another sheet
+        pass
+
+
+def parse_sheet_documentaion(dict_preparsed_data, df_documentation):
+    for row in df_documentation.itertuples():
+        sheet = getattr(row, 'Sheet')
+        field = getattr(row, 'Field')
+        attribute_column_name = getattr(row, 'attribute_column_name')
+        name = getattr(row, 'name')
+        display_order = getattr(row, 'display_order')
+        multiplier = getattr(row, 'multiplier')
+        line_item_code = getattr(row, 'line_item_code')
+        data_source = getattr(row, 'data_source')
+        attribute_category_id = getattr(row, 'attribute_category_id')
+        attribute_type = getattr(row, 'attribute_type')
+        datatype = getattr(row, 'datatype')
+
+        # check PlanAttribute with line_item_code and data_source_id
+        if PlanAttribute.objects.filter(
+                line_item_code=line_item_code, data_source_id=data_source).exists():
+            current_plan_attribute = PlanAttribute.objects.get(line_item_code=line_item_code, data_source_id=data_source)
+        else:
+            current_plan_attribute = PlanAttribute.objects.create(
+                attribute_column_name=attribute_column_name,
+                name=name,
+                display_order=int(display_order),
+                multiplier=multiplier,
+                line_item_code=line_item_code,
+                data_source_id=data_source,
+                attribute_category_id=attribute_category_id,
+                attribute_type=attribute_type,
+                datatype=datatype
+            )
+        create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name)
+
+
+#@shared_task
+def import_reason(path, dict_data):
+    from django.core.files.storage import default_storage
+    print("in task")
+    print(dict_data)
+    import_file = dict_data.get("data")
+    with default_storage.open(os.getcwd() + "/assets/files/" + str(import_file), 'wb+') as destination:
+        for chunk in import_file.chunks():
+            destination.write(chunk)
+    xl = pd.ExcelFile(path)
+    print(type(xl))
+    df_documentation = get_df_documentation(xl)
+    list_unique_sheet_name = list(df_documentation["Sheet"].unique())
+    #list_unique_sheet_name.append("Documentation")
+    dict_preparsed_data = get_dict_preparsed_data(list_unique_sheet_name, xl)
+    print(type(df_documentation))
+    print(type(dict_preparsed_data))
+    parse_sheet_documentaion(dict_preparsed_data, df_documentation)
+    # remove file after reading and counting
+    # time.sleep(1)
+    os.remove(path)

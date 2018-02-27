@@ -6,13 +6,15 @@ from .models import DataSource
 IMPORT_FILE_FORMAT_CHOICES = (
     # (0, '---'),
     (1, _("txt")),
-    # (2, _("csv"))
+    # (2, _("csv")),
+    (3, _("xlsx"))
 )
 
 IMPORT_SOURCE = (
     # (0, '---'),
     (1, _("Census")),
-    # (2, _("Pension Plan Data"))
+    # (2, _("Pension Plan Data")),
+    (3, _("Reason"))
 )
 
 

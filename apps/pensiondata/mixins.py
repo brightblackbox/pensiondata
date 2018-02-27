@@ -1,3 +1,6 @@
+import json
+import os
+
 from django.conf import settings
 from django.conf.urls import url
 from django.utils.decorators import method_decorator
@@ -5,12 +8,13 @@ from django.views.decorators.http import require_POST
 
 from django.template.response import TemplateResponse
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+from django.core.files.storage import default_storage
 
 from apps.common.tmp_storages import TempFolderStorage
 from .forms import ImportForm
-from .tasks import import_to_database
+from .tasks import import_to_database, import_reason
 from celery.result import AsyncResult
-import json
+from pensiondata.forms import IMPORT_FILE_FORMAT_CHOICES, IMPORT_SOURCE
 
 try:
     from django.utils.encoding import force_text
@@ -99,46 +103,97 @@ class ImportMixin(ImportMixinBase):
             import_file = form.cleaned_data['import_file']
             source = form.cleaned_data['source']
 
-            # first always write the uploaded file to disk as it may be a
-            # memory file or else based on settings upload handlers
-            tmp_storage = self.get_tmp_storage_class()()
-            data = bytes()
-            for chunk in import_file.chunks():
-                data += chunk
+            # for Data Source = Census and format = txt
+            # be careful! hardcode here!
+            if source == str(IMPORT_SOURCE[0][0]) and input_format == str(IMPORT_FILE_FORMAT_CHOICES[0][0]):
+                # first always write the uploaded file to disk as it may be a
+                # memory file or else based on settings upload handlers
+                tmp_storage = self.get_tmp_storage_class()()
+                data = bytes()
+                for chunk in import_file.chunks():
+                    data += chunk
 
-            tmp_storage.save(data, 'rU')  # rb, rU
+                tmp_storage.save(data, 'rU')  # rb, rU
 
-            # then read the file, using the proper format-specific mode
-            # warning, big files may exceed memory
-            try:
-                data = tmp_storage.readlines('rU')  # rb, rU using UTF8
-                total_rows = len(data)
-                if total_rows > 0:
-                    import_task = import_to_database.delay(data, self.get_model_name())
+                # then read the file, using the proper format-specific mode
+                # warning, big files may exceed memory
+                try:
+                    # here I had error with reading xlsx file
+                    data = tmp_storage.readlines('rU')  # rb, rU using UTF8
+                    total_rows = len(data)
+                    if total_rows > 0:
+                        import_task = import_to_database.delay(data, self.get_model_name())
+                        resp_msg = {
+                            'result': 'success',
+                            'message': 'The uploading is in progress',
+                            'task_id': import_task.id,
+                            'job_count': total_rows
+                        }
+                    else:
+                        resp_msg = {
+                            'result': 'empty',
+                            'message': 'Empty file'
+                        }
+                    return JsonResponse(resp_msg)
+                # except UnicodeDecodeError as e:
+                #
+                #     return HttpResponse(_(u"<h1>Imported file has a wrong encoding: %s</h1>" % e))
+                except Exception as e:
+                    print(e)
+                    return JsonResponse({
+                        'result': 'fail',
+                        'message': _(u"%s encountered while trying to read file: %s" % (type(e).__name__, import_file.name))
+                    })
+            elif source == str(IMPORT_SOURCE[1][0]) and input_format == str(IMPORT_FILE_FORMAT_CHOICES[1][0]):
+                tmp_storage = self.get_tmp_storage_class()()
+                data = bytes()
+                for chunk in import_file.chunks():
+                    data += chunk
 
-                    resp_msg = {
-                        'result': 'success',
-                        'message': 'The uploading is in progress',
-                        'task_id': import_task.id,
-                        'job_count': total_rows
-                    }
-                else:
-                    resp_msg = {
-                        'result': 'empty',
-                        'message': 'Empty file'
-                    }
-                return JsonResponse(resp_msg)
+                tmp_storage.save(data, 'rb')  # rb, rU
+                print(tmp_storage)
+                print(type(tmp_storage))
+                dict_data = {}
+                dict_data["data"]=import_file
+                print(dict_data)
+                print(type(dict_data))
+                print(dict_data['data'])
+                print(type(dict_data['data']))
+                data = tmp_storage.read('rb')  # rb, rU using UTF8
+                # print(data)
+                # print(type(data))
 
-
-            # except UnicodeDecodeError as e:
-            #
-            #     return HttpResponse(_(u"<h1>Imported file has a wrong encoding: %s</h1>" % e))
-            except Exception as e:
-                return JsonResponse({
+                print(import_file)
+                print(type(import_file))
+                with default_storage.open(os.getcwd() +"/assets/files/" +str(import_file), 'wb+') as destination:
+                    for chunk in import_file.chunks():
+                        destination.write(chunk)
+                # xl = pd.ExcelFile(os.getcwd() +"/assets/files/" +str(import_file))
+                path = os.getcwd() + "/assets/files/" + str(import_file)
+                print(import_file)
+                print("before delay")
+                result = import_reason(path, dict_data)
+                # print(result)
+                # print(result.id)
+                # if result:
+                #     resp_msg = {
+                #         'result': 'success',
+                #         'message': 'The uploading is in progress',
+                #         'task_id': result,
+                #         'job_count': 100
+                #     }
+                # else:
+                #     resp_msg = {
+                #         'result': 'empty',
+                #         'message': 'Empty file'
+                #     }
+                # return JsonResponse(resp_msg)
+            else:
+                resp_msg = {
                     'result': 'fail',
-                    'message': _(u"%s encountered while trying to read file: %s" % (type(e).__name__, import_file.name))
-                })
-
+                    'message': 'Not correct combination of Data Source and Format! Census - txt, Reason - xlsx'
+                }
+                return JsonResponse(resp_msg)
         context['title'] = _("Import")
         context['form'] = form
         context['opts'] = self.model._meta
