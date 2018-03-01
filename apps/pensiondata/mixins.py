@@ -1,5 +1,7 @@
 import json
 import os
+import pandas as pd
+import xlrd
 
 from django.conf import settings
 from django.conf.urls import url
@@ -85,6 +87,8 @@ class ImportMixin(ImportMixinBase):
         ]
         return my_urls + urls
 
+
+
     def import_action(self, request, *args, **kwargs):
         '''
         Perform a dry_run of the import to make sure the import will not
@@ -98,7 +102,21 @@ class ImportMixin(ImportMixinBase):
         form = ImportForm(request.POST or None,
                           request.FILES or None)
 
+        def get_df_documentation(xl):
+            if "Documentation" in xl.sheet_names:
+                df_documentation = xl.parse("Documentation")
+                return df_documentation
+
+        def get_all_sheets(list_unique_sheet_name, xl):
+            dict_all_sheets = {}
+            for sheet in list_unique_sheet_name:
+                df_sheet = xl.parse(sheet)
+                # print(df_sheet)
+                dict_all_sheets[sheet] = df_sheet.to_json(orient='index')
+            return dict_all_sheets
+
         if request.POST and form.is_valid():  # NOTE: AJAX POST
+            print("in my if")
             input_format = form.cleaned_data['input_format']
             import_file = form.cleaned_data['import_file']
             source = form.cleaned_data['source']
@@ -149,45 +167,35 @@ class ImportMixin(ImportMixinBase):
                 data = bytes()
                 for chunk in import_file.chunks():
                     data += chunk
-
                 tmp_storage.save(data, 'rb')  # rb, rU
-                print(tmp_storage)
-                print(type(tmp_storage))
-                dict_data = {}
-                dict_data["data"]=import_file
-                print(dict_data)
-                print(type(dict_data))
-                print(dict_data['data'])
-                print(type(dict_data['data']))
-                data = tmp_storage.read('rb')  # rb, rU using UTF8
-                # print(data)
-                # print(type(data))
+                data = tmp_storage.read('rb')  # rb, rU using
 
-                print(import_file)
-                print(type(import_file))
-                with default_storage.open(os.getcwd() +"/assets/files/" +str(import_file), 'wb+') as destination:
-                    for chunk in import_file.chunks():
-                        destination.write(chunk)
-                # xl = pd.ExcelFile(os.getcwd() +"/assets/files/" +str(import_file))
-                path = os.getcwd() + "/assets/files/" + str(import_file)
-                print(import_file)
-                print("before delay")
-                result = import_reason(path, dict_data)
-                # print(result)
-                # print(result.id)
-                # if result:
-                #     resp_msg = {
-                #         'result': 'success',
-                #         'message': 'The uploading is in progress',
-                #         'task_id': result,
-                #         'job_count': 100
-                #     }
-                # else:
-                #     resp_msg = {
-                #         'result': 'empty',
-                #         'message': 'Empty file'
-                #     }
-                # return JsonResponse(resp_msg)
+                # "dynamically" read xlsx from tmp_storage
+                workbook = xlrd.open_workbook(file_contents=data)
+                xl = pd.ExcelFile(workbook, engine="xlrd")
+
+                # get json serializer data from sheet "Documentation"
+                df_documentation = get_df_documentation(xl)
+                list_unique_sheet_name = list(df_documentation["Sheet"].unique())
+                df_documentation = df_documentation.to_json(orient='index')
+
+                # get all another important data from xlsx file
+                dict_all_sheets = get_all_sheets(list_unique_sheet_name, xl)
+
+                result = import_reason.delay(dict_all_sheets, df_documentation, list_unique_sheet_name)
+                if result:
+                    resp_msg = {
+                        'result': 'success',
+                        'message': 'The uploading is in progress',
+                        'task_id': result.id,
+                        'job_count': len(list_unique_sheet_name),
+                    }
+                else:
+                    resp_msg = {
+                        'result': 'empty',
+                        'message': 'Downloading and parsing is done!'
+                    }
+                return JsonResponse(resp_msg)
             else:
                 resp_msg = {
                     'result': 'fail',
@@ -210,6 +218,9 @@ class ImportMixin(ImportMixinBase):
             if 'task_id' in request.POST.keys() and request.POST['task_id']:
                 task_id = request.POST['task_id']
                 import_task = AsyncResult(task_id)
+                print(import_task)
+                print(import_task.result)
+                print(import_task.status)
 
                 data['result'] = import_task.result or import_task.status
 

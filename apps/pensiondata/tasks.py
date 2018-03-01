@@ -1,8 +1,11 @@
 import re
 import os
 import time
+import datetime
+import json
 
 import pandas as pd
+import xlrd
 from django.db.utils import  IntegrityError
 from celery import shared_task, current_task, task
 
@@ -257,15 +260,19 @@ def get_df_documentation(xl):
         return df_documentation
 
 
-def preparse_sheets(xl, sheet):
-    df_sheet = xl.parse(sheet)
+def preparse_sheets(dict_all_sheets, sheet):
+    # df_sheet = xl.parse(sheet)
+    df_sheet = dict_all_sheets.get(sheet)
+    df_sheet = json.loads(df_sheet)
+    df_sheet = pd.DataFrame.from_dict(df_sheet, orient='index')
+    # df_sheet = df_sheet.sort_index()
     # create headers with 2 names - one name is not always unique
     header_shot = df_sheet.iloc[1].tolist()
     header_full = df_sheet.iloc[0].tolist()
     tuple_multi_headrs = list(zip(header_full,header_shot))
     multi_headers = pd.MultiIndex.from_tuples(tuple_multi_headrs, names=['full_name', 'short_name'])
     df_sheet.columns = multi_headers
-
+    # df_sheet = df_sheet.drop(df_sheet.index[[0, 1]])
     # check for first empty row in sheet
     index_nan = None
     for row in df_sheet.itertuples():
@@ -277,15 +284,32 @@ def preparse_sheets(xl, sheet):
                     break
         if index_nan:
             break
-    df_sheet = df_sheet.loc[2:(index_nan-1), :]
+    list_indexes = df_sheet.index.values.tolist()
+    list_int_index = list(map(int, list_indexes))
+    list_int_index.sort()
+    dict_index_position = {}
+    list_for_drop = []
+    for i in list_indexes:
+        dict_index_position[i] = list_indexes.index(i)
+    list_index_for_drop = list_int_index[int(index_nan):]
+    for li in list_index_for_drop:
+        list_for_drop.append(dict_index_position.get(str(li)))
+    for li in list_indexes:
+        if li == "0" or li == "1":
+            list_for_drop.append(dict_index_position.get(str(li)))
+    df_sheet = df_sheet.drop(df_sheet.index[list_for_drop])
     return df_sheet
 
 
-def get_dict_preparsed_data(list_unique_sheet_name, xl):
+def get_dict_preparsed_data(list_unique_sheet_name, dict_all_sheets):
     dict_preparsed_data = {}
+    # count = 0
     for sheet in list_unique_sheet_name:
-        df_preparsed = preparse_sheets(xl, sheet)
+        df_preparsed = preparse_sheets(dict_all_sheets, sheet)
         dict_preparsed_data[sheet] = df_preparsed
+        # count += 1
+        # if count == 1:
+        #     break
     return dict_preparsed_data
 
 
@@ -293,14 +317,27 @@ def convert_list_attribute_values(list_attribute_values, datatype):
     new_list_attribute_values = []
     if datatype == "shortdate":
         for item in list_attribute_values:
-            if isinstance(item, float):
-                return list_attribute_values
-            if item.month < 10:
-                month = "0%s" % str(item.month)
+            if item:
+                item = str(item)
+                if len(item) > 10:
+                    item = item[:10]
+                result = datetime.datetime.fromtimestamp(int(item)).strftime('%Y-%m-%d')
+            # if isinstance(item, float):
+            #     return list_attribute_values
+            # if item.month < 10:
+            #     month = "0%s" % str(item.month)
+            # else:
+            #     month = "%s" % str(item.month)
+            # result = "%s-%s-%s" % (str(item.year), month, str(item.day))
+                new_list_attribute_values.append(result)
+    elif datatype == 'int_separated3':
+        for item in list_attribute_values:
+            item = str(item)
+            if item and "$" in item:
+                result = "".join(symb for symb in filter(lambda y: y.isdigit(), item))
+                new_list_attribute_values.append(result)
             else:
-                month = "%s" % str(item.month)
-            result = "%s-%s-%s" % (str(item.year), month, str(item.day))
-            new_list_attribute_values.append(result)
+                new_list_attribute_values.append(item)
     else:
         for item in list_attribute_values:
             new_list_attribute_values.append(str(item))
@@ -373,24 +410,10 @@ def parse_sheet_documentaion(dict_preparsed_data, df_documentation):
         create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name)
 
 
-#@shared_task
-def import_reason(path, dict_data):
-    from django.core.files.storage import default_storage
-    print("in task")
-    print(dict_data)
-    import_file = dict_data.get("data")
-    with default_storage.open(os.getcwd() + "/assets/files/" + str(import_file), 'wb+') as destination:
-        for chunk in import_file.chunks():
-            destination.write(chunk)
-    xl = pd.ExcelFile(path)
-    print(type(xl))
-    df_documentation = get_df_documentation(xl)
-    list_unique_sheet_name = list(df_documentation["Sheet"].unique())
-    #list_unique_sheet_name.append("Documentation")
-    dict_preparsed_data = get_dict_preparsed_data(list_unique_sheet_name, xl)
-    print(type(df_documentation))
-    print(type(dict_preparsed_data))
+@shared_task
+def import_reason(dict_all_sheets, df_documentation, list_unique_sheet_name):
+    df_documentation = json.loads(df_documentation)
+    df_documentation = pd.DataFrame.from_dict(df_documentation, orient='index')
+    dict_preparsed_data = get_dict_preparsed_data(list_unique_sheet_name, dict_all_sheets)
     parse_sheet_documentaion(dict_preparsed_data, df_documentation)
-    # remove file after reading and counting
-    # time.sleep(1)
-    os.remove(path)
+    # return True
