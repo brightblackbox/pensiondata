@@ -43,6 +43,7 @@ $("#id-import-form").on("submit", function(e){
             if(resp.result === 'success'){
                 task_id = resp.task_id;
                 job_count = resp.job_count;
+                data_source = resp.data_source;
                 progress();
             }else if(resp.result === 'fail'){
                 $('.error').html(resp.message);
@@ -83,7 +84,6 @@ var poll = function(){
             function(resp) {
                 console.log(resp);
                 console.log('-----------------------');
-
                 if(resp.result === 'PENDING'){
                     return;
                 }
@@ -104,9 +104,16 @@ var poll = function(){
                           imported_count = resp.result;
                       }
 
-                      $('.filled-count').html(imported_count + ": rows processed");
-                      $('.failed-count').html((job_count - imported_count) + " failed");
-                      $('.total-count').html(job_count + ": Total");
+                      if (data_source == 'Census'){
+                          $('.filled-count').html(imported_count + ": rows processed");
+                          $('.failed-count').html((job_count - imported_count) + " failed");
+                          $('.total-count').html(job_count + ": Total");
+                      }
+                      else if (data_source == 'Reason'){
+                          $('.filled-count').html(job_count + ": execel sheets are successfully parsed!");
+                          $('.total-count').html(job_count + ": Total excel sheets");
+                      }
+
 
                 }else{
 

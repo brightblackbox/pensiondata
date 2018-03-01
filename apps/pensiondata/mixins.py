@@ -116,7 +116,6 @@ class ImportMixin(ImportMixinBase):
             return dict_all_sheets
 
         if request.POST and form.is_valid():  # NOTE: AJAX POST
-            print("in my if")
             input_format = form.cleaned_data['input_format']
             import_file = form.cleaned_data['import_file']
             source = form.cleaned_data['source']
@@ -143,6 +142,7 @@ class ImportMixin(ImportMixinBase):
                         import_task = import_to_database.delay(data, self.get_model_name())
                         resp_msg = {
                             'result': 'success',
+                            'data_source': 'Census',
                             'message': 'The uploading is in progress',
                             'task_id': import_task.id,
                             'job_count': total_rows
@@ -186,6 +186,7 @@ class ImportMixin(ImportMixinBase):
                 if result:
                     resp_msg = {
                         'result': 'success',
+                        'data_source': 'Reason',
                         'message': 'The uploading is in progress',
                         'task_id': result.id,
                         'job_count': len(list_unique_sheet_name),
@@ -218,9 +219,6 @@ class ImportMixin(ImportMixinBase):
             if 'task_id' in request.POST.keys() and request.POST['task_id']:
                 task_id = request.POST['task_id']
                 import_task = AsyncResult(task_id)
-                print(import_task)
-                print(import_task.result)
-                print(import_task.status)
 
                 data['result'] = import_task.result or import_task.status
 
