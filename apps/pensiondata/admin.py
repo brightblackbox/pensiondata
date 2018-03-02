@@ -404,12 +404,17 @@ def calculate(modeladmin, request, queryset):
 
     """
     list_ids = [qs.id for qs in queryset]
-    generate_calculated_fields.delay(list_ids=list_ids)
+    task_calculated_id = generate_calculated_fields.delay(list_ids=list_ids)
+    task_calculated_id = task_calculated_id.id
+    request.task_id = task_calculated_id
+    calculate.task_calculated_id = task_calculated_id
 
 
 def null_recalculate(modeladmin, request, queryset):
     list_ids = [qs.id for qs in queryset]
-    generate_calculated_fields_null.delay(list_ids=list_ids)
+    calculate_null_task = generate_calculated_fields_null.delay(list_ids=list_ids)
+    calculate_null_task = calculate_null_task.id
+    null_recalculate.calculate_null_task = calculate_null_task
 
 
 calculate.short_description = "Calculate selected items"
@@ -422,6 +427,14 @@ class PlanAttributeCalculatedAdmin(PlanAttributeAdmin):
     def get_queryset(self, request):
         return self.model.objects.filter(attribute_type='calculated')
 
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        if "task_calculated_id" in dir(calculate):
+            extra_context['task_calculated_id'] = calculate.task_calculated_id
+        if "calculate_null_task" in dir(null_recalculate):
+            extra_context['task_calculated_id'] = null_recalculate.calculate_null_task
+        extra_context['some_var'] = 'This is what I want to show'
+        return super(PlanAttributeAdmin, self).changelist_view(request, extra_context=extra_context)
 
 admin.site.register(GenerateCalculatedAttributeData, PlanAttributeCalculatedAdmin)
 

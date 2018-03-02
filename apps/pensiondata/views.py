@@ -16,6 +16,7 @@ import sys
 import time
 import pandas
 from wsgiref.util import FileWrapper
+from celery.result import AsyncResult
 
 from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, PlanAnnual, \
                     Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup
@@ -365,6 +366,14 @@ def plan_calculated_status(request):
         'plan_attribute_id': plan_attribute_id,
         'status': status,
         'name': name
+    })
+
+@staff_member_required
+def get_calculated_task_status(request):
+    task_id = request.GET.get('task_id')
+    current_task = AsyncResult(task_id)
+    return JsonResponse({
+        "result": current_task.result or current_task.status
     })
 
 # NOTE:  This part should be changed/optimized to Class based View later
