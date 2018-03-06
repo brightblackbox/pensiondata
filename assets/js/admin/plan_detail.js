@@ -615,7 +615,7 @@ $(document).ready(function() {
     $("#table-annual-data").dataTable({
         order: [[ 0, 'desc' ]],
         searching: false,
-        paging: false,
+        //paging: false,
         info: false
     });
     });

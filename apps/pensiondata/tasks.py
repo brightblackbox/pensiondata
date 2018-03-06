@@ -272,18 +272,27 @@ def preparse_sheets(dict_all_sheets, sheet):
     tuple_multi_headrs = list(zip(header_full,header_shot))
     multi_headers = pd.MultiIndex.from_tuples(tuple_multi_headrs, names=['full_name', 'short_name'])
     df_sheet.columns = multi_headers
+    # print(df_sheet)
+    # print(type(df_sheet))
     # df_sheet = df_sheet.drop(df_sheet.index[[0, 1]])
     # check for first empty row in sheet
-    index_nan = None
+    # index_nan = None
+    list_index_nan= []
     for row in df_sheet.itertuples():
         row_unique_values = list(set(row))
         if len(row_unique_values) == 2:
             for item in row_unique_values:
                 if any(i.isdigit() for i in str(item)):
-                    index_nan = item
-                    break
-        if index_nan:
-            break
+                    # index_nan = item
+                    list_index_nan.append(int(item))
+                    #break
+        # if index_nan:
+        #     break
+    print('list_index_nan')
+    print(list_index_nan)
+    index_nan = min(list_index_nan)
+
+    # cut dataframe under first empty raw
     list_indexes = df_sheet.index.values.tolist()
     list_int_index = list(map(int, list_indexes))
     list_int_index.sort()
@@ -303,19 +312,15 @@ def preparse_sheets(dict_all_sheets, sheet):
 
 def get_dict_preparsed_data(list_unique_sheet_name, dict_all_sheets):
     dict_preparsed_data = {}
-    # count = 0
     for sheet in list_unique_sheet_name:
         df_preparsed = preparse_sheets(dict_all_sheets, sheet)
         dict_preparsed_data[sheet] = df_preparsed
-        # count += 1
-        # if count == 1:
-        #     break
     return dict_preparsed_data
 
 
 def convert_list_attribute_values(list_attribute_values, datatype):
     new_list_attribute_values = []
-    if datatype == "shortdate":
+    if datatype == "shortdate" or datatype == "MONTH/DAY/YEAR":
         for item in list_attribute_values:
             if item:
                 item = str(item)
@@ -330,7 +335,7 @@ def convert_list_attribute_values(list_attribute_values, datatype):
             #     month = "%s" % str(item.month)
             # result = "%s-%s-%s" % (str(item.year), month, str(item.day))
                 new_list_attribute_values.append(result)
-    elif datatype == 'int_separated3':
+    elif datatype == 'int_separated3' or datatype == "$":
         for item in list_attribute_values:
             item = str(item)
             if item and "$" in item:
@@ -347,14 +352,26 @@ def convert_list_attribute_values(list_attribute_values, datatype):
 def create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name):
     current_sheet = dict_preparsed_data.get(sheet)
     # get Plans:
-    # by name - column Full_Name
-
-    list_plans_full_name = current_sheet[('Formal Plan Name', 'Full_Name')].tolist()
+    # by id - column Plan ID
+    # print(current_sheet)
+    # print(type(current_sheet))
     list_years = current_sheet[('Fiscal Year End', 'FYE')].tolist()
+
     list_plans = []
-    for item in list_plans_full_name:
-        plan = Plan.objects.get(name__iexact=item)
-        list_plans.append(plan)
+    list_plans_full_name = current_sheet[('Internal Reason Plan ID #', 'Plan ID')].tolist()
+    # print(list_plans_full_name)
+    # sometimes we do not have Plan Id - get by Full_Name
+    if None in list_plans_full_name:
+        # print(list_plans_full_name)
+        # print(current_sheet)
+        list_plans_full_name = current_sheet[('Formal Plan Name', 'Full_Name')].tolist()
+        for item in list_plans_full_name:
+            plan = Plan.objects.get(display_name__iexact=item)
+            list_plans.append(plan)
+    else:
+        for item in list_plans_full_name:
+            # plan = Plan.objects.get(id=int(item))
+            list_plans.append(Plan.objects.get(id=int(item)))
     try:
         # create total_list - with all row's data for creating new PlanAnnualAttribute
         list_attribute_values = current_sheet[(name, field)].tolist()
@@ -378,36 +395,84 @@ def create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attr
 
 
 def parse_sheet_documentaion(dict_preparsed_data, df_documentation):
-    for row in df_documentation.itertuples():
-        sheet = getattr(row, 'Sheet')
-        field = getattr(row, 'Field')
-        attribute_column_name = getattr(row, 'attribute_column_name')
-        name = getattr(row, 'name')
-        display_order = getattr(row, 'display_order')
-        multiplier = getattr(row, 'multiplier')
-        line_item_code = getattr(row, 'line_item_code')
-        data_source = getattr(row, 'data_source')
-        attribute_category_id = getattr(row, 'attribute_category_id')
-        attribute_type = getattr(row, 'attribute_type')
-        datatype = getattr(row, 'datatype')
+    all_headers_list = df_documentation.columns.values.tolist()
+    headers_list = list(filter(lambda y: y is not None, map(lambda x:  x if 'Unnamed' not in x else None, all_headers_list)))
+    # print(headers_list)
+    # print(type(headers_list))
+    # print(len(headers_list))
 
-        # check PlanAttribute with line_item_code and data_source_id
-        if PlanAttribute.objects.filter(
-                line_item_code=line_item_code, data_source_id=data_source).exists():
-            current_plan_attribute = PlanAttribute.objects.get(line_item_code=line_item_code, data_source_id=data_source)
-        else:
-            current_plan_attribute = PlanAttribute.objects.create(
-                attribute_column_name=attribute_column_name,
-                name=name,
-                display_order=int(display_order),
-                multiplier=multiplier,
-                line_item_code=line_item_code,
-                data_source_id=data_source,
-                attribute_category_id=attribute_category_id,
-                attribute_type=attribute_type,
-                datatype=datatype
-            )
-        create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name)
+    # hardcode for Reason datasource
+    if "Sheet" and "Field" and ("Data Type" or "datatype") and ("Description" or "name") in headers_list and len(headers_list) < 5:
+        for row in df_documentation.itertuples():
+            # print(row)
+            # print(type(row))
+            # print(dir(row))
+            # # print(type(row.__dict__))
+
+            sheet = getattr(row, 'Sheet')
+            field = getattr(row, 'Field')
+
+            # get name
+            if 'name' in headers_list:
+                name = getattr(row, 'name')
+            elif "Description" in headers_list:
+                name = getattr(row, 'Description')
+            else:
+                name = None
+
+            # get datatype
+            if "Data Type" in headers_list:
+                datatype = getattr(row, '_4')
+            elif "datatype" in headers_list:
+                datatype = getattr(row, 'datatype')
+            else:
+                datatype = "text"
+
+            # replace double quotes to single quotes in name:
+            if name:
+                name = name.replace('"', "'")
+                plan_attr = PlanAttribute.objects.filter(name=name, data_source_id=3)
+                # hardcode for Reason datasource
+                # if not PlanAttribute.objects.filter(name=name, data_source_id=3).exists():
+                #     print("does not exist")
+                #     count += 1
+                #     print(sheet, name, datatype, field)
+                #     list_empty.append(name)
+                #     print("===================<<<<<<<<<<<<<<")
+                if plan_attr.exists() and plan_attr.count() == 1:
+                    current_plan_attribute = PlanAttribute.objects.get(name=name, data_source_id=3)
+                    create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name)
+
+    # for row in df_documentation.itertuples():
+    #     sheet = getattr(row, 'Sheet')
+    #     field = getattr(row, 'Field')
+    #     attribute_column_name = getattr(row, 'attribute_column_name')
+    #     name = getattr(row, 'name')
+    #     display_order = getattr(row, 'display_order')
+    #     multiplier = getattr(row, 'multiplier')
+    #     line_item_code = getattr(row, 'line_item_code')
+    #     data_source = getattr(row, 'data_source')
+    #     attribute_category_id = getattr(row, 'attribute_category_id')
+    #     attribute_type = getattr(row, 'attribute_type')
+    #     datatype = getattr(row, 'datatype')
+    #
+    #     # check PlanAttribute with line_item_code and data_source_id
+    #     if PlanAttribute.objects.filter(
+    #             line_item_code=line_item_code, data_source_id=data_source).exists():
+    #         current_plan_attribute = PlanAttribute.objects.get(line_item_code=line_item_code, data_source_id=data_source)
+    #     else:
+    #         current_plan_attribute = PlanAttribute.objects.create(
+    #             attribute_column_name=attribute_column_name,
+    #             name=name,
+    #             display_order=int(display_order),
+    #             multiplier=multiplier,
+    #             line_item_code=line_item_code,
+    #             data_source_id=data_source,
+    #             attribute_category_id=attribute_category_id,
+    #             attribute_type=attribute_type,
+    #             datatype=datatype
+    #         )
+    #     create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name)
 
 
 @shared_task
@@ -416,4 +481,5 @@ def import_reason(dict_all_sheets, df_documentation, list_unique_sheet_name):
     df_documentation = pd.DataFrame.from_dict(df_documentation, orient='index')
     dict_preparsed_data = get_dict_preparsed_data(list_unique_sheet_name, dict_all_sheets)
     parse_sheet_documentaion(dict_preparsed_data, df_documentation)
+    print(list_unique_sheet_name)
     # return True
