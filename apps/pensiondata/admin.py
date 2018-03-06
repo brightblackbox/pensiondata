@@ -1,6 +1,6 @@
 import re
 from django.contrib import admin
-from django.db.models import F, Count
+from django.db.models import F, Count, Case, When, Value, BooleanField
 import json
 from django.db.models.query import QuerySet
 
@@ -194,7 +194,20 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
         #     .select_related('attribute_category', 'data_source').distinct()
 
         category_list = AttributeCategory.objects.order_by('name')
-        datasource_list = DataSource.objects.order_by('name')
+
+        if (request.session.get('plan_column_state_admin')):
+            selected_data_sources = request.session.get('plan_column_state_admin').get('source')
+        else:
+            # get all data from all Data source by default
+            selected_data_sources = list(DataSource.objects.filter().values_list("id", flat=True))
+        datasource_list = DataSource.objects.all().annotate( \
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(
+                When(id__in=selected_data_sources, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
+        ).order_by('name')
 
         plan_annual_objs = PlanAnnualAttribute.objects \
             .filter(plan=plan) \

@@ -160,7 +160,6 @@ class PlanDetailView(DetailView):
                 output_field=BooleanField()
             )
         ).distinct().order_by('category_name', 'attribute_name')
-
         category_list = plan_annual_objs.values(
             'plan_attribute__attribute_category__id',
             'plan_attribute__attribute_category__name'
@@ -587,10 +586,10 @@ def save_checklist(request):
         model_name = request.POST.get('model_name')
         if is_admin_page and request.user.is_superuser:
             session_key = model_name + '_column_state_admin'
+            request.session[session_key] = {'category': [], 'source': [], 'attr': []}
         else:
             session_key = model_name + '_column_state'
-
-        request.session[session_key] = {'category': [], 'source': [], 'attr': []}
+        # request.session[session_key] = {'category': [], 'source': [], 'attr': []}
         checked_dict = request.session[session_key]
         checked_dict['category'] = list(map(int, request.POST.getlist('category_checked_states[]')))
         checked_dict['source'] = list(map(int, request.POST.getlist('datasource_checked_states[]')))

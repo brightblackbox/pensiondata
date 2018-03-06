@@ -80,6 +80,7 @@ $('input.column-check-box').change(function () {
 
 // render table
 function initialize_annual_table() {
+    console.log("in initialize_annual_table");
     // tr for "category"
     var $tr_category = '<th rowspan="3" style="vertical-align: middle;">Year</th>';
 
@@ -99,9 +100,9 @@ function initialize_annual_table() {
     var $tbody = '';
 
     $.each(plan_annual_data, function (i, annual_item) {
-      if (annual_item.year == '2000') {
-          console.log(annual_item);
-      }
+      // if (annual_item.year == '2000') {
+      //     console.log(annual_item);
+      // }
       var $td_id = 'td-id-' + annual_item.year + '-' + annual_item.attribute_id;
       var $td_html = '<span class="annual-value">' + numberWithCommas(annual_item.attribute_value) + '</span>';
       $('#' + $td_id).html($td_html).attr({'data-annual-data-pk': annual_item.id, 'data-is-from-source': annual_item.is_from_source});
@@ -111,6 +112,7 @@ function initialize_annual_table() {
 }
 
 function redraw_annual_table() {
+    console.log("in redraw_annual_table");
     // show all td
     $('#table-annual-data td').show();
     $('#table-annual-data th').show();
@@ -608,4 +610,14 @@ $(document).ready(function() {
     // draw plan_annual_attr table
     initialize_annual_table();
     redraw_annual_table();
+
+    $(function(){
+    $("#table-annual-data").dataTable({
+        order: [[ 0, 'desc' ]],
+        searching: false,
+        paging: false,
+        info: false
+    });
+    });
+
 });
