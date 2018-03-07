@@ -407,8 +407,8 @@ def edit_plan_annual_attr(request):
         obj.is_from_source = is_from_source
 
         # disconnect signal becuase of moderation
-        post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
-        moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=obj)
+        # post_save.disconnect(recalculate, sender=PlanAnnualAttribute)
+        # moderation.pre_save_handler(sender=PlanAnnualAttribute, instance=obj)
         obj.save()
         moderation.post_save_handler(sender=PlanAnnualAttribute, instance=obj, created=False)
         post_save.connect(recalculate, sender=PlanAnnualAttribute)
