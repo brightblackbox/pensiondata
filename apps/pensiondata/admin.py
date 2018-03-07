@@ -6,7 +6,7 @@ from django.db.models.query import QuerySet
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, DataSource, \
     PlanAnnualAttribute, AttributeCategory, \
-    GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup
+    GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup, PlanBenefitDesign
 
 from .models import GovernmentAttrSummary
 from .tasks import generate_calculated_fields, generate_calculated_fields_null
@@ -486,8 +486,14 @@ class PlanAnnualAttributeAdmin(ImportMixin, admin.ModelAdmin):
 
 admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
 
+
+class PlanBenefitDesignAdmin(admin.ModelAdmin):
+    list_display = ['id', "plan_name"]
+    search_fields = ["plan_name"]
+
 admin.site.register(PresentationExport)
 admin.site.register(ExportGroup)
+admin.site.register(PlanBenefitDesign, PlanBenefitDesignAdmin)
 
 ###############################################################################
 # To register new model, you also need to add it to ADMIN_REORDER at settings.

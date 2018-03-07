@@ -590,3 +590,45 @@ class PresentationExport(models.Model):
         elif self.government_field:
             field = self.government_field.name
         return name.format(name=self.export_group.name, field=field, order=self.order)
+
+
+class PlanBenefitDesign(models.Model):
+    plan = models.OneToOneField(Plan, on_delete=models.CASCADE, blank=True, null=True)
+    slepp_record_id = models.CharField(max_length=255, blank=True, null=True)
+    plan_name = models.CharField(max_length=255, blank=True, null=True)
+    state = models.CharField(max_length=255, blank=True, null=True)
+    occupation = models.CharField(max_length=255, blank=True, null=True)
+    tier = models.CharField(max_length=255, blank=True, null=True)
+    hired_before_date = models.DateTimeField(blank=True, null=True)
+    hired_on_or_after_date = models.DateTimeField(blank=True, null=True)
+    covers_new_hires = models.FloatField(blank=True, null=True)
+    plan_type = models.CharField(max_length=255, blank=True, null=True)
+    employee_contribution_rate = models.FloatField(blank=True, null=True)
+    vesting_years = models.FloatField(blank=True, null=True)
+    retirement_eligibility_normal = models.CharField(max_length=255, blank=True, null=True)
+    retirement_eligibility_early = models.CharField(max_length=255, blank=True, null=True)
+    formula_benefit = models.CharField(max_length=255, blank=True, null=True)
+    final_average_salary = models.CharField(max_length=255, blank=True, null=True)
+    multiplier = models.CharField(max_length=255, blank=True, null=True)
+    benefit_supplement = models.TextField(blank=True, null=True)
+    penalty_for_early_retirement = models.CharField(max_length=255, blank=True, null=True)
+    early_retirement_formula = models.CharField(max_length=255, blank=True, null=True)
+    additional_details_on_early_retirement_penalties = models.CharField(max_length=255, blank=True, null=True)
+    cost_of_living_adjustment = models.CharField(max_length=255, blank=True, null=True)
+    deferred_vested_start_date = models.CharField(max_length=255, blank=True, null=True)
+    increases_in_deferred_vested_benefits = models.CharField(max_length=255, blank=True, null=True)
+    mandatory_retirement = models.CharField(max_length=255, blank=True, null=True)
+    deferred_retirement_option_program = models.FloatField(blank=True, null=True)
+    vesting_in_years_non_fas_plan = models.CharField(max_length=255, blank=True, null=True)
+    employer_contribution_rate_non_fas_plan = models.CharField(max_length=255, blank=True, null=True)
+    employee_contribution_ratenon_fas_plan = models.CharField(max_length=255, blank=True, null=True)
+    interest_rate_non_fas_plan = models.CharField(max_length=255, blank=True, null=True)
+    social_security_coverage = models.CharField(max_length=255, blank=True, null=True)
+    source = models.CharField(max_length=255, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'plan_benefit_design'
+
+    def __str__(self):
+        return self.plan_name
