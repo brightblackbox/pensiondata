@@ -488,8 +488,9 @@ admin.site.register(PlanAnnualAttribute, PlanAnnualAttributeAdmin)
 
 
 class PlanBenefitDesignAdmin(admin.ModelAdmin):
-    list_display = ['id', "plan_name"]
+    list_display = ['id', "plan_name", "tier", "occupation"]
     search_fields = ["plan_name"]
+    ordering = "id",
 
 admin.site.register(PresentationExport)
 admin.site.register(ExportGroup)
