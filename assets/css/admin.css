@@ -132,16 +132,13 @@ select2 for master attribute
     color: #999999;
 }
 
-/*body{*/
-    /*background-color: #4cae4c;*/
-/*}*/
 
-table.dataTable thead .sorting {
-    background: url('../css/images/sort_both.png') no-repeat center right !important;
-}
-table.dataTable thead .sorting_asc {
-    background: url('../css/images/sort_asc.png') no-repeat center right !important;
-}
-table.dataTable thead .sorting_desc {
-    background: url('../css/images/sort_desc.png') no-repeat center right !important;
-}
+/*table.dataTable thead .sorting {*/
+    /*background: url('../css/images/sort_both.png') no-repeat center right !important;*/
+/*}*/
+/*table.dataTable thead .sorting_asc {*/
+    /*background: url('../css/images/sort_asc.png') no-repeat center right !important;*/
+/*}*/
+/*table.dataTable thead .sorting_desc {*/
+    /*background: url('../css/images/sort_desc.png') no-repeat center right !important;*/
+/*}*/

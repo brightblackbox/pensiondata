@@ -133,7 +133,7 @@ table.dataTable {
 
 #table-annual-data th {
     text-transform: none;
-    background: #f6f6f6;
+    /*background: #f6f6f6;*/
     font-weight: normal;
     font-size: 14px;
 
