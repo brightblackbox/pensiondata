@@ -601,6 +601,7 @@ class PlanBenefitDesign(models.Model):
     tier = models.CharField(max_length=255, blank=True, null=True)
     hired_before_date = models.DateTimeField(blank=True, null=True)
     hired_on_or_after_date = models.DateTimeField(blank=True, null=True)
+    date = models.DateTimeField(blank=True, null=True)
     covers_new_hires = models.FloatField(blank=True, null=True)
     plan_type = models.CharField(max_length=255, blank=True, null=True)
     employee_contribution_rate = models.FloatField(blank=True, null=True)

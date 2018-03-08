@@ -491,6 +491,7 @@ class PlanBenefitDesignAdmin(admin.ModelAdmin):
     list_display = ['id', "plan_name", "tier", "occupation"]
     search_fields = ["plan_name"]
     ordering = "id",
+    exclude = ['hired_before_date', 'hired_on_or_after_date']
 
 admin.site.register(PresentationExport)
 admin.site.register(ExportGroup)

@@ -19,13 +19,14 @@ $('#id_import_file').bind('change', function() {
 
 // if select format is "xslx" change automatically select from Data Source to Reason
 $("#id_input_format").change( function () {
-        var val = $(this).val();
-        // vall == "3" is xlsx format
-        if (val == "3"){
-            $('#id_source option[value="3"]').attr('selected','selected');
-        }
+        $("#id_source").val($(this).val());
     }
 );
+
+//if select Data source is Reason change automatically select from format to "xlsx"
+$("#id_source").change(function () {
+    $("#id_input_format").val($(this).val());
+});
 
 // form submit
 $("#id-import-form").on("submit", function(e){
