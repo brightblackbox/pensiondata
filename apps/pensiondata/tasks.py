@@ -288,8 +288,6 @@ def preparse_sheets(dict_all_sheets, sheet):
                     #break
         # if index_nan:
         #     break
-    print('list_index_nan')
-    print(list_index_nan)
     index_nan = min(list_index_nan)
 
     # cut dataframe under first empty raw

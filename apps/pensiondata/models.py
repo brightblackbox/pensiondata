@@ -317,6 +317,8 @@ class Plan(models.Model):
     gasb_68_type = models.CharField(max_length=30, blank=True, null=True)
     state_gov_role = models.CharField(max_length=30, blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    system_assigned_employer_id = models.CharField(max_length=20, blank=True, null=True,
+                                                   verbose_name="System Assigned Employer ID")
 
     class Meta:
         managed = True
