@@ -11,6 +11,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.core.validators import MaxValueValidator, MinValueValidator
 import re
 #########################################################################################################
 
@@ -634,3 +635,17 @@ class PlanBenefitDesign(models.Model):
 
     def __str__(self):
         return self.plan_name
+
+
+class PlanInheritance(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    level = models.IntegerField(default=1,
+                                validators=[
+                                    MinValueValidator(1), MaxValueValidator(9)
+                                ])
+    child_plan = models.ForeignKey(Plan, on_delete=models.CASCADE, blank=True, null=True, related_name='child_plan')
+    parent_plan = models.ForeignKey(Plan, on_delete=models.CASCADE, blank=True, null=True, related_name='parent_plan')
+
+    class Meta:
+        managed = False
+        db_table = 'plan_inheritance'
