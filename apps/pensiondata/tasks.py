@@ -349,22 +349,37 @@ def convert_list_attribute_values(list_attribute_values, datatype):
     return new_list_attribute_values
 
 
+def get_correct_list(current_list, description):
+    if isinstance(current_list, pd.Series):
+        current_list = current_list.tolist()
+    elif isinstance(current_list, pd.DataFrame):
+        current_list = current_list[description].tolist()
+    else:
+        current_list = current_list.tolist()
+    return current_list
+
+
 def create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attribute, datatype, name):
     current_sheet = dict_preparsed_data.get(sheet)
     # get Plans:
     # by id - column Plan ID
     # print(current_sheet)
     # print(type(current_sheet))
-    list_years = current_sheet[('Fiscal Year End', 'FYE')].tolist()
+    list_years = current_sheet[('Fiscal Year End', 'FYE')]
+    list_years = get_correct_list(list_years, ('Fiscal Year End', 'FYE'))
 
     list_plans = []
-    list_plans_full_name = current_sheet[('Internal Reason Plan ID #', 'Plan ID')].tolist()
+    list_plans_full_name = current_sheet[('Internal Reason Plan ID #', 'Plan ID')]
+    list_plans_full_name = get_correct_list(list_plans_full_name, ('Internal Reason Plan ID #', 'Plan ID'))
+    # list_plans_full_name = current_sheet[('Internal Reason Plan ID #', 'Plan ID')].tolist()
     # print(list_plans_full_name)
     # sometimes we do not have Plan Id - get by Full_Name
     if None in list_plans_full_name:
         # print(list_plans_full_name)
         # print(current_sheet)
-        list_plans_full_name = current_sheet[('Formal Plan Name', 'Full_Name')].tolist()
+        list_plans_full_name = current_sheet[('Formal Plan Name', 'Full_Name')]
+        list_plans_full_name = get_correct_list(list_plans_full_name, ('Formal Plan Name', 'Full_Name'))
+        # list_plans_full_name = current_sheet[('Formal Plan Name', 'Full_Name')].tolist()
         for item in list_plans_full_name:
             plan = Plan.objects.get(display_name__iexact=item)
             list_plans.append(plan)
@@ -374,8 +389,19 @@ def create_plan_annual_attr(dict_preparsed_data, field, sheet, current_plan_attr
             list_plans.append(Plan.objects.get(id=int(item)))
     try:
         # create total_list - with all row's data for creating new PlanAnnualAttribute
-        list_attribute_values = current_sheet[(name, field)].tolist()
-        list_attribute_values_nan = current_sheet[(name, field)].isnull().tolist()
+        list_attribute_values = current_sheet[(name, field)]
+        list_attribute_values = get_correct_list(list_attribute_values, (name, field))
+        # list_attribute_values = current_sheet[(name, field)].tolist()
+        list_attribute_values_nan = current_sheet[(name, field)]
+
+        if isinstance(list_attribute_values_nan, pd.Series):
+            list_attribute_values_nan = list_attribute_values_nan.isnull().tolist()
+        elif isinstance(list_attribute_values_nan, pd.DataFrame):
+            list_attribute_values_nan = list_attribute_values_nan[(name, field)].tolist()
+        else:
+            list_attribute_values_nan = list_attribute_values_nan.isnull().tolist()
+
+        # list_attribute_values_nan = current_sheet[(name, field)].isnull().tolist()
         list_attribute_values = convert_list_attribute_values(list_attribute_values, datatype)
         total_list = list(zip(list_attribute_values_nan, list_attribute_values, list_plans, list_years))
 
@@ -481,5 +507,5 @@ def import_reason(dict_all_sheets, df_documentation, list_unique_sheet_name):
     df_documentation = pd.DataFrame.from_dict(df_documentation, orient='index')
     dict_preparsed_data = get_dict_preparsed_data(list_unique_sheet_name, dict_all_sheets)
     parse_sheet_documentaion(dict_preparsed_data, df_documentation)
-    print(list_unique_sheet_name)
+    # print(list_unique_sheet_name)
     # return True
