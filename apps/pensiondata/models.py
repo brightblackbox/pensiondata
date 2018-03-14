@@ -295,9 +295,51 @@ class GovernmentType(models.Model):
         return self.level
 
 
+# custom model filed
+class CharNullField(models.CharField):
+    """
+    Subclass of the CharField that allows empty strings to be stored as NULL.
+    """
+    description = "CharField that stores NULL but returns ''."
+
+    def from_db_value(self, value, expression, connection, contex):
+        """
+        Gets value right out of the db and changes it if its ``None``.
+        """
+        if value is None:
+            return ''
+        else:
+            return value
+
+    def to_python(self, value):
+        """
+        Gets value right out of the db or an instance, and changes it if its ``None``.
+        """
+        if isinstance(value, models.CharField):
+            # If an instance, just return the instance.
+            return value
+        if value is None:
+            # If db has NULL, convert it to ''.
+            return ''
+
+        # Otherwise, just return the value.
+        return value
+
+    def get_prep_value(self, value):
+        """
+        Catches value right before sending to db.
+        """
+        if value == '':
+            # If Django tries to save an empty string, send the db None (NULL).
+            return None
+        else:
+            # Otherwise, just pass the value.
+            return value
+
+
 class Plan(models.Model):
     id = models.BigAutoField(primary_key=True)
-    census_plan_id = models.CharField(max_length=255, unique=True)
+    census_plan_id = CharNullField(max_length=255, unique=True, blank=True, null=True)
     name = models.CharField(max_length=255)
     display_name = models.CharField(max_length=255, blank=True, null=True)
     year_of_inception = models.IntegerField(blank=True, null=True)

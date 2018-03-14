@@ -157,11 +157,11 @@ admin.site.register(Government, GovernmentAdmin)
 class PlanAdmin(ImportMixin, ModerationAdmin):
     model = Plan
 
-    list_display = ['census_plan_id', 'name', 'display_name', ]
+    list_display = ['id', 'census_plan_id', 'name', 'display_name', ]
     list_filter = ['admin_gov__state__name']
     list_per_page = 30
     ordering = ['admin_gov__state__id']
-    search_fields = ['display_name']
+    search_fields = ['display_name', 'name']
 
     list_select_related = ('admin_gov', 'admin_gov__state',)
 
