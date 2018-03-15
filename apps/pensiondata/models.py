@@ -349,7 +349,10 @@ class Plan(models.Model):
     benefit_tier = models.IntegerField(blank=True, null=True)
     year_closed = models.IntegerField(blank=True, null=True)
     web_site = models.CharField(max_length=255, blank=True, null=True)
-    admin_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True)
+    admin_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True,
+                                  related_name='admin_gov')
+    employ_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True,
+                                   verbose_name="Employing Gov", related_name='employ_gov')
     soc_sec_coverage = models.NullBooleanField()
     soc_sec_coverage_notes = models.CharField(max_length=255, blank=True, null=True)
     includes_state_employees = models.NullBooleanField()
