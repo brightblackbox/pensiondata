@@ -114,7 +114,7 @@ class Government(models.Model):
         verbose_name_plural = 'Governments'
 
     def __str__(self):
-        return self.name
+        return "%s %s, %s" % (self.name, self.government_type, self.state)
 
 
 class GovernmentAttribute(models.Model):
