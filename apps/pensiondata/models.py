@@ -13,6 +13,7 @@ from __future__ import unicode_literals
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 import re
+import decimal
 #########################################################################################################
 
 ATTRIBUTE_TYPE_CHOICES = (
@@ -104,6 +105,8 @@ class Government(models.Model):
     state = models.ForeignKey('State', models.DO_NOTHING, null=True, blank=True)
     government_type = models.ForeignKey('GovernmentType', models.DO_NOTHING, null=True, blank=True)
     county = models.ForeignKey('County', models.DO_NOTHING, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
 
     class Meta:
         db_table = 'government'
@@ -362,8 +365,8 @@ class Plan(models.Model):
     notes = models.TextField(blank=True, null=True)
     system_assigned_employer_id = models.CharField(max_length=20, blank=True, null=True,
                                                    verbose_name="System Assigned Employer ID")
-    latitude = models.DecimalField(max_digits=12, decimal_places=6, blank=True, null=True)
-    longitude = models.DecimalField(max_digits=12, decimal_places=6, blank=True, null=True)
+    latitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
 
     class Meta:
         managed = True
