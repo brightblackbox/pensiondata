@@ -682,6 +682,7 @@ class PlanBenefitDesign(models.Model):
 
     class Meta:
         db_table = 'plan_benefit_design'
+        verbose_name = "Plan Benefit Design"
 
     def __str__(self):
         return self.plan_name
@@ -699,3 +700,4 @@ class PlanInheritance(models.Model):
     class Meta:
         managed = False
         db_table = 'plan_inheritance'
+        verbose_name_plural = "Plan Inheritance"

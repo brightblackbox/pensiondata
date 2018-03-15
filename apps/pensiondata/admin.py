@@ -96,7 +96,7 @@ class GovernmentAdmin(ModerationAdmin):
     fieldsets = [
         (None, {'fields': [field.name for field in Government._meta.fields if field.name != 'id']})
     ]
-    list_display = ['name', 'government_type', 'county', 'state']
+    list_display = ['__str__', 'government_type', 'county', 'state']
     list_filter = ['government_type', 'state']
 
     list_select_related = ('government_type', 'county', 'state', )
