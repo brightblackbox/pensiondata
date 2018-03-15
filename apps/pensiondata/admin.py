@@ -162,6 +162,7 @@ class PlanAdmin(ImportMixin, ModerationAdmin):
     list_per_page = 30
     ordering = ['admin_gov__state__id']
     search_fields = ['display_name', 'name']
+    raw_id_fields = ['admin_gov', 'employ_gov']
 
     list_select_related = ('admin_gov', 'admin_gov__state',)
 
