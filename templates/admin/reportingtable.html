@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_static admin_modify %}
+{% load admin_urls %}
+
+
+{% block content %}
+    <form action={% url 'generate_reporting_table' %} method="post" id="id-reporting-table">
+        {% csrf_token %}
+        <input type="submit" class="default" value="{% trans "Generate Reporting Table" %}">
+    </form>
+
+
+
+<script type="text/javascript" src="{% static 'js/admin/reportingtable.js' %}"></script>
+{% endblock %}
+

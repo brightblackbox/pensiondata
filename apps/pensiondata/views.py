@@ -2,7 +2,9 @@ from django.http import HttpResponse, JsonResponse
 from django.views.generic import TemplateView, DetailView
 from django.views.generic.list import ListView
 from django_tables2 import RequestConfig
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
+from django.db import connection
+from django.db.utils import  ProgrammingError
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models.signals import pre_save, pre_delete, post_save, post_delete
@@ -374,6 +376,188 @@ def get_calculated_task_status(request):
     return JsonResponse({
         "result": current_task.result or current_task.status
     })
+
+@staff_member_required
+def generate_reporting_table(request):
+    print('!!!!!!!')
+    if request.POST:
+        print("POST-----")
+        # drop table if exists
+        with connection.cursor() as cursor:
+            # drop table if exists
+            cursor.execute('DROP TABLE IF EXISTS reporting_table')
+            # create start part of table
+            cursor.execute('''
+
+            CREATE TABLE reporting_table (
+            id bigserial primary key,
+            plan_id bigint,
+            census_plan_id varchar(255),
+            name   varchar(255),
+            display_name      varchar(255),             
+            year_of_inception   int,            
+            benefit_tier int,         
+            year_closed  int,                 
+            web_site  varchar(255),
+            soc_sec_coverage boolean,
+            soc_sec_coverage_notes  varchar(255),
+             includes_state_employees boolean,
+             includes_local_employees boolean,
+             includes_safety_employees boolean,
+             includes_general_employees boolean,
+             includes_teachers boolean,
+             intra_period_data_entity_id bigint, 
+             intra_period_data_period_end_date date,
+             intra_period_data_period_type int,
+             gasb_68_type varchar(255),
+             state_gov_role varchar(255),
+             notes text,
+             system_assigned_employer_id varchar(255),
+             latitude NUMERIC,
+             longitude NUMERIC,
+             year varchar(255),
+             admin_gov_id bigint,
+             employ_gov_id bigint
+            );
+            ''')
+
+            # add column to table reporting_table from every instanse of Plan Attribute
+            i = 0
+            for plan_attr in PlanAttribute.objects.all():
+                try:
+                    if plan_attr.attribute_column_name is None or plan_attr.attribute_column_name == 'id' \
+                            or " " in plan_attr.attribute_column_name:
+                        pass
+                    else:
+                        add_col_str = 'ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(
+                            str(plan_attr.attribute_column_name))
+                    cursor.execute(add_col_str)
+                # cannot add columns with current name
+                except ProgrammingError:
+                    pass
+
+            scope_all_plan_an_attr = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute')
+
+            def check_none(attr):
+                if not attr:
+                    return "NULL"
+                else:
+                    return attr
+
+            def check_boolean_none(attr):
+                if attr is None:
+                    return "NULL"
+                else:
+                    return "'%s'"%(attr)
+
+            i = 0
+            for plan in Plan.objects.filter(id__lte=1):
+                scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute').filter(plan=plan)
+                print(scope_for_current_plan.count())
+                print(plan.id)
+                for current_plan in scope_for_current_plan:
+
+                    # current_plan.plan.
+                    str_insert = '''
+                    INSERT INTO reporting_table
+                    ( plan_id, census_plan_id )
+                    VALUES ( {plan_id} , {census_plan_id}, {display_name} )
+                    '''.format(
+                        plan_id=current_plan.plan.id,
+                        census_plan_id=check_none(current_plan.plan.census_plan_id),
+                        display_name=check_none(current_plan.plan.display_name.replace("'", "").replace('"', '')),
+                        # year_of_inception=check_none(current_plan.plan.year_of_inception)
+                    )
+                    print(current_plan.plan.display_name.replace("'", "").replace('"', ''))
+
+
+                    # str_insert = '''
+                    # INSERT INTO reporting_table
+                    # ( id , census_plan_id ,name , display_name, year_of_inception, benefit_tier, year_closed, web_site, soc_sec_coverage,
+                    # soc_sec_coverage_notes, includes_state_employees, includes_local_employees, includes_safety_employees,
+                    # includes_general_employees, includes_teachers, intra_period_data_entity_id, intra_period_data_period_end_date,
+                    # intra_period_data_period_type, gasb_68_type, state_gov_role, notes, system_assigned_employer_id, latitude, longitude,
+                    # year, admin_gov_id, employ_gov_id, plan_id )
+                    # VALUES ( {id} , '{census_plan_id}' , '{name}' , '{display_name}', {year_of_inception}, {benefit_tier}, {year_closed}, '{web_site}', {soc_sec_coverage},
+                    # '{soc_sec_coverage_notes}', {includes_state_employees}, {includes_local_employees}, {includes_safety_employees},
+                    # {includes_general_employees}, {includes_teachers}, '{intra_period_data_entity_id}', '{intra_period_data_period_end_date}',
+                    # '{intra_period_data_period_type}', '{gasb_68_type}', '{state_gov_role}', '{notes}', '{system_assigned_employer_id}', '{latitude}', '{longitude}',
+                    # '{year}', '{admin_gov_id}', '{employ_gov_id}', '{plan_id}' )
+                    # '''.format(
+                    #     id=current_plan.plan.id,
+                    #     census_plan_id=current_plan.plan.census_plan_id,
+                    #     name=current_plan.plan.name,
+                    #     display_name=current_plan.plan.display_name.replace("'", "").replace('"', ''),
+                    #     year_of_inception=check_none(current_plan.plan.year_of_inception),
+                    #     benefit_tier=check_none(current_plan.plan.benefit_tier),
+                    #     year_closed=check_none(current_plan.plan.year_closed),
+                    #     web_site=check_none(current_plan.plan.web_site),
+                    #     soc_sec_coverage=check_boolean_none(current_plan.plan.soc_sec_coverage),
+                    #     soc_sec_coverage_notes=current_plan.plan.soc_sec_coverage_notes,
+                    #     includes_state_employees=check_boolean_none(current_plan.plan.includes_state_employees),
+                    #     includes_local_employees=check_boolean_none(current_plan.plan.includes_local_employees),
+                    #     includes_safety_employees=check_boolean_none(current_plan.plan.includes_safety_employees),
+                    #     includes_general_employees=check_boolean_none(current_plan.plan.includes_general_employees),
+                    #     includes_teachers=check_boolean_none(current_plan.plan.includes_teachers),
+                    #     intra_period_data_entity_id=check_none(current_plan.plan.intra_period_data_entity_id),
+                    #     intra_period_data_period_end_date=check_none(current_plan.plan.intra_period_data_period_end_date),
+                    #     intra_period_data_period_type=check_none(current_plan.plan.intra_period_data_period_type),
+                    #     gasb_68_type=check_none(current_plan.plan.gasb_68_type),
+                    #     state_gov_role=check_none(current_plan.plan.state_gov_role),
+                    #     notes=check_none(current_plan.plan.notes),
+                    #     system_assigned_employer_id=current_plan.plan.system_assigned_employer_id,
+                    #     latitude=current_plan.plan.latitude,
+                    #     longitude=current_plan.plan.longitude,
+                    #     year=current_plan.year,
+                    #     admin_gov_id=current_plan.plan.admin_gov_id,
+                    #     employ_gov_id=current_plan.plan.employ_gov_id,
+                    #     plan_id=current_plan.plan_id
+                    # )
+
+                    cursor.execute(str_insert)
+                    # exist_str =
+                #     if i == 10000:
+                #         break
+                #     i += 1
+                # if i == 10000:
+                #     break
+
+                #print(i)
+
+
+                # if plan_attr.attribute_column_name is None or plan_attr.attribute_column_name == 'id':
+                #     name = plan_attr.name.replace(" ", "_")
+                #     add_col_str = 'ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(
+                #         str(name))
+                # elif " " in  plan_attr.attribute_column_name:
+                #     name = plan_attr.name.replace(" ", "_")
+                #     add_col_str = 'ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(
+                #         str(name))
+                # else:
+                #     add_col_str = 'ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(str(plan_attr.attribute_column_name))
+                #
+                # # cannot add columns with current name
+                # try:
+                #     cursor.execute(add_col_str)
+                # except ProgrammingError:
+                #     pass
+                # if i == 5:
+                #     break
+                # i += 1
+        # i = 0
+        # for item in Plan.objects.filter(id__lte=1):
+        #     print(item)
+        #     scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan').filter(plan=item)#
+        #     print(scope_for_current_plan.count())
+            # for it in scope_for_current_plan:
+            #     plan = it.plan
+            #     print(plan)
+            #print(scope_for_current_plan.count())
+
+        # with connection.cursor() as cursor:
+        #     cursor.execute('''CREATE TABLE test_bla (id integer);''')
+
+    return redirect('/admin/pensiondata/reportingtable/')
 
 # NOTE:  This part should be changed/optimized to Class based View later
 @staff_member_required

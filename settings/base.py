@@ -44,6 +44,7 @@ ADMIN_REORDER = (
         'pensiondata.GenerateCalculatedAttributeData',
         'pensiondata.PlanBenefitDesign',
         'pensiondata.PlanInheritance',
+        'pensiondata.ReportingTable',
     )},
     {'app': 'sites', 'models': ('sites.Site',)},
 )

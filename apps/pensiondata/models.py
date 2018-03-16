@@ -702,40 +702,38 @@ class PlanInheritance(models.Model):
         db_table = 'plan_inheritance'
         verbose_name_plural = "Plan Inheritance"
 
-#
-# class ReportingTable(models.Model):
-#     id = models.BigAutoField(primary_key=True)
-#     plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
-#     census_plan_id = CharNullField(max_length=255, unique=True, blank=True, null=True)
-#     name = models.CharField(max_length=255)
-#     display_name = models.CharField(max_length=255, blank=True, null=True)
-#     year_of_inception = models.IntegerField(blank=True, null=True)
-#     benefit_tier = models.IntegerField(blank=True, null=True)
-#     year_closed = models.IntegerField(blank=True, null=True)
-#     web_site = models.CharField(max_length=255, blank=True, null=True)
-#     admin_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True,
-#                                   related_name='admin_gov_report')
-#     employ_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True,
-#                                    verbose_name="Employing Gov", related_name='employ_gov_report')
-#     soc_sec_coverage = models.NullBooleanField()
-#     soc_sec_coverage_notes = models.CharField(max_length=255, blank=True, null=True)
-#     includes_state_employees = models.NullBooleanField()
-#     includes_local_employees = models.NullBooleanField()
-#     includes_safety_employees = models.NullBooleanField()
-#     includes_general_employees = models.NullBooleanField()
-#     includes_teachers = models.NullBooleanField()
-#     intra_period_data_entity_id = models.BigIntegerField(blank=True, null=True)
-#     intra_period_data_period_end_date = models.DateField(blank=True, null=True)
-#     intra_period_data_period_type = models.IntegerField(blank=True, null=True)
-#     gasb_68_type = models.CharField(max_length=30, blank=True, null=True)
-#     state_gov_role = models.CharField(max_length=30, blank=True, null=True)
-#     notes = models.TextField(blank=True, null=True)
-#     system_assigned_employer_id = models.CharField(max_length=20, blank=True, null=True,
-#                                                    verbose_name="System Assigned Employer ID")
-#     latitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
-#     longitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
-#
-#     year = models.CharField(max_length=4)
-#
-#     class Meta:
-#         db_table = 'reporting_table'
+
+class ReportingTable(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
+    census_plan_id = CharNullField(max_length=255, unique=True, blank=True, null=True)
+    name = models.CharField(max_length=255)
+    display_name = models.CharField(max_length=255, blank=True, null=True)
+    year_of_inception = models.IntegerField(blank=True, null=True)
+    benefit_tier = models.IntegerField(blank=True, null=True)
+    year_closed = models.IntegerField(blank=True, null=True)
+    web_site = models.CharField(max_length=255, blank=True, null=True)
+    admin_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True,
+                                  related_name='admin_gov_report')
+    employ_gov = models.ForeignKey(Government, models.DO_NOTHING, blank=True, null=True,
+                                   verbose_name="Employing Gov", related_name='employ_gov_report')
+    soc_sec_coverage = models.NullBooleanField()
+    soc_sec_coverage_notes = models.CharField(max_length=255, blank=True, null=True)
+    includes_state_employees = models.NullBooleanField()
+    includes_local_employees = models.NullBooleanField()
+    includes_safety_employees = models.NullBooleanField()
+    includes_general_employees = models.NullBooleanField()
+    includes_teachers = models.NullBooleanField()
+    intra_period_data_entity_id = models.BigIntegerField(blank=True, null=True)
+    intra_period_data_period_end_date = models.DateField(blank=True, null=True)
+    intra_period_data_period_type = models.IntegerField(blank=True, null=True)
+    gasb_68_type = models.CharField(max_length=30, blank=True, null=True)
+    state_gov_role = models.CharField(max_length=30, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+    system_assigned_employer_id = models.CharField(max_length=20, blank=True, null=True,
+                                                   verbose_name="System Assigned Employer ID")
+    latitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
+
+    year = models.CharField(max_length=4)
+

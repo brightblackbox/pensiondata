@@ -1,7 +1,7 @@
 from django.conf.urls import url, include
 from django.contrib import admin
 from django.conf import settings
-from pensiondata.views import HomeView, PlanListView, PlanDetailView, export_file, GovernmentDetailView
+from pensiondata.views import HomeView, PlanListView, PlanDetailView, export_file, GovernmentDetailView, generate_reporting_table
 
 admin.autodiscover()
 
@@ -16,6 +16,7 @@ urlpatterns = [
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^generate_reporting_table/$', generate_reporting_table, name='generate_reporting_table'),
 ]
 
 urlpatterns += [url(r'^nested_admin/', include('nested_admin.urls'))]

@@ -2,11 +2,12 @@ import re
 from django.contrib import admin
 from django.db.models import F, Count, Case, When, Value, BooleanField
 import json
+from django.conf.urls import url
 from django.db.models.query import QuerySet
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, DataSource, \
     PlanAnnualAttribute, AttributeCategory, \
-    GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup, PlanBenefitDesign, PlanInheritance
+    GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup, PlanBenefitDesign, PlanInheritance,ReportingTable
 
 from .models import GovernmentAttrSummary
 from .tasks import generate_calculated_fields, generate_calculated_fields_null
@@ -500,10 +501,34 @@ class PlanInheritanceAdmin(admin.ModelAdmin):
     ordering = "id",
 
 
+class ReportingTableAdmin( admin.ModelAdmin):
+    raw_id_fields = ['plan', 'admin_gov', 'employ_gov']
+
+    change_list_template = 'admin/reportingtable.html'
+
+
+    # def get_model_info(self):
+    #     app_label = self.model._meta.app_label
+    #     try:
+    #         return ( app_label, self.model._meta.model_name, )
+    #     except AttributeError:
+    #         return ( app_label, self.model._meta.module_name, )
+    #
+    # def changelist_view(self, request, extra_context=None):
+    #     """
+    #     The 'change list' admin view for this model.
+    #     """
+    #     print(self.get_model_info())
+    #     print('=+++++++++')
+    #
+    #     return redirect('/admin/%s/%s/reportingtable/' % self.get_model_info())
+
+
 admin.site.register(PresentationExport)
 admin.site.register(ExportGroup)
 admin.site.register(PlanBenefitDesign, PlanBenefitDesignAdmin)
 admin.site.register(PlanInheritance, PlanInheritanceAdmin)
+admin.site.register(ReportingTable, ReportingTableAdmin)
 
 ###############################################################################
 # To register new model, you also need to add it to ADMIN_REORDER at settings.
