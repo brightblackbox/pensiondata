@@ -11,6 +11,7 @@ from django.db.models.signals import pre_save, pre_delete, post_save, post_delet
 from django.db.models import F, Case, When, Value, BooleanField
 import json
 import os
+from pprint import pprint
 import psycopg2
 import traceback
 import csv
@@ -423,52 +424,485 @@ def generate_reporting_table(request):
 
             # add column to table reporting_table from every instanse of Plan Attribute
             i = 0
+            list_all_attribute_column_name = []
             for plan_attr in PlanAttribute.objects.all():
-                try:
-                    if plan_attr.attribute_column_name is None or plan_attr.attribute_column_name == 'id' \
-                            or " " in plan_attr.attribute_column_name:
-                        pass
-                    else:
-                        add_col_str = 'ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(
-                            str(plan_attr.attribute_column_name))
-                    cursor.execute(add_col_str)
-                # cannot add columns with current name
-                except ProgrammingError:
+                if plan_attr.attribute_column_name is None or plan_attr.attribute_column_name == 'id' \
+                        or " " in plan_attr.attribute_column_name or plan_attr.attribute_column_name == 'plan_id'\
+                        or plan_attr.attribute_column_name == 'year':
                     pass
+                else:
+                    list_all_attribute_column_name.append(str(plan_attr.attribute_column_name))
+            # only unique attribute_column_name
+            list_all_attribute_column_name = list(set(list_all_attribute_column_name))
+            #try:
+            for one_attr_col_name in list_all_attribute_column_name:
+                print(one_attr_col_name)
+                cursor.execute('ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(str(one_attr_col_name)))
+            #except ProgrammingError:
+            #   list_all_attribute_column_name.remove(one_attr_col_name)
+
+
+                # try:
+                #     if plan_attr.attribute_column_name is None or plan_attr.attribute_column_name == 'id' \
+                #             or " " in plan_attr.attribute_column_name:
+                #         pass
+                #     else:
+                #         add_col_str = 'ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(
+                #             str(plan_attr.attribute_column_name))
+                #         list_all_attribute_column_name.append(str(plan_attr.attribute_column_name))
+                #     cursor.execute(add_col_str)
+                # # cannot add columns with current name
+                # except ProgrammingError:
+                #     pass
 
             scope_all_plan_an_attr = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute')
 
-            def check_none(attr):
-                if not attr:
-                    return "NULL"
-                else:
-                    return attr
+        def check_none(attr):
+            if not attr:
+                return "NULL"
+            else:
+                return attr
 
-            def check_boolean_none(attr):
-                if attr is None:
-                    return "NULL"
-                else:
-                    return "'%s'"%(attr)
+        def convet_none_to_null(attr):
+            if not attr:
+                return "NULL"
+            else:
+                return attr
 
-            i = 0
-            for plan in Plan.objects.filter(id__lte=1):
-                scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute').filter(plan=plan)
-                print(scope_for_current_plan.count())
-                print(plan.id)
-                for current_plan in scope_for_current_plan:
+        def check_boolean_none(attr):
+            if attr is None:
+                return "NULL"
+            else:
+                return "'%s'"%(attr)
 
-                    # current_plan.plan.
+
+        print(len(list(set(list_all_attribute_column_name))))
+        print(list(set(list_all_attribute_column_name)))
+
+        i = 0
+        for plan in Plan.objects.filter(id__lte=1):
+            scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute').filter(plan=plan)
+            print(scope_for_current_plan.count())
+
+            qs_years = scope_for_current_plan.values_list('year', flat=True)
+            current_plan = scope_for_current_plan.first().plan
+            qs_plan_attribute_id = scope_for_current_plan.values_list('plan_attribute_id', flat=True)
+            dict_plan_attr_and_attr_value = {}
+            t = 0
+            # for item in list_all_attribute_column_name:
+            #     if item in qs_plan_attribute_id:
+            #         qs_plan_attribute_id
+            #         t += 1
+            # print("===  t ",t )
+            # for item in list_all_attribute_column_name:
+            #     cur_id = PlanAttribute.objects.filter(attribute_column_name=item)[0].id
+            #     print(cur_id)
+            # for pl_attr in qs_plan_attribute_id:
+            #     print(pl_attr)
+
+
+            print(qs_plan_attribute_id)
+            print(len(qs_plan_attribute_id))
+            print(current_plan)
+
+            dict_plan_attr_and_attr_value_with_years = {}
+            for y in qs_years:
+                dict_plan_attr_and_attr_value_with_years[y]={}
+
+            pprint(dict_plan_attr_and_attr_value_with_years)
+            # for curr_year in qs_years:
+            #     for item in list_all_attribute_column_name:
+            #         cur_id = PlanAttribute.objects.filter(attribute_column_name=item)[0].id
+            #         case_exist = scope_for_current_plan.filter(year=curr_year, plan_attribute_id=cur_id)
+            #         if case_exist.exists() :
+            #             # dict_plan_attr_and_attr_value[item] = convet_none_to_null(case_exist[0].attribute_value)
+            #             dict_plan_attr_and_attr_value_with_years[curr_year] [item] = convet_none_to_null(case_exist[0].attribute_value)
+            #             # dict_plan_attr_and_attr_value_with_years[curr_year][item] = convet_none_to_null(case_exist[0].attribute_value)
+            #     #dict_plan_attr_and_attr_value_with_years[curr_year] = dict_plan_attr_and_attr_value
+            #
+            #             #dict_plan_attr_and_attr_value[item]=case_exist[0].attribute_value
+            #             #print(item, "======", case_exist[0].attribute_value,"======" ,type(case_exist[0].attribute_value))
+            # pprint(dict_plan_attr_and_attr_value_with_years)
+
+            dict_2016 = {'actassets_ava': 'NULL',
+                 'actassets_est': '0',
+                 'actassets_gasb': 'NULL',
+                 'actassets_smooth': 'NULL',
+                 'actcostmeth': 'NULL',
+                 'actcostmeth_gasb': 'Entry Age Normal',
+                 'actcostmeth_note': 'NULL',
+                 'actcostmethcode': 'NULL',
+                 'actcostmethcode_gasb': '1',
+                 'actfundedratio_est': '0',
+                 'actfundedratio_gasb': 'NULL',
+                 'actfundedratio_gasb67': 'NULL',
+                 'activeage_avg': 'NULL',
+                 'actives_tot': 'NULL',
+                 'activesalaries': 'NULL',
+                 'activesalary_avg': 'NULL',
+                 'activesalary_avg_est': '0',
+                 'activetenure_avg': 'NULL',
+                 'actliabilities_ean': 'NULL',
+                 'actliabilities_est': '0',
+                 'actliabilities_gasb': 'NULL',
+                 'actliabilities_other': '0',
+                 'actliabilities_puc': 'NULL',
+                 'actrpt_cy': 'NULL',
+                 'actrptdate': 'NULL',
+                 'actuarially_accured_liabilities': '15723720',
+                 'actvaldate_actuarialcosts': 'NULL',
+                 'actvaldate_gasbschedules': 'NULL',
+                 'addsubtractgainloss': 'NULL',
+                 'adec': 'NULL',
+                 'adjustment_mktassets': 'NULL',
+                 'administeringgovt': '0',
+                 'administrative_expenses': '13885',
+                 'aec': 'NULL',
+                 'all_other_short_term_investments': '300574',
+                 'alternatives': '0',
+                 'arc': 'NULL',
+                 'assetsmoothingbaseline': 'NULL',
+                 'assetsmoothingperiod_gasb': '5',
+                 'assetvalmeth': 'NULL',
+                 'assetvalmeth_gasb': '5-year smoothed market ',
+                 'assetvalmeth_note': 'NULL',
+                 'assetvalmethcode': 'NULL',
+                 'assetvalmethcode_gasb': '0',
+                 'beneficiaries_dependentsurvivors': 'NULL',
+                 'beneficiaries_disabilityretirees': 'NULL',
+                 'beneficiaries_other': 'NULL',
+                 'beneficiaries_serviceretirees': 'NULL',
+                 'beneficiaries_spousalsurvivors': 'NULL',
+                 'beneficiaries_survivors': 'NULL',
+                 'beneficiaries_tot': 'NULL',
+                 'beneficiaryage_avg': 'NULL',
+                 'beneficiarybenefit_avg': 'NULL',
+                 'beneficiarybenefit_avg_est': '0',
+                 'benefits_disabilityretirees': 'NULL',
+                 'benefits_serviceretirees': 'NULL',
+                 'benefits_tot': 'NULL',
+                 'benefitswebsite': 'http',
+                 'blendeddiscountrate': '0.0775000005960464478',
+                 'cafr_av_conflict': 'NULL',
+                 'cafr_cy': 'NULL',
+                 'cash_on_hand_and_demand_deposits': '186433',
+                 'cashandshortterm': '0',
+                 'cola_code': 'NULL',
+                 'cola_verabatim': 'NULL',
+                 'contrib_ee_other': 'NULL',
+                 'contrib_ee_purchaseservice': 'NULL',
+                 'contrib_ee_regular': '231794',
+                 'contrib_er_other': 'NULL',
+                 'contrib_er_regular': '435098',
+                 'contrib_er_state': 'NULL',
+                 'contrib_other': '6223',
+                 'contrib_tot': '673115',
+                 'contributionfy': 'NULL',
+                 'contributions_by_local_employees': '77689',
+                 'contributions_by_state_employees': '154105',
+                 'corporate_bonds_other': '2316304',
+                 'corporate_stocks': '5850539',
+                 'costsharing': '0',
+                 'coststructure': 'Multiple employer, agent plan',
+                 'covered_payroll': '3488017',
+                 'coveredpayroll_gasb67': 'NULL',
+                 'coverslocalemployees': '1',
+                 'coversstateemployees': '1',
+                 'coversteachers': '0',
+                 'dataentrycode': 'NULL',
+                 'disability_benefits': '57661',
+                 'dividend_earnings': '0',
+                 'dropmembers': 'NULL',
+                 'eegroupid': '0',
+                 'electedofficials': '0',
+                 'employeetypecovered': 'Plan covers state and local employees',
+                 'employertype': '2',
+                 'equities_domestic': '0.529799997806549072',
+                 'equities_international': '0.114100001752376556',
+                 'equities_tot': '0.643899977207183838',
+                 'expectedreturnmethod': 'NULL',
+                 'expense_adminexpenses': '-11002',
+                 'expense_alternatives': 'NULL',
+                 'expense_colabenefits': 'NULL',
+                 'expense_deathbenefits': 'NULL',
+                 'expense_depreciation': '-2021',
+                 'expense_disabilitybenefits': 'NULL',
+                 'expense_dropbenefits': 'NULL',
+                 'expense_investments': '-2883',
+                 'expense_lumpsumbenefits': 'NULL',
+                 'expense_net': '-1100976',
+                 'expense_otherbenefits': '-45768',
+                 'expense_otherdeductions': '-3668',
+                 'expense_otherinvestments': 'NULL',
+                 'expense_privateequity': 'NULL',
+                 'expense_realestate': 'NULL',
+                 'expense_refunds': 'NULL',
+                 'expense_retbenefits': '-1038517',
+                 'expense_seclendmgmtfees': '-1416',
+                 'expense_securitieslending': '-2772',
+                 'expense_survivorbenefits': 'NULL',
+                 'expense_totbenefits': '-1084285',
+                 'fairvaluechange_investments': '753836',
+                 'fairvaluechange_realestate': 'NULL',
+                 'fairvaluechange_seclend': 'NULL',
+                 'fairvaluechange_seclendug': 'NULL',
+                 'federal_agency_securities': '0',
+                 'federal_treasury_securities': '0',
+                 'federally_sponsored_agencies': '0',
+                 'fiscalyeartype': '1',
+                 'fixedincome_domestic': '0.155699998140335083',
+                 'fixedincome_international': '0',
+                 'fixedincome_tot': '0.253800004720687866',
+                 'foreign_and_international_securities': '1260074',
+                 'former_active_members_retired_on_account_of_disability': '4120',
+                 'fundingmeth': 'NULL',
+                 'fundingmeth_gasb': 'Level Percent Closed',
+                 'fundingmeth_note': 'NULL',
+                 'fundingmethcode1_gasb': '1',
+                 'fundingmethcode2_gasb': '3',
+                 'fundmethcode_1': 'NULL',
+                 'fundmethcode_2': 'NULL',
+                 'fy': '2016',
+                 'fye': '2016-09-30',
+                 'gainloss': 'NULL',
+                 'gainlossbase_1': 'NULL',
+                 'gainlossbase_2': 'NULL',
+                 'gainlossconcept': 'NULL',
+                 'gainlossperiod': 'NULL',
+                 'gainlossrecognition': 'NULL',
+                 'geogrowth_est': '0.0220383889973163605',
+                 'georeturn_est': '0.050627436488866806',
+                 'govtname': 'Alabama',
+                 'grossreturns': '0',
+                 'inactive_members': '9641',
+                 'inactivenonvested': 'NULL',
+                 'inactivevestedmembers': 'NULL',
+                 'income_alternatives': 'NULL',
+                 'income_dividends': 'NULL',
+                 'income_interest': 'NULL',
+                 'income_interestanddividends': '297369',
+                 'income_international': 'NULL',
+                 'income_net': '1726146',
+                 'income_otheradditions': 'NULL',
+                 'income_otherinvestments': 'NULL',
+                 'income_privateequity': 'NULL',
+                 'income_realestate': 'NULL',
+                 'income_securitieslending': '7481',
+                 'income_securitieslendingrebate': '-1356',
+                 'inflationassumption_gasb': '0.0299999993294477463',
+                 'inpfs': '1',
+                 'interest_earnings': '297369',
+                 'investmentreturn_10yr': '0.0534000024199485779',
+                 'investmentreturn_10yr_est': '0',
+                 'investmentreturn_12yr': 'NULL',
+                 'investmentreturn_15yr': 'NULL',
+                 'investmentreturn_1yr': '0.10220000147819519',
+                 'investmentreturn_1yr_est': '0',
+                 'investmentreturn_20yr': 'NULL',
+                 'investmentreturn_25yr': 'NULL',
+                 'investmentreturn_2yr': 'NULL',
+                 'investmentreturn_30yr': 'NULL',
+                 'investmentreturn_3yr': '0.0764999985694885254',
+                 'investmentreturn_4yr': 'NULL',
+                 'investmentreturn_5yr': '0.11029999703168869',
+                 'investmentreturn_5yr_est': '0',
+                 'investmentreturn_7yr': 'NULL',
+                 'investmentreturn_8yr': 'NULL',
+                 'investmentreturn_longterm': 'NULL',
+                 'investmentreturn_longtermstartye': 'NULL',
+                 'investmentreturnassumption_gasb': '0.0799999982118606567',
+                 'investments_held_in_trust_by_other_agencies': '0',
+                 'judgesattorneys': '0',
+                 'local_government_active_members': '54627',
+                 'local_government_contributions': '257602',
+                 'localemployers': '1',
+                 'localfire': '0',
+                 'localgenee': '1',
+                 'localpolice': '0',
+                 'losses_on_investments': '0',
+                 'lowercorridor': 'NULL',
+                 'members_retired_on_account_of_age_or_service': '38247',
+                 'mktassets_actrpt': 'NULL',
+                 'mktassets_net': '11177074',
+                 'mktassets_smooth': 'NULL',
+                 'mortgages_held_directly': '0',
+                 'net_gains_on_investments': '753836',
+                 'netflows_smooth': 'NULL',
+                 'netpensionliability': 'NULL',
+                 'netposition': 'NULL',
+                 'noav': 'NULL',
+                 'nocafr': 'NULL',
+                 'normcostamount_ee': 'NULL',
+                 'normcostamount_er': 'NULL',
+                 'normcostamount_tot': 'NULL',
+                 'normcostrate_ee': 'NULL',
+                 'normcostrate_ee_est': '0',
+                 'normcostrate_er': 'NULL',
+                 'normcostrate_er_est': '0',
+                 'normcostrate_tot': 'NULL',
+                 'normcostrate_tot_est': '0',
+                 'other': '0',
+                 'other_benefits': '0',
+                 'other_investment_earnings': '4709',
+                 'other_investments': '0',
+                 'other_securities': '0',
+                 'othermembers': 'NULL',
+                 'payroll': 'NULL',
+                 'payrollgrowthassumption': 'NULL',
+                 'percentadec': 'NULL',
+                 'percentarcpaid': 'NULL',
+                 'percentreqcontpaid': 'NULL',
+                 'phasein': 'NULL',
+                 'phaseinpercent': 'NULL',
+                 'phaseinperiods': 'NULL',
+                 'phaseintype': 'NULL',
+                 'plan_annual_id': '1177068',
+                 'planclosed': '0',
+                 'planfullname': 'Employeesе Retirement System of Alabama',
+                 'planinceptionyear': '1945',
+                 'planleveldata': '1',
+                 'planname': 'Alabama ERS',
+                 'plantype': '1',
+                 'planyearclosed': 'NULL',
+                 'ppd_id': '1',
+                 'projectedpayroll': 'NULL',
+                 'pvfb_active': 'NULL',
+                 'pvfb_inactivenonvested': 'NULL',
+                 'pvfb_inactivevested': 'NULL',
+                 'pvfb_other': 'NULL',
+                 'pvfb_retiree': 'NULL',
+                 'pvfb_tot': 'NULL',
+                 'pvfnc_ee': 'NULL',
+                 'pvfnc_er': 'NULL',
+                 'pvfnc_tot': 'NULL',
+                 'pvfs': 'NULL',
+                 'real_property': '1129763',
+                 'realestate': '0.102299995720386505',
+                 'remainingamortperiod': 'NULL',
+                 'rentals_from_state_government': '0',
+                 'reportingdatenotes': 'NULL',
+                 'reqcontamount_er': 'NULL',
+                 'reqcontamount_tot': 'NULL',
+                 'reqcontrate_er': 'NULL',
+                 'reqcontrate_er_est': '0',
+                 'reqcontrate_tot': 'NULL',
+                 'requiredcontribution': 'NULL',
+                 'requiredcontribution_est': 'NULL',
+                 'retirement_benefits': '937718',
+                 'schoolees': '0',
+                 'schoolemployers': '0',
+                 'serviceretage_avg': 'NULL',
+                 'serviceretbenefit_avg': 'NULL',
+                 'serviceretireeage_avg': 'NULL',
+                 'serviceretireebenefit_avg': 'NULL',
+                 'servicerettenure_avg': 'NULL',
+                 'smoothingreset': 'NULL',
+                 'socseccovered': '1',
+                 'socseccovered_verbatim': 'Plan members covered by Social Security',
+                 'source_actcosts': 'NULL',
+                 'source_actliabilities': 'NULL',
+                 'source_assetallocation': '2016 Alabama RS CAFR p 110',
+                 'source_fundingandmethods': 'NULL',
+                 'source_gasbassumptions': '2016 CAFR p 73',
+                 'source_gasbschedules': 'No AV',
+                 'source_incomestatement': '2016 CAFR P 28',
+                 'source_investmentreturn': '2016 Plan CAFR p 103',
+                 'source_membership': 'NULL',
+                 'source_planbasics': 'NULL',
+                 'state_and_local_government_securities': '0',
+                 'state_contributions_on_behalf_of_local_employees': '0',
+                 'state_contributions_on_behalf_of_state_employees': '141168',
+                 'state_government_active_members': '29936',
+                 'stateabbrev': 'AL',
+                 'stateemployers': '1',
+                 'statefire': '0',
+                 'stategenee': '1',
+                 'statename': 'Alabama',
+                 'statepolice': '1',
+                 'survivor_benefits': '43138',
+                 'survivors': '3751',
+                 'system_id': '1',
+                 'teacher': '0',
+                 'tierid': '0',
+                 'time_or_savings_deposits': '223',
+                 'total_active_members': '84563',
+                 'total_benefit_payments': '1038517',
+                 'total_cash_and_securities': '11043910',
+                 'total_cash_and_short_term_investments': '487230',
+                 'total_corporate_bonds': '2316304',
+                 'total_earnings_on_investments': '1055914',
+                 'total_employee_contributions': '231794',
+                 'total_federal_government_securities': '0',
+                 'total_other_investments': '1129763',
+                 'total_other_securities': '1260074',
+                 'total_state_contributions': '141168',
+                 'totalpensionliability': 'NULL',
+                 'totamortperiod': 'NULL',
+                 'totmembership': 'NULL',
+                 'uaal_gasb': 'NULL',
+                 'uaalamortperiod_gasb': '29.8999996185302734',
+                 'uaalrate': 'NULL',
+                 'uaalyearestablished': 'NULL',
+                 'uppercorridor': 'NULL',
+                 'valuationid': '1',
+                 'wageinflation': 'NULL',
+                 'withdrawals': '49436'}
+
+            def my_str(attr):
+                if " " in attr:
+                    return "'%s'"%(str(attr))
+                return attr
+
+            list_keys = list(dict_2016.keys())
+            list_values = list(dict_2016.values())
+            print(len(list_keys))
+            print(len(list_values))
+            str_keys = ', '.join(map(str, list_keys))
+            str_values = ', '.join(map(my_str, list_values))
+            print(str_keys)
+            print(str_values)
+
+            with connection.cursor() as cursor:
+                for one_year in qs_years:
                     str_insert = '''
                     INSERT INTO reporting_table
-                    ( plan_id, census_plan_id )
-                    VALUES ( {plan_id} , {census_plan_id}, {display_name} )
+                    (plan_id, year, {str_keys})
+                    VALUES ({plan_id}, {one_year}, {str_values} )
                     '''.format(
-                        plan_id=current_plan.plan.id,
-                        census_plan_id=check_none(current_plan.plan.census_plan_id),
-                        display_name=check_none(current_plan.plan.display_name.replace("'", "").replace('"', '')),
-                        # year_of_inception=check_none(current_plan.plan.year_of_inception)
+                        str_keys=str_keys,
+                        plan_id=current_plan.id,
+                        one_year=one_year,
+                        str_values=str_values,
+                        actassets_ava='NULL',
+                        actassets_est='0',
+                        actassets_gasb='NULL'
+
                     )
-                    print(current_plan.plan.display_name.replace("'", "").replace('"', ''))
+                    print(str_insert)
+                    # for item in list_all_attribute_column_name:
+                    #     cur_id = PlanAttribute.objects.filter(attribute_column_name=item)[0].id
+                    #     case_exist = scope_for_current_plan.filter(year=one_year, plan_attribute_id=cur_id)
+                    #     if case_exist.exists():
+                    #         print(cur_id, "======" ,case_exist[0].attribute_value)
+                    cursor.execute(str_insert)
+
+
+
+                # print(plan.id)
+                # for current_plan in scope_for_current_plan:
+                #
+                #     # current_plan.plan.
+                #     str_insert = '''
+                #     INSERT INTO reporting_table
+                #     ( plan_id, census_plan_id )
+                #     VALUES ( {plan_id} , {census_plan_id})
+                #     '''.format(
+                #         plan_id=current_plan.plan.id,
+                #         census_plan_id=check_none(current_plan.plan.census_plan_id),
+                #         display_name=check_none(current_plan.plan.display_name.replace("'", "").replace('"', '')),
+                #         # year_of_inception=check_none(current_plan.plan.year_of_inception)
+                #     )
+                #     print(current_plan.plan.display_name.replace("'", "").replace('"', ''))
 
 
                     # str_insert = '''
@@ -514,7 +948,7 @@ def generate_reporting_table(request):
                     #     plan_id=current_plan.plan_id
                     # )
 
-                    cursor.execute(str_insert)
+                    # cursor.execute(str_insert)
                     # exist_str =
                 #     if i == 10000:
                 #         break
