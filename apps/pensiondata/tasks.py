@@ -571,7 +571,7 @@ def task_reporting_table():
         return attr
 
     # id__lte=500
-    for plan in Plan.objects.filter(id__lte=1):
+    for plan in Plan.objects.filter():
         scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute').filter(plan=plan)
         if scope_for_current_plan.count() == 0:
             continue
