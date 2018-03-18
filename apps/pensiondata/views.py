@@ -3,8 +3,6 @@ from django.views.generic import TemplateView, DetailView
 from django.views.generic.list import ListView
 from django_tables2 import RequestConfig
 from django.shortcuts import get_object_or_404, redirect
-from django.db import connection
-from django.db.utils import  ProgrammingError
 from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models.signals import pre_save, pre_delete, post_save, post_delete
@@ -25,6 +23,7 @@ from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute,
                     Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup
 from .tables import PlanTable
 from .signals import recalculate
+from .tasks import task_reporting_table
 
 from moderation import moderation
 from moderation.helpers import automoderate
@@ -381,164 +380,7 @@ def get_calculated_task_status(request):
 @staff_member_required
 def generate_reporting_table(request):
     if request.POST:
-        print("POST-----")
-
-        # drop table if exists
-        with connection.cursor() as cursor:
-            # drop table if exists
-            cursor.execute('DROP TABLE IF EXISTS reporting_table')
-            # create start part of table
-            cursor.execute('''
-
-            CREATE TABLE reporting_table (
-            id bigserial primary key,
-            plan_id bigint,
-            census_plan_id varchar(255),
-            name   varchar(255),
-            display_name      varchar(255),             
-            year_of_inception   int,            
-            benefit_tier int,         
-            year_closed  int,                 
-            web_site  varchar(255),
-            soc_sec_coverage boolean,
-            soc_sec_coverage_notes  varchar(255),
-             includes_state_employees boolean,
-             includes_local_employees boolean,
-             includes_safety_employees boolean,
-             includes_general_employees boolean,
-             includes_teachers boolean,
-             intra_period_data_entity_id bigint, 
-             intra_period_data_period_end_date date,
-             intra_period_data_period_type int,
-             gasb_68_type varchar(255),
-             state_gov_role varchar(255),
-             notes text,
-             system_assigned_employer_id varchar(255),
-             latitude NUMERIC,
-             longitude NUMERIC,
-             year varchar(255),
-             admin_gov_id bigint,
-             employ_gov_id bigint
-            );
-            ''')
-
-            list_all_attribute_column_name = []
-            for plan_attr in PlanAttribute.objects.all():
-                if plan_attr.attribute_column_name is None or plan_attr.attribute_column_name == 'id' \
-                        or " " in plan_attr.attribute_column_name or plan_attr.attribute_column_name == 'plan_id'\
-                        or plan_attr.attribute_column_name == 'year':
-                    pass
-                else:
-                    list_all_attribute_column_name.append(str(plan_attr.attribute_column_name))
-            # only unique attribute_column_name
-            list_all_attribute_column_name = list(set(list_all_attribute_column_name))
-            for one_attr_col_name in list_all_attribute_column_name:
-                cursor.execute('ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(str(one_attr_col_name)))
-
-        def convet_none_to_null(attr):
-            if not attr:
-                return "NULL"
-            return attr
-
-        #id__lte=500
-        for plan in Plan.objects.filter(id__lte=1):
-            scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute').filter(plan=plan)
-            if scope_for_current_plan.count() == 0:
-                continue
-
-            qs_years = scope_for_current_plan.values_list('year', flat=True)
-            current_plan = scope_for_current_plan.first().plan
-
-            dict_plan_attr_and_attr_value_with_years = {}
-            for y in qs_years:
-                dict_plan_attr_and_attr_value_with_years[y]={}
-
-            def my_str(attr):
-                if isinstance(attr, str):
-                    if not attr:
-                        return "'%s'" % (str(attr))
-                    if " " in attr:
-                        if "'" or '"' in attr:
-                            return "'%s'" % (str(attr.replace("'", "").replace('"', '')))
-                        return "'%s'" % (str(attr))
-                    return attr
-                elif attr:
-                    return attr
-                return "NULL"
-
-            for one_year in qs_years:
-                try:
-                    with connection.cursor() as cursor:
-                        str_insert = '''
-                        INSERT INTO reporting_table
-                        (plan_id, year, census_plan_id, name, display_name, year_of_inception, benefit_tier, year_closed,
-                         web_site, soc_sec_coverage, soc_sec_coverage_notes, includes_state_employees, 
-                         includes_local_employees, includes_safety_employees,includes_general_employees,
-                         includes_teachers, intra_period_data_entity_id, intra_period_data_period_end_date, 
-                         intra_period_data_period_type, gasb_68_type, state_gov_role, notes, system_assigned_employer_id,
-                         latitude, longitude, admin_gov_id, employ_gov_id)
-                        VALUES ({plan_id}, {one_year}, {census_plan_id}, {name}, {display_name}, {year_of_inception},
-                        {benefit_tier},{year_closed}, {web_site}, {soc_sec_coverage}, {soc_sec_coverage_notes},
-                         {includes_state_employees}, {includes_local_employees}, {includes_safety_employees},
-                         {includes_general_employees},{includes_teachers}, {intra_period_data_entity_id},
-                         {intra_period_data_period_end_date}, {intra_period_data_period_type}, {gasb_68_type},
-                          {state_gov_role}, {notes}, {system_assigned_employer_id}, {latitude}, {longitude},
-                          {admin_gov_id}, {employ_gov_id})
-                        '''.format(
-                            plan_id=current_plan.id,
-                            one_year=one_year,
-                            census_plan_id=my_str(current_plan.census_plan_id),
-                            name=my_str(current_plan.name),
-                            display_name=my_str(current_plan.display_name),
-                            year_of_inception=my_str(current_plan.year_of_inception),
-                            benefit_tier=my_str(current_plan.benefit_tier),
-                            year_closed=my_str(current_plan.year_closed),
-                            web_site=my_str(current_plan.web_site),
-                            soc_sec_coverage=my_str(current_plan.soc_sec_coverage),
-                            soc_sec_coverage_notes=my_str(current_plan.soc_sec_coverage_notes),
-                            includes_state_employees=my_str(current_plan.includes_state_employees),
-                            includes_local_employees=my_str(current_plan.includes_local_employees),
-                            includes_safety_employees=my_str(current_plan.includes_safety_employees),
-                            includes_general_employees=my_str(current_plan.includes_general_employees),
-                            includes_teachers=my_str(current_plan.includes_teachers),
-                            intra_period_data_entity_id=my_str(current_plan.intra_period_data_entity_id),
-                            intra_period_data_period_end_date=my_str(current_plan.intra_period_data_period_end_date),
-                            intra_period_data_period_type=my_str(current_plan.intra_period_data_period_type),
-                            gasb_68_type=my_str(current_plan.gasb_68_type),
-                            state_gov_role=my_str(current_plan.state_gov_role),
-                            notes=my_str(current_plan.notes),
-                            system_assigned_employer_id=my_str(current_plan.system_assigned_employer_id),
-                            latitude=my_str(current_plan.latitude),
-                            longitude=my_str(current_plan.longitude),
-                            admin_gov_id=my_str(current_plan.admin_gov_id),
-                            employ_gov_id=my_str(current_plan.employ_gov_id)
-                        )
-                        cursor.execute(str_insert)
-                except ProgrammingError:
-                    print("ProgrammingError-------->>> ", current_plan)
-
-                for one_attr in list_all_attribute_column_name:
-                    cur_id = PlanAttribute.objects.filter(attribute_column_name=one_attr)[0].id
-                    case_exist = scope_for_current_plan.filter(year=one_year, plan_attribute_id=cur_id)
-                    if case_exist.exists():
-                        with connection.cursor() as cursor:
-                            try:
-                                attribute_value = convet_none_to_null(case_exist[0].attribute_value)
-                                str_update = '''
-                                UPDATE reporting_table
-                                SET {one_attr}={attribute_value}
-                                WHERE plan_id={plan_id} AND year='{one_year}'
-                                '''.format(
-                                    one_attr=one_attr,
-                                    attribute_value=my_str(attribute_value),
-                                    plan_id=current_plan.id,
-                                    one_year=one_year
-                                )
-                                cursor.execute(str_update)
-                            except ProgrammingError:
-                                print("ProgrammingError-------->>> ", current_plan)
-                                print(attribute_value)
-
+        task_reporting_table.delay()
     return redirect('/admin/pensiondata/reportingtable/')
 
 # NOTE:  This part should be changed/optimized to Class based View later

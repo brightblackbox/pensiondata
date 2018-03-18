@@ -6,6 +6,8 @@ import json
 
 import pandas as pd
 import xlrd
+from django.db import connection
+from django.db.utils import  ProgrammingError
 from django.db.utils import  IntegrityError
 from celery import shared_task, current_task, task
 
@@ -507,3 +509,160 @@ def import_reason(dict_all_sheets, df_documentation, list_unique_sheet_name):
     parse_sheet_documentaion(dict_preparsed_data, df_documentation)
     # print(list_unique_sheet_name)
     # return True
+
+
+@shared_task
+def task_reporting_table():
+    # drop table if exists
+    with connection.cursor() as cursor:
+        # drop table if exists
+        cursor.execute('DROP TABLE IF EXISTS reporting_table')
+        # create start part of table
+        cursor.execute('''
+
+        CREATE TABLE reporting_table (
+        id bigserial primary key,
+        plan_id bigint,
+        census_plan_id varchar(255),
+        name   varchar(255),
+        display_name      varchar(255),             
+        year_of_inception   int,            
+        benefit_tier int,         
+        year_closed  int,                 
+        web_site  varchar(255),
+        soc_sec_coverage boolean,
+        soc_sec_coverage_notes  varchar(255),
+         includes_state_employees boolean,
+         includes_local_employees boolean,
+         includes_safety_employees boolean,
+         includes_general_employees boolean,
+         includes_teachers boolean,
+         intra_period_data_entity_id bigint, 
+         intra_period_data_period_end_date date,
+         intra_period_data_period_type int,
+         gasb_68_type varchar(255),
+         state_gov_role varchar(255),
+         notes text,
+         system_assigned_employer_id varchar(255),
+         latitude NUMERIC,
+         longitude NUMERIC,
+         year varchar(255),
+         admin_gov_id bigint,
+         employ_gov_id bigint
+        );
+        ''')
+
+        list_all_attribute_column_name = []
+        for plan_attr in PlanAttribute.objects.all():
+            if plan_attr.attribute_column_name is None or plan_attr.attribute_column_name == 'id' \
+                    or " " in plan_attr.attribute_column_name or plan_attr.attribute_column_name == 'plan_id' \
+                    or plan_attr.attribute_column_name == 'year':
+                pass
+            else:
+                list_all_attribute_column_name.append(str(plan_attr.attribute_column_name))
+        # only unique attribute_column_name
+        list_all_attribute_column_name = list(set(list_all_attribute_column_name))
+        for one_attr_col_name in list_all_attribute_column_name:
+            cursor.execute('ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(str(one_attr_col_name)))
+
+    def convet_none_to_null(attr):
+        if not attr:
+            return "NULL"
+        return attr
+
+    # id__lte=500
+    for plan in Plan.objects.filter(id__lte=1):
+        scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute').filter(plan=plan)
+        if scope_for_current_plan.count() == 0:
+            continue
+        qs_years = scope_for_current_plan.values_list('year', flat=True)
+        current_plan = scope_for_current_plan.first().plan
+
+        def my_str(attr):
+            if isinstance(attr, str):
+                if not attr:
+                    return "'%s'" % (str(attr))
+                if " " in attr:
+                    if "'" or '"' in attr:
+                        return "'%s'" % (str(attr.replace("'", "").replace('"', '')))
+                    return "'%s'" % (str(attr))
+                return "'%s'" % (str(attr))
+            elif attr:
+                return attr
+            return "NULL"
+
+        for one_year in qs_years:
+            try:
+                with connection.cursor() as cursor:
+                    str_insert = '''
+                    INSERT INTO reporting_table
+                    (plan_id, year, census_plan_id, name, display_name, year_of_inception, benefit_tier, year_closed,
+                     web_site, soc_sec_coverage, soc_sec_coverage_notes, includes_state_employees, 
+                     includes_local_employees, includes_safety_employees,includes_general_employees,
+                     includes_teachers, intra_period_data_entity_id, intra_period_data_period_end_date, 
+                     intra_period_data_period_type, gasb_68_type, state_gov_role, notes, system_assigned_employer_id,
+                     latitude, longitude, admin_gov_id, employ_gov_id)
+                    VALUES ({plan_id}, {one_year}, {census_plan_id}, {name}, {display_name}, {year_of_inception},
+                    {benefit_tier},{year_closed}, {web_site}, {soc_sec_coverage}, {soc_sec_coverage_notes},
+                     {includes_state_employees}, {includes_local_employees}, {includes_safety_employees},
+                     {includes_general_employees},{includes_teachers}, {intra_period_data_entity_id},
+                     {intra_period_data_period_end_date}, {intra_period_data_period_type}, {gasb_68_type},
+                      {state_gov_role}, {notes}, {system_assigned_employer_id}, {latitude}, {longitude},
+                      {admin_gov_id}, {employ_gov_id})
+                    '''.format(
+                        plan_id=current_plan.id,
+                        one_year=one_year,
+                        census_plan_id=my_str(current_plan.census_plan_id),
+                        name=my_str(current_plan.name),
+                        display_name=my_str(current_plan.display_name),
+                        year_of_inception=my_str(current_plan.year_of_inception),
+                        benefit_tier=my_str(current_plan.benefit_tier),
+                        year_closed=my_str(current_plan.year_closed),
+                        web_site=my_str(current_plan.web_site),
+                        soc_sec_coverage=my_str(current_plan.soc_sec_coverage),
+                        soc_sec_coverage_notes=my_str(current_plan.soc_sec_coverage_notes),
+                        includes_state_employees=my_str(current_plan.includes_state_employees),
+                        includes_local_employees=my_str(current_plan.includes_local_employees),
+                        includes_safety_employees=my_str(current_plan.includes_safety_employees),
+                        includes_general_employees=my_str(current_plan.includes_general_employees),
+                        includes_teachers=my_str(current_plan.includes_teachers),
+                        intra_period_data_entity_id=my_str(current_plan.intra_period_data_entity_id),
+                        intra_period_data_period_end_date=my_str(current_plan.intra_period_data_period_end_date),
+                        intra_period_data_period_type=my_str(current_plan.intra_period_data_period_type),
+                        gasb_68_type=my_str(current_plan.gasb_68_type),
+                        state_gov_role=my_str(current_plan.state_gov_role),
+                        notes=my_str(current_plan.notes),
+                        system_assigned_employer_id=my_str(current_plan.system_assigned_employer_id),
+                        latitude=my_str(current_plan.latitude),
+                        longitude=my_str(current_plan.longitude),
+                        admin_gov_id=my_str(current_plan.admin_gov_id),
+                        employ_gov_id=my_str(current_plan.employ_gov_id)
+                    )
+                    cursor.execute(str_insert)
+            except ProgrammingError:
+                pass
+                # print("ProgrammingError-------->>> ", current_plan)
+
+            for one_attr in list_all_attribute_column_name:
+                filter_scope = scope_for_current_plan.filter(plan_attribute__attribute_column_name=one_attr)
+                if filter_scope.exists():
+                    cur_pl_attr = filter_scope.first().plan_attribute
+                    case_exist = scope_for_current_plan.filter(year=one_year, plan_attribute=cur_pl_attr)
+                    if case_exist.exists():
+                        with connection.cursor() as cursor:
+                            try:
+                                attribute_value = convet_none_to_null(case_exist[0].attribute_value)
+                                str_update = '''
+                                UPDATE reporting_table
+                                SET {one_attr}={attribute_value}
+                                WHERE plan_id={plan_id} AND year='{one_year}'
+                                '''.format(
+                                    one_attr=one_attr,
+                                    attribute_value=my_str(attribute_value),
+                                    plan_id=current_plan.id,
+                                    one_year=one_year
+                                )
+                                cursor.execute(str_update)
+                            except ProgrammingError:
+                                pass
+                                # print("ProgrammingError-------->>> ", current_plan, case_exist[0].id)
