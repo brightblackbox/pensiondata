@@ -9,6 +9,7 @@ import xlrd
 from django.db import connection
 from django.db.utils import  ProgrammingError
 from django.db.utils import  IntegrityError
+from django.core.exceptions import ObjectDoesNotExist
 from celery import shared_task, current_task, task
 
 from .models import PlanAnnualAttribute, PlanAttribute, Plan, DataSource
@@ -563,15 +564,10 @@ def task_reporting_table():
         # only unique attribute_column_name
         list_all_attribute_column_name = list(set(list_all_attribute_column_name))
         for one_attr_col_name in list_all_attribute_column_name:
-            cursor.execute('ALTER TABLE reporting_table ADD COLUMN {} varchar(255);'.format(str(one_attr_col_name)))
-
-    def convet_none_to_null(attr):
-        if not attr:
-            return "NULL"
-        return attr
+            cursor.execute('ALTER TABLE reporting_table ADD COLUMN {} varchar(300);'.format(str(one_attr_col_name)))
 
     # id__lte=500
-    for plan in Plan.objects.filter():
+    for plan in Plan.objects.all():
         scope_for_current_plan = PlanAnnualAttribute.objects.select_related('plan', 'plan_attribute').filter(plan=plan)
         if scope_for_current_plan.count() == 0:
             continue
@@ -643,26 +639,31 @@ def task_reporting_table():
                 pass
                 # print("ProgrammingError-------->>> ", current_plan)
 
+        with connection.cursor() as cursor:
             for one_attr in list_all_attribute_column_name:
                 filter_scope = scope_for_current_plan.filter(plan_attribute__attribute_column_name=one_attr)
                 if filter_scope.exists():
-                    cur_pl_attr = filter_scope.first().plan_attribute
-                    case_exist = scope_for_current_plan.filter(year=one_year, plan_attribute=cur_pl_attr)
-                    if case_exist.exists():
-                        with connection.cursor() as cursor:
-                            try:
-                                attribute_value = convet_none_to_null(case_exist[0].attribute_value)
-                                str_update = '''
-                                UPDATE reporting_table
-                                SET {one_attr}={attribute_value}
-                                WHERE plan_id={plan_id} AND year='{one_year}'
-                                '''.format(
-                                    one_attr=one_attr,
-                                    attribute_value=my_str(attribute_value),
-                                    plan_id=current_plan.id,
-                                    one_year=one_year
-                                )
-                                cursor.execute(str_update)
-                            except ProgrammingError:
-                                pass
-                                # print("ProgrammingError-------->>> ", current_plan, case_exist[0].id)
+                    cur_pl_attr = scope_for_current_plan.filter(plan_attribute__attribute_column_name=one_attr).first().plan_attribute
+                    for one_year in qs_years:
+                        try:
+                            case_exist = scope_for_current_plan.get(year=one_year, plan_attribute=cur_pl_attr)
+                        except ObjectDoesNotExist:
+                            continue
+                        try:
+                            attribute_value = my_str(case_exist.attribute_value)
+                            str_update = '''
+                            UPDATE reporting_table
+                            SET {one_attr}={attribute_value}
+                            WHERE plan_id={plan_id} AND year='{one_year}'
+                            '''.format(
+                                one_attr=one_attr,
+                                attribute_value=attribute_value,
+                                plan_id=current_plan.id,
+                                one_year=one_year
+                            )
+                            cursor.execute(str_update)
+                        except ProgrammingError:
+                            pass
+                        except Exception as e:
+                            import logging
+                            logging.exception(e)
