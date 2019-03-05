@@ -20,7 +20,8 @@ from wsgiref.util import FileWrapper
 from celery.result import AsyncResult
 
 from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, PlanAnnual, \
-                    Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup
+    Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup, \
+    PensionMapData, PensionChartData
 from .tables import PlanTable
 from .signals import recalculate
 from .tasks import task_reporting_table
@@ -354,6 +355,84 @@ class GovernmentDetailView(DetailView):
         self.object = self.get_object()
         context = self.get_context_data(**kwargs)
         return self.render_to_response(context=context)
+
+
+def api_map_search(request, state):
+    results = Government.objects.filter(
+        state__state_abbreviation = state,
+        name__icontains = request.GET['employer']
+    )
+
+    data = {'governments': []}
+
+    if len(results) == 0:
+        return JsonResponse(data)
+
+    for government in results:
+
+        item = {
+            'government_id': government.id,
+            'government_name': government.name,
+            'contributions': None,
+            'liabilities': None
+        }
+
+        contributions = PensionMapData.get_contributions(government.id, request.GET.get('year'))
+        liabilities = PensionMapData.get_liabilities(government.id, request.GET.get('year'))
+
+        if contributions:
+            item['contributions'] = contributions.plan_contributions
+
+        if liabilities:
+            item['liabilities'] = liabilities.plan_liabilities
+
+        data['governments'].append(item)
+
+    return JsonResponse(data)
+
+def api_map_contribs(request, state):
+    from django.forms.models import model_to_dict
+
+    data = {'contributions': []}
+
+    results = PensionMapData.get_contributions_by_state(state, request.GET.get('year'))
+    fields = ['government_id', 'government_name', 'year', 'plan_name', 'plan_contributions']
+    data['contributions'] = [model_to_dict(result, fields) for result in results]
+
+    return JsonResponse(data)
+
+
+def api_map_liabilities(request, state):
+    from django.forms.models import model_to_dict
+
+    data = {'contributions': []}
+
+    results = PensionMapData.get_liabilities_by_state(state, request.GET.get('year'))
+    fields = ['government_id', 'government_name', 'year', 'plan_name', 'plan_liabilities']
+    data['contributions'] = [model_to_dict(result, fields) for result in results]
+
+    return JsonResponse(data)
+
+def api_chart_contribs(request, government_id):
+
+    data = {'headers': {'f1': '', 'f2': ''}, 'values': []}
+
+    rows = PensionChartData.get(government_id)
+
+    if rows == []:
+        return JsonResponse(data)
+
+    data['headers']['f1'] = rows[0].f1_header
+    data['headers']['f2'] = rows[0].f2_header
+
+    for row in  PensionChartData.get(government_id):
+        data['values'].append({
+            'year': row.year,
+            'f1': row.f1_value,
+            'f2': row.f2_value
+        })
+
+    return JsonResponse(data)
 
 
 @staff_member_required

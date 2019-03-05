@@ -8,12 +8,13 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 
+# @formatter:off
 from __future__ import unicode_literals
 
-from django.db import models
+from django.db import connection, models
 from django.core.validators import MaxValueValidator, MinValueValidator
 import re
-import decimal
+import datetime, decimal
 #########################################################################################################
 
 ATTRIBUTE_TYPE_CHOICES = (
@@ -736,4 +737,211 @@ class ReportingTable(models.Model):
     longitude = models.DecimalField(max_digits=12, decimal_places=8, blank=True, null=True)
 
     year = models.CharField(max_length=4)
+
+#@formatter:on
+class PensionMapData(models.Model):
+    class Meta:
+        managed = False
+
+    government_id = models.IntegerField()
+    government_name = models.CharField(max_length = 255, blank = False)
+    year = models.CharField(max_length = 4, blank = False, null = False)
+    plan_name = models.CharField(max_length = 255, blank = False)
+    plan_contributions = models.DecimalField(decimal_places = 0, max_digits = 12)
+    plan_liabilities = models.DecimalField(decimal_places = 0, max_digits = 12)
+
+    @staticmethod
+    def get_contributions(government_id, year = None):
+
+        query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
+                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_contribution " \
+                "from plan, plan_annual_attribute, government, state " \
+                "where plan.id = plan_annual_attribute.plan_id " \
+                "and plan.admin_gov_id = government.id " \
+                "and plan_attribute_id in (10885,10914,10984) " \
+                "and government.state_id = state.id " \
+                "and government.id=%s " \
+                "and cast(year as numeric) <= %s " \
+                "order by 2,3 desc limit 1"
+
+        cur = connection.cursor()
+        cur.execute(query, [government_id, year or datetime.datetime.now().year])
+
+        columns = [c.name for c in cur.description]
+        result = cur.fetchone()
+
+        cur.close()
+
+        if result is None:
+            return None
+
+        row = dict(zip(columns, result))
+
+        return PensionMapData(
+            government_id = row['id'],
+            government_name = row['government_name'],
+            year = row['year'],
+            plan_name = row['plan_name'],
+            plan_contributions = row['employer_contribution']
+        )
+
+
+    @staticmethod
+    def get_contributions_by_state(state, year = None):
+
+        query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
+                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_contribution " \
+                "from plan, plan_annual_attribute, government, state " \
+                "where plan.id = plan_annual_attribute.plan_id " \
+                "and plan.admin_gov_id = government.id " \
+                "and plan_attribute_id in (10885,10914,10984) " \
+                "and government.state_id = state.id " \
+                "and state.state_abbreviation=%s " \
+                "and cast(year as numeric) <= %s " \
+                "order by 2,3 desc"
+
+        cur = connection.cursor()
+        cur.execute(query, [state, year or datetime.datetime.now().year])
+
+        columns = [c.name for c in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+
+        cur.close()
+
+        # only return the first row (latest year) for each government.id
+        results = {}
+        for row in rows:
+
+            if row['id'] in results.keys():
+                continue
+
+            results[row['id']] = PensionMapData(
+                government_id = row['id'],
+                government_name = row['government_name'],
+                year = row['year'],
+                plan_name = row['plan_name'],
+                plan_contributions = row['employer_contribution']
+            )
+
+        return results.values()
+
+    @staticmethod
+    def get_liabilities(government_id, year = None):
+
+        query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
+                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_liabilities " \
+                "from plan, plan_annual_attribute, government, state " \
+                "where plan.id = plan_annual_attribute.plan_id " \
+                "and plan.admin_gov_id = government.id " \
+                "and plan_attribute_id in (10877) " \
+                "and government.state_id = state.id " \
+                "and government.id=%s " \
+                "and cast(year as numeric) <= %s " \
+                "order by 2,3 desc limit 1"
+
+        cur = connection.cursor()
+        cur.execute(query, [government_id, year or datetime.datetime.now().year])
+
+        result = cur.fetchone()
+        cur.close()
+
+        if result is None:
+            return None
+
+        columns = [c.name for c in cur.description]
+        row = dict(zip(columns, result))
+
+        return PensionMapData(
+            government_id = row['id'],
+            government_name = row['government_name'],
+            year = row['year'],
+            plan_name = row['plan_name'],
+            plan_liabilities = row['employer_liabilities']
+        )
+
+    @staticmethod
+    def get_liabilities_by_state(state, year = None):
+
+        query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
+                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_liabilities " \
+                "from plan, plan_annual_attribute, government, state " \
+                "where plan.id = plan_annual_attribute.plan_id " \
+                "and plan.admin_gov_id = government.id " \
+                "and plan_attribute_id in (10877) " \
+                "and government.state_id = state.id " \
+                "and state.state_abbreviation=%s " \
+                "and cast(year as numeric) <= %s " \
+                "order by 2,3 desc"
+
+        cur = connection.cursor()
+        cur.execute(query, [state, year or datetime.datetime.now().year])
+
+        columns = [c.name for c in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+
+        cur.close()
+
+        # only return the first row (latest year) for each government.id
+        results = {}
+        for row in rows:
+
+            if row['id'] in results.keys():
+                continue
+
+            results[row['id']] = PensionMapData(
+                government_id = row['id'],
+                government_name = row['government_name'],
+                year = row['year'],
+                plan_name = row['plan_name'],
+                plan_liabilities = row['employer_liabilities']
+            )
+
+        return results.values()
+
+class PensionChartData(models.Model):
+    class Meta:
+        managed = False
+
+    year = models.CharField(max_length = 4, blank = False, null = False)
+    f1_header = models.CharField(max_length = 255, blank = False)
+    f1_value = models.DecimalField(decimal_places = 0, max_digits = 12)
+    f2_header = models.CharField(max_length = 255, blank = True)
+    f2_value = models.DecimalField(decimal_places = 0, max_digits = 12)
+
+    @staticmethod
+    def get(government_id):
+        headers = Plan.objects.filter(admin_gov_id = government_id).exclude(name__contains = 'ASRS')
+
+        query = "select * from crosstab('select plan_annual_attribute.year, plan.name, " \
+                "cast(plan_annual_attribute.attribute_value as numeric) as employer_contribution " \
+                "from plan, plan_annual_attribute, government " \
+                "where plan.id = plan_annual_attribute.plan_id " \
+                "and plan.admin_gov_id = government.id " \
+                "and plan_attribute_id in (10885,10914,10984) " \
+                "and government.id='%s' order by 1,2\') " \
+                "AS ct(year varchar, f1 numeric, f2 numeric)"
+
+        cur = connection.cursor()
+        cur.execute(query, [government_id])
+
+        columns = [c.name for c in cur.description]
+        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
+
+        cur.close()
+
+        results = []
+        for row in rows:
+            item = PensionChartData(
+                year = row['year'],
+                f1_header = headers[0].name,
+                f1_value = row['f1']
+            )
+
+            if len(headers) > 1:
+                item.f2_header = headers[1].name
+                item.f2_value = row['f2']
+
+            results.append(item)
+
+        return results
 
