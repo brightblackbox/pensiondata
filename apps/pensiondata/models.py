@@ -746,7 +746,6 @@ class PensionMapData(models.Model):
     government_id = models.IntegerField()
     government_name = models.CharField(max_length = 255, blank = False)
     year = models.CharField(max_length = 4, blank = False, null = False)
-    plan_name = models.CharField(max_length = 255, blank = False)
     plan_contributions = models.DecimalField(decimal_places = 0, max_digits = 12)
     plan_liabilities = models.DecimalField(decimal_places = 0, max_digits = 12)
 
@@ -754,7 +753,7 @@ class PensionMapData(models.Model):
     def get_contributions(government_id, year = None):
 
         query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
-                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_contribution " \
+                "sum(cast(plan_annual_attribute.attribute_value as numeric)) as employer_contribution " \
                 "from plan, plan_annual_attribute, government, state " \
                 "where plan.id = plan_annual_attribute.plan_id " \
                 "and plan.admin_gov_id = government.id " \
@@ -762,7 +761,8 @@ class PensionMapData(models.Model):
                 "and government.state_id = state.id " \
                 "and government.id=%s " \
                 "and cast(year as numeric) <= %s " \
-                "order by 2,3 desc limit 1"
+                "group by government.id, government.name, plan_annual_attribute.year " \
+                "order by 2,3 desc"
 
         cur = connection.cursor()
         cur.execute(query, [government_id, year or datetime.datetime.now().year])
@@ -781,23 +781,22 @@ class PensionMapData(models.Model):
             government_id = row['id'],
             government_name = row['government_name'],
             year = row['year'],
-            plan_name = row['plan_name'],
             plan_contributions = row['employer_contribution']
         )
-
 
     @staticmethod
     def get_contributions_by_state(state, year = None):
 
         query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
-                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_contribution " \
+                "sum(cast(plan_annual_attribute.attribute_value as numeric)) as employer_contribution " \
                 "from plan, plan_annual_attribute, government, state " \
                 "where plan.id = plan_annual_attribute.plan_id " \
                 "and plan.admin_gov_id = government.id " \
                 "and plan_attribute_id in (10885,10914,10984) " \
                 "and government.state_id = state.id " \
-                "and state.state_abbreviation=%s " \
+                "and state.state_abbreviation = %s " \
                 "and cast(year as numeric) <= %s " \
+                "group by government.id, government.name, plan_annual_attribute.year " \
                 "order by 2,3 desc"
 
         cur = connection.cursor()
@@ -819,7 +818,6 @@ class PensionMapData(models.Model):
                 government_id = row['id'],
                 government_name = row['government_name'],
                 year = row['year'],
-                plan_name = row['plan_name'],
                 plan_contributions = row['employer_contribution']
             )
 
@@ -829,7 +827,7 @@ class PensionMapData(models.Model):
     def get_liabilities(government_id, year = None):
 
         query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
-                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_liabilities " \
+                "sum(cast(plan_annual_attribute.attribute_value as numeric)) as employer_liabilities " \
                 "from plan, plan_annual_attribute, government, state " \
                 "where plan.id = plan_annual_attribute.plan_id " \
                 "and plan.admin_gov_id = government.id " \
@@ -837,7 +835,8 @@ class PensionMapData(models.Model):
                 "and government.state_id = state.id " \
                 "and government.id=%s " \
                 "and cast(year as numeric) <= %s " \
-                "order by 2,3 desc limit 1"
+                "group by government.id, government.name, plan_annual_attribute.year " \
+                "order by 2,3 desc"
 
         cur = connection.cursor()
         cur.execute(query, [government_id, year or datetime.datetime.now().year])
@@ -855,7 +854,6 @@ class PensionMapData(models.Model):
             government_id = row['id'],
             government_name = row['government_name'],
             year = row['year'],
-            plan_name = row['plan_name'],
             plan_liabilities = row['employer_liabilities']
         )
 
@@ -863,14 +861,15 @@ class PensionMapData(models.Model):
     def get_liabilities_by_state(state, year = None):
 
         query = "select government.id, government.name as government_name, plan_annual_attribute.year, " \
-                "trim(plan.name) as plan_name, cast(plan_annual_attribute.attribute_value as numeric) as employer_liabilities " \
+                "sum(cast(plan_annual_attribute.attribute_value as numeric)) as employer_liabilities " \
                 "from plan, plan_annual_attribute, government, state " \
                 "where plan.id = plan_annual_attribute.plan_id " \
                 "and plan.admin_gov_id = government.id " \
                 "and plan_attribute_id in (10877) " \
                 "and government.state_id = state.id " \
-                "and state.state_abbreviation=%s " \
+                "and state.state_abbreviation = %s " \
                 "and cast(year as numeric) <= %s " \
+                "group by government.id, government.name, plan_annual_attribute.year " \
                 "order by 2,3 desc"
 
         cur = connection.cursor()
@@ -892,11 +891,11 @@ class PensionMapData(models.Model):
                 government_id = row['id'],
                 government_name = row['government_name'],
                 year = row['year'],
-                plan_name = row['plan_name'],
                 plan_liabilities = row['employer_liabilities']
             )
 
         return results.values()
+
 
 class PensionChartData(models.Model):
     class Meta:
@@ -944,4 +943,3 @@ class PensionChartData(models.Model):
             results.append(item)
 
         return results
-

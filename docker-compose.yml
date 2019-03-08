@@ -16,9 +16,9 @@ services:
   web:
     build:
       context: .
-      dockerfile: /conf/dockerfiles/django
+      dockerfile: ./conf/dockerfiles/django
     hostname: web
-    command: ./conf/commands/run_webapp.sh
+#    command: ./conf/commands/run_webapp.sh
     volumes:
       - .:/pensiondata  # mount current directory inside container
     environment:
@@ -28,14 +28,16 @@ services:
     # set up links so that web knows about db, rabbit and redis
     links:
       - rabbit
+      - db
     depends_on:
       - rabbit
+      - db
 
   # Celery worker
   celery:
     build:
       context: .
-      dockerfile: /conf/dockerfiles/celery
+      dockerfile: ./conf/dockerfiles/celery
     command: ./conf/commands/run_celery.sh
 
     volumes:
@@ -48,3 +50,18 @@ services:
       - rabbit
     depends_on:
       - rabbit
+
+  # Postgres DB
+  db:
+    image: postgres:9.6.12
+    environment:
+      - POSTGRES_PASSWORD=pgpass
+      - POSTGRES_USER=pguser
+      - POSTGRES_DB=pensiondata
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-datavolume:/var/lib/postgresql/data
+
+volumes:
+  db-datavolume:
