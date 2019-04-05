@@ -21,7 +21,9 @@ from celery.result import AsyncResult
 
 from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, PlanAnnual, \
     Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup, \
-    PensionMapData, PensionChartData
+    PensionMapData, PensionChartData, PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames, \
+    PlanAnnualAttributesMaster
+
 from .tables import PlanTable
 from .signals import recalculate
 from .tasks import task_reporting_table
@@ -77,6 +79,7 @@ class PlanDetailView(DetailView):
     template_name = 'plan_detail.html'
     pk_url_kwarg = "PlanID"
 
+    # noinspection PyUnreachableCode
     def get_context_data(self, **kwargs):
 
         year_from = self.request.POST.get('from', '')
@@ -112,70 +115,80 @@ class PlanDetailView(DetailView):
                                  ADMIN_EXP,           \
                                  TOT_CASH_SEC,        \
                                  TOT_ACT_MEM]
+        if True:
+            plan_annual_objs = PlanAnnualAttribute.objects \
+                .select_related('plan_attribute') \
+                .select_related('plan_attribute__attribute_category') \
+                .select_related('plan_attribute__data_source') \
+                .filter(plan=plan)
 
-        plan_annual_objs = PlanAnnualAttribute.objects \
-            .select_related('plan_attribute') \
-            .select_related('plan_attribute__attribute_category') \
-            .select_related('plan_attribute__data_source') \
-            .filter(plan=plan)
+            plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
 
-        plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
+            year_list = plan_annual_objs_filtered_attributes.filter(
+                year__range=(year_from or '1950', year_to or '2050')
+            ).order_by('year').values('year').distinct()
 
-        year_list = plan_annual_objs_filtered_attributes.filter(
-            year__range=(year_from or '1950', year_to or '2050')
-        ).order_by('year').values('year').distinct()
+            plan_annual_data = plan_annual_objs_filtered_attributes \
+                                .values('id',
+                                        'year',
+                                        'plan_attribute__id',
+                                        'plan_attribute__multiplier',
+                                        'plan_attribute__data_source__id',
+                                        'plan_attribute__attribute_category__id',
+                                        'attribute_value',
+                                        'plan_attribute__datatype'
+                                        ) \
+                                .annotate(
+                                    attribute_id=F('plan_attribute__id'),
+                                    multiplier=F('plan_attribute__multiplier'),
+                                    data_source_id=F('plan_attribute__data_source__id'),
+                                    category_id=F('plan_attribute__attribute_category__id')
+                                )
 
-        plan_annual_data = plan_annual_objs_filtered_attributes \
-                            .values('id',
-                                    'year',
-                                    'plan_attribute__id',
-                                    'plan_attribute__multiplier',
-                                    'plan_attribute__data_source__id',
-                                    'plan_attribute__attribute_category__id',
-                                    'attribute_value',
-                                    'plan_attribute__datatype'
-                                    ) \
-                            .annotate(
-                                attribute_id=F('plan_attribute__id'),
-                                multiplier=F('plan_attribute__multiplier'),
-                                data_source_id=F('plan_attribute__data_source__id'),
-                                category_id=F('plan_attribute__attribute_category__id')
-                            )
+            full_attr_list = plan_annual_objs.values(
+                'plan_attribute__id',
+                'plan_attribute__name',
+                'plan_attribute__data_source__id',
+                'plan_attribute__data_source__name',
+                'plan_attribute__attribute_category__id',
+                'plan_attribute__attribute_category__name'
+            ).annotate(
+                attribute_id=F('plan_attribute__id'),
+                attribute_name=F('plan_attribute__name'),
+                data_source_id=F('plan_attribute__data_source__id'),
+                data_source_name=F('plan_attribute__data_source__name'),
+                category_id=F('plan_attribute__attribute_category__id'),
+                category_name=F('plan_attribute__attribute_category__name'),
+                # 'selected' is helpful in checking the options in the checkboxes
+                selected=Case(
+                    When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField()
+                )
+            ).distinct().order_by('category_name', 'attribute_name')
+            category_list = plan_annual_objs.values(
+                'plan_attribute__attribute_category__id',
+                'plan_attribute__attribute_category__name'
+            ).annotate(
+                id=F('plan_attribute__attribute_category__id'),
+                name=F('plan_attribute__attribute_category__name'),
+                # 'selected' is helpful in checking the options in the checkboxes
+                selected=Case(
+                    When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField()
+                )
+            ).distinct().order_by('name','-selected') # -selected is to put True values on top so that later we can remove any False values (which also has True value somewhere)
+        else:
+            plan_annual_objs = PlanAnnualAttributesMaster.get_list(plan.id)
 
-        full_attr_list = plan_annual_objs.values(
-            'plan_attribute__id',
-            'plan_attribute__name',
-            'plan_attribute__data_source__id',
-            'plan_attribute__data_source__name',
-            'plan_attribute__attribute_category__id',
-            'plan_attribute__attribute_category__name'
-        ).annotate(
-            attribute_id=F('plan_attribute__id'),
-            attribute_name=F('plan_attribute__name'),
-            data_source_id=F('plan_attribute__data_source__id'),
-            data_source_name=F('plan_attribute__data_source__name'),
-            category_id=F('plan_attribute__attribute_category__id'),
-            category_name=F('plan_attribute__attribute_category__name'),
-            # 'selected' is helpful in checking the options in the checkboxes
-            selected=Case(
-                When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
-                default=Value(False),
-                output_field=BooleanField()
-            )
-        ).distinct().order_by('category_name', 'attribute_name')
-        category_list = plan_annual_objs.values(
-            'plan_attribute__attribute_category__id',
-            'plan_attribute__attribute_category__name'
-        ).annotate(
-            id=F('plan_attribute__attribute_category__id'),
-            name=F('plan_attribute__attribute_category__name'),
-            # 'selected' is helpful in checking the options in the checkboxes
-            selected=Case(
-                When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
-                default=Value(False),
-                output_field=BooleanField()
-            )
-        ).distinct().order_by('name','-selected') # -selected is to put True values on top so that later we can remove any False values (which also has True value somewhere)
+            year_list = plan_annual_objs.filter(
+                year__range=(year_from or '1950', year_to or '2050')
+            ).order_by('year').values('year').distinct()
+
+
+
+
 
         category_list=category_list.distinct('name') # this is to remove the selected=False values where selected=True is already there
 
