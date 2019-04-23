@@ -83,8 +83,7 @@ class PlanDetailView(DetailView):
 
         year_from = self.request.POST.get('from', '')
         year_to = self.request.POST.get('to', '2021')
-        # unfiltered = self.request.POST.get('unfiltered', 'off') == 'on'
-        unfiltered = True
+        unfiltered = self.request.POST.get('unfiltered', 'off') == 'on'
         reset_attr_states = self.request.POST.get('reset_attr_states', '0') == '1'
 
         context = super(PlanDetailView, self).get_context_data(**kwargs)
@@ -127,7 +126,8 @@ class PlanDetailView(DetailView):
         elif (self.request.session.get('plan_column_state')) and reset_attr_states == False:
             selected_attr_list = self.request.session['plan_column_state']['attr']
         # using default columns if got nothing from POST request or saved session
-        elif unfiltered:
+        # elif unfiltered:
+        else:
             selected_attr_list = [CONTRIB_STATE_EMPL, \
                                   CONTRIB_LOCAL_EMPL, \
                                   CONTRIB_LOCAL_GOVT, \
@@ -136,9 +136,6 @@ class PlanDetailView(DetailView):
                                   ADMIN_EXP, \
                                   TOT_CASH_SEC, \
                                   TOT_ACT_MEM]
-        else:
-            #TODO: Check whether this is necessary. Right now this just ensures that *some* attributes are selected.
-            selected_attr_list = [_.plan_attribute_id for _ in plan_annual_objs]
 
         plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
 
