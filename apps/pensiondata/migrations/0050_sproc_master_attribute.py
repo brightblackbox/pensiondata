@@ -22,6 +22,7 @@ class Migration(migrations.Migration):
           create temporary table temp_annual_attribute as
             select
               plan_annual_attribute.plan_id,
+              plan_annual_attribute.plan_attribute_id,
               plan_attribute_master.master_attribute_id,
               plan_annual_attribute.year,
               plan_annual_attribute.attribute_value,
@@ -39,11 +40,12 @@ class Migration(migrations.Migration):
             from temp_annual_attribute
             group by plan_id, master_attribute_id, year;
 
-          insert into plan_annual_master_attribute (year, attribute_value, plan_id, plan_attribute_id)
+          insert into plan_annual_master_attribute (year, attribute_value, plan_id, plan_attribute_id, master_attribute_id)
             select
               temp_annual_attribute.year,
               temp_annual_attribute.attribute_value,
               temp_annual_attribute.plan_id,
+              temp_annual_attribute.plan_attribute_id,
               temp_annual_attribute.master_attribute_id
             from temp_annual_attribute
               inner join temp_top_priorities on
@@ -58,7 +60,7 @@ class Migration(migrations.Migration):
     reverse_sql = "drop function update_plan_annual_master_attribute()"
 
     dependencies = [
-        ('pensiondata', '0047_auto_20190401_2314'),
+        ('pensiondata', '0049_auto_20190419_1906'),
     ]
 
     operations = [

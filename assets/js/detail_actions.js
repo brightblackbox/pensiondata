@@ -12,6 +12,11 @@ $(function () {
         changeLinkUrl($('.export-file-link'), /&to=[^&]*/, '&to=' + end_year);
     });
 
+    $('#unfiltered').on('change', function() {
+        $('#reset_attr_states').val('1');
+        $('button.button-apply').click();
+    });
+
     function changeLinkUrl(links, replace, insert) {
         if (!links.length) {return;}
         var regex = new RegExp(replace, 'g');

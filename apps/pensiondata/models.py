@@ -504,11 +504,12 @@ class PlanAnnualMasterAttribute(models.Model):
     id = models.BigAutoField(primary_key=True)
     plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
     year = models.CharField(max_length=4)
-    plan_attribute = models.ForeignKey('PlanMasterAttributeNames', models.DO_NOTHING, null=True, blank=True)
+    plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True)
+    master_attribute = models.ForeignKey('PlanMasterAttributeNames', models.DO_NOTHING, null=True, blank=True)
     attribute_value = models.CharField(max_length=256, null=True, blank=True)
 
     class Meta:
-        unique_together = ('plan', 'year', 'plan_attribute',)
+        unique_together = ('plan', 'year', 'plan_attribute', 'master_attribute')
         db_table = 'plan_annual_master_attribute'
         verbose_name = 'Plan Annual Master Attribute'
         verbose_name_plural = 'Plan Annual Master Attributes'
@@ -998,37 +999,3 @@ class PensionChartData(models.Model):
 
         return results
 
-
-class PlanAnnualAttributesMaster(models.Model):
-
-    id = models.BigIntegerField(primary_key = True)
-    year = models.CharField(max_length = 4, blank = False, null = False)
-    plan_attribute_id = models.BigIntegerField()
-    plan_attribute_name = models.CharField(max_length = 255, blank = True, null = True)
-    plan_attribute_multiplier = models.DecimalField(max_digits = 30, decimal_places = 6, null = True, blank = True, default = 1000)
-    plan_attribute_datatype = models.CharField(max_length = 256, null = True, blank = True)
-    attribute_category_id = models.BigIntegerField()
-    attribute_category_name = models.CharField(max_length = 255, unique = True)
-    data_source_id = models.BigIntegerField()
-    data_source_name = models.CharField(max_length = 255, unique = True)
-
-    class Meta:
-        managed = False
-
-    @staticmethod
-    def get_list(plan_id):
-
-        query = "select pama.id, pama.year, pam.id as plan_attribute_id, pman.name as plan_attribute_name, " \
-                "pa.multiplier as plan_attribute_multiplier, pa.datatype as plan_attribute_datatype, " \
-                "c.id as attribute_category_id, c.name as attribute_category_name, " \
-                "d.id as data_source_id, d.name as data_source_name " \
-                "from plan_annual_master_attribute pama " \
-                "inner join plan p on pama.plan_id = p.id " \
-                "inner join plan_attribute_master pam on pama.plan_attribute_id = pam.master_attribute_id " \
-                "inner join plan_attribute pa on pam.plan_attribute_id = pa.id " \
-                "inner join plan_master_attribute_names pman on pama.plan_attribute_id = pman.id " \
-                "inner join attribute_category c on pa.attribute_category_id = c.id " \
-                "inner join data_source d on pa.data_source_id = d.id " \
-                "where p.id=%s"
-
-        return PlanAnnualAttributesMaster.objects.raw(query, [plan_id])

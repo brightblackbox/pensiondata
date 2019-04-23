@@ -21,8 +21,7 @@ from celery.result import AsyncResult
 
 from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, PlanAnnual, \
     Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup, \
-    PensionMapData, PensionChartData, PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames, \
-    PlanAnnualAttributesMaster
+    PensionMapData, PensionChartData, PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames
 
 from .tables import PlanTable
 from .signals import recalculate
@@ -84,6 +83,9 @@ class PlanDetailView(DetailView):
 
         year_from = self.request.POST.get('from', '')
         year_to = self.request.POST.get('to', '2021')
+        # unfiltered = self.request.POST.get('unfiltered', 'off') == 'on'
+        unfiltered = True
+        reset_attr_states = self.request.POST.get('reset_attr_states', '0') == '1'
 
         context = super(PlanDetailView, self).get_context_data(**kwargs)
         plan = self.object
@@ -98,97 +100,104 @@ class PlanDetailView(DetailView):
         TOT_CASH_SEC = 42
         TOT_ACT_MEM = 43
 
-        # getting columns from the POST request
-        if self.request.method == 'POST':
-            print ("This is a POST request")
-            selected_attr_list = self.request.POST.getlist('attr_checked_states[]')
-        # getting columns from session
-        elif (self.request.session.get('plan_column_state')):
-            selected_attr_list = self.request.session['plan_column_state']['attr']
-        # using default columns if got nothing from POST request or saved session
-        else:
-            selected_attr_list = [CONTRIB_STATE_EMPL,  \
-                                 CONTRIB_LOCAL_EMPL,  \
-                                 CONTRIB_LOCAL_GOVT,  \
-                                 TOTAL_CONTRIB_STATE, \
-                                 TOT_BEN_PAYM,        \
-                                 ADMIN_EXP,           \
-                                 TOT_CASH_SEC,        \
-                                 TOT_ACT_MEM]
-        if True:
+
+        if unfiltered:
             plan_annual_objs = PlanAnnualAttribute.objects \
                 .select_related('plan_attribute') \
                 .select_related('plan_attribute__attribute_category') \
                 .select_related('plan_attribute__data_source') \
                 .filter(plan=plan)
+            plan_attribute_name_field = 'plan_attribute__name'
 
-            plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
-
-            year_list = plan_annual_objs_filtered_attributes.filter(
-                year__range=(year_from or '1950', year_to or '2050')
-            ).order_by('year').values('year').distinct()
-
-            plan_annual_data = plan_annual_objs_filtered_attributes \
-                                .values('id',
-                                        'year',
-                                        'plan_attribute__id',
-                                        'plan_attribute__multiplier',
-                                        'plan_attribute__data_source__id',
-                                        'plan_attribute__attribute_category__id',
-                                        'attribute_value',
-                                        'plan_attribute__datatype'
-                                        ) \
-                                .annotate(
-                                    attribute_id=F('plan_attribute__id'),
-                                    multiplier=F('plan_attribute__multiplier'),
-                                    data_source_id=F('plan_attribute__data_source__id'),
-                                    category_id=F('plan_attribute__attribute_category__id')
-                                )
-
-            full_attr_list = plan_annual_objs.values(
-                'plan_attribute__id',
-                'plan_attribute__name',
-                'plan_attribute__data_source__id',
-                'plan_attribute__data_source__name',
-                'plan_attribute__attribute_category__id',
-                'plan_attribute__attribute_category__name'
-            ).annotate(
-                attribute_id=F('plan_attribute__id'),
-                attribute_name=F('plan_attribute__name'),
-                data_source_id=F('plan_attribute__data_source__id'),
-                data_source_name=F('plan_attribute__data_source__name'),
-                category_id=F('plan_attribute__attribute_category__id'),
-                category_name=F('plan_attribute__attribute_category__name'),
-                # 'selected' is helpful in checking the options in the checkboxes
-                selected=Case(
-                    When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
-                    default=Value(False),
-                    output_field=BooleanField()
-                )
-            ).distinct().order_by('category_name', 'attribute_name')
-            category_list = plan_annual_objs.values(
-                'plan_attribute__attribute_category__id',
-                'plan_attribute__attribute_category__name'
-            ).annotate(
-                id=F('plan_attribute__attribute_category__id'),
-                name=F('plan_attribute__attribute_category__name'),
-                # 'selected' is helpful in checking the options in the checkboxes
-                selected=Case(
-                    When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
-                    default=Value(False),
-                    output_field=BooleanField()
-                )
-            ).distinct().order_by('name','-selected') # -selected is to put True values on top so that later we can remove any False values (which also has True value somewhere)
         else:
-            plan_annual_objs = PlanAnnualAttributesMaster.get_list(plan.id)
+            plan_annual_objs = PlanAnnualMasterAttribute.objects \
+                .select_related('plan_attribute') \
+                .select_related('plan_attribute__attribute_category') \
+                .select_related('plan_attribute__data_source') \
+                .select_related('master_attribute') \
+                .filter(plan=plan)
+            plan_attribute_name_field = 'master_attribute__name'
 
-            year_list = plan_annual_objs.filter(
-                year__range=(year_from or '1950', year_to or '2050')
-            ).order_by('year').values('year').distinct()
 
+        # getting columns from the POST request
+        if self.request.method == 'POST' and reset_attr_states == False:
+            # print ("This is a POST request")
+            selected_attr_list = self.request.POST.getlist('attr_checked_states[]')
+        # getting columns from session
+        elif (self.request.session.get('plan_column_state')) and reset_attr_states == False:
+            selected_attr_list = self.request.session['plan_column_state']['attr']
+        # using default columns if got nothing from POST request or saved session
+        elif unfiltered:
+            selected_attr_list = [CONTRIB_STATE_EMPL, \
+                                  CONTRIB_LOCAL_EMPL, \
+                                  CONTRIB_LOCAL_GOVT, \
+                                  TOTAL_CONTRIB_STATE, \
+                                  TOT_BEN_PAYM, \
+                                  ADMIN_EXP, \
+                                  TOT_CASH_SEC, \
+                                  TOT_ACT_MEM]
+        else:
+            #TODO: Check whether this is necessary. Right now this just ensures that *some* attributes are selected.
+            selected_attr_list = [_.plan_attribute_id for _ in plan_annual_objs]
 
+        plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
 
+        year_list = plan_annual_objs_filtered_attributes.filter(
+            year__range=(year_from or '1950', year_to or '2050')
+        ).order_by('year').values('year').distinct()
 
+        plan_annual_data = plan_annual_objs_filtered_attributes \
+                            .values('id',
+                                    'year',
+                                    'plan_attribute__id',
+                                    'plan_attribute__multiplier',
+                                    'plan_attribute__data_source__id',
+                                    'plan_attribute__attribute_category__id',
+                                    'attribute_value',
+                                    'plan_attribute__datatype'
+                                    ) \
+                            .annotate(
+                                attribute_id=F('plan_attribute__id'),
+                                multiplier=F('plan_attribute__multiplier'),
+                                data_source_id=F('plan_attribute__data_source__id'),
+                                category_id=F('plan_attribute__attribute_category__id')
+                            )
+
+        full_attr_list = plan_annual_objs.values(
+            'plan_attribute__id',
+            plan_attribute_name_field,
+            'plan_attribute__data_source__id',
+            'plan_attribute__data_source__name',
+            'plan_attribute__attribute_category__id',
+            'plan_attribute__attribute_category__name'
+        ).annotate(
+            attribute_id=F('plan_attribute__id'),
+            attribute_name=F(plan_attribute_name_field),
+            data_source_id=F('plan_attribute__data_source__id'),
+            data_source_name=F('plan_attribute__data_source__name'),
+            category_id=F('plan_attribute__attribute_category__id'),
+            category_name=F('plan_attribute__attribute_category__name'),
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(
+                When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
+        ).distinct().order_by('category_name', 'attribute_name')
+
+        category_list = plan_annual_objs.values(
+            'plan_attribute__attribute_category__id',
+            'plan_attribute__attribute_category__name'
+        ).annotate(
+            id=F('plan_attribute__attribute_category__id'),
+            name=F('plan_attribute__attribute_category__name'),
+            # 'selected' is helpful in checking the options in the checkboxes
+            selected=Case(
+                When(plan_attribute_id__in=selected_attr_list, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField()
+            )
+        ).distinct().order_by('name','-selected') # -selected is to put True values on top so that later we can remove any False values (which also has True value somewhere)
 
         category_list=category_list.distinct('name') # this is to remove the selected=False values where selected=True is already there
 
@@ -223,6 +232,7 @@ class PlanDetailView(DetailView):
         context['year_to'] = year_to
         context['year_range'] = range(1932, 2022)
         context['presentations_exports'] = presentations_exports
+        context['unfiltered'] = unfiltered
 
         context['plan_annual_data'] = json.dumps(list(plan_annual_data))
 
