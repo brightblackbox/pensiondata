@@ -377,7 +377,7 @@ class Plan(models.Model):
         db_table = 'plan'
 
     def __str__(self):
-        return self.display_name
+        return self.display_name or ''
 
     # @property
     # def gov_state(self):
@@ -420,6 +420,16 @@ class PlanAnnualAttribute(models.Model):
 
     def __str__(self):
         return "Plan Annual Attribute(%s)" % self.year
+
+    @staticmethod
+    def get_master(plan):
+
+        query = "select m.id, m.plan_id, m.year, p.plan_attribute_id, m.attribute_value " \
+                "from plan_annual_master_attribute m " \
+                "inner join plan_attribute_master p on m.plan_attribute_id = p.master_attribute_id " \
+                "where m.plan_id=%s"
+
+        return PlanAnnualMasterAttribute.objects.raw(query, [plan.id])
 
     @property
     def data_source(self):
@@ -488,6 +498,26 @@ class PlanAnnualAttribute(models.Model):
         except:
             # print('Invalid: calculation error')
             return '0'
+
+
+class PlanAnnualMasterAttribute(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    plan = models.ForeignKey('Plan', models.DO_NOTHING, null=True, blank=True)
+    year = models.CharField(max_length=4)
+    plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null=True, blank=True)
+    master_attribute = models.ForeignKey('PlanMasterAttributeNames', models.DO_NOTHING, null=True, blank=True)
+    attribute_value = models.CharField(max_length=256, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('plan', 'year', 'plan_attribute', 'master_attribute')
+        db_table = 'plan_annual_master_attribute'
+        verbose_name = 'Plan Annual Master Attribute'
+        verbose_name_plural = 'Plan Annual Master Attributes'
+
+    def __str__(self):
+        return "Plan Annual Master Attribute(%s)" % self.year
+
+
 
 
 class PlanAttribute(models.Model):
@@ -563,17 +593,41 @@ class PlanAttribute(models.Model):
                     return False
         return readable_rule
 
-
-### THIS MODEL IS A WORK IN PROGRESS -- DO NOT USE FOR NOW
-class PlanInheritance(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    parent_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='parent_plan_fk', null=True)
-    child_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='child_plan_fk', null=True)
-    level = models.IntegerField()
+class PlanAttributeMaster(models.Model):
+    id = models.BigAutoField(primary_key = True)
+    master_attribute = models.ForeignKey('PlanMasterAttributeNames', models.DO_NOTHING, null = True, blank = True, related_name = 'attr_master')
+    plan_attribute = models.ForeignKey('PlanAttribute', models.DO_NOTHING, null = True, blank = True,)
+    priority = models.IntegerField()
 
     class Meta:
-        managed = False
-        db_table = 'plan_inheritance'
+        managed = True
+        db_table = 'plan_attribute_master'
+        verbose_name = 'Plan Attribute Master'
+
+
+### THIS MODEL IS A WORK IN PROGRESS -- DO NOT USE FOR NOW
+# class PlanInheritance(models.Model):
+#     id = models.BigAutoField(primary_key=True)
+#     parent_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='parent_plan_fk', null=True)
+#     child_plan = models.ForeignKey('Plan', models.DO_NOTHING, related_name='child_plan_fk', null=True)
+#     level = models.IntegerField()
+#
+#     class Meta:
+#         managed = False
+#         db_table = 'plan_inheritance'
+
+class PlanMasterAttributeNames(models.Model):
+    id = models.BigAutoField(primary_key = True)
+    name = models.CharField(max_length = 255, blank = True, null = True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        managed = True
+        db_table = 'plan_master_attribute_names'
+        verbose_name = 'Plan Master Attribute Name'
+        verbose_name_plural = 'Plan Master Attribute Names'
 
 
 class PlanProvisions(models.Model):
@@ -909,7 +963,8 @@ class PensionChartData(models.Model):
 
     @staticmethod
     def get(government_id):
-        headers = Plan.objects.filter(admin_gov_id = government_id).exclude(name__contains = 'ASRS')
+        # headers = Plan.objects.filter(admin_gov_id = government_id).exclude(name__contains = 'ASRS')
+        headers = Plan.objects.filter(admin_gov_id = government_id)
 
         query = "select * from crosstab('select plan_annual_attribute.year, plan.name, " \
                 "cast(plan_annual_attribute.attribute_value as numeric) as employer_contribution " \
@@ -943,3 +998,4 @@ class PensionChartData(models.Model):
             results.append(item)
 
         return results
+

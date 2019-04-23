@@ -45,6 +45,9 @@ ADMIN_REORDER = (
         'pensiondata.PlanBenefitDesign',
         'pensiondata.PlanInheritance',
         'pensiondata.ReportingTable',
+        'pensiondata.PlanAnnualMasterAttribute',
+        'pensiondata.PlanMasterAttributeNames',
+        'pensiondata.PlanAttributeMaster'
     )},
     {'app': 'sites', 'models': ('sites.Site',)},
 )

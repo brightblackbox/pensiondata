@@ -21,7 +21,8 @@ from celery.result import AsyncResult
 
 from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, PlanAnnual, \
     Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup, \
-    PensionMapData, PensionChartData
+    PensionMapData, PensionChartData, PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames
+
 from .tables import PlanTable
 from .signals import recalculate
 from .tasks import task_reporting_table
@@ -77,10 +78,14 @@ class PlanDetailView(DetailView):
     template_name = 'plan_detail.html'
     pk_url_kwarg = "PlanID"
 
+    # noinspection PyUnreachableCode
     def get_context_data(self, **kwargs):
 
         year_from = self.request.POST.get('from', '')
         year_to = self.request.POST.get('to', '2021')
+        # unfiltered = self.request.POST.get('unfiltered', 'off') == 'on'
+        unfiltered = True
+        reset_attr_states = self.request.POST.get('reset_attr_states', '0') == '1'
 
         context = super(PlanDetailView, self).get_context_data(**kwargs)
         plan = self.object
@@ -95,29 +100,45 @@ class PlanDetailView(DetailView):
         TOT_CASH_SEC = 42
         TOT_ACT_MEM = 43
 
+
+        if unfiltered:
+            plan_annual_objs = PlanAnnualAttribute.objects \
+                .select_related('plan_attribute') \
+                .select_related('plan_attribute__attribute_category') \
+                .select_related('plan_attribute__data_source') \
+                .filter(plan=plan)
+            plan_attribute_name_field = 'plan_attribute__name'
+
+        else:
+            plan_annual_objs = PlanAnnualMasterAttribute.objects \
+                .select_related('plan_attribute') \
+                .select_related('plan_attribute__attribute_category') \
+                .select_related('plan_attribute__data_source') \
+                .select_related('master_attribute') \
+                .filter(plan=plan)
+            plan_attribute_name_field = 'master_attribute__name'
+
+
         # getting columns from the POST request
-        if self.request.method == 'POST':
-            print ("This is a POST request")
+        if self.request.method == 'POST' and reset_attr_states == False:
+            # print ("This is a POST request")
             selected_attr_list = self.request.POST.getlist('attr_checked_states[]')
         # getting columns from session
-        elif (self.request.session.get('plan_column_state')):
+        elif (self.request.session.get('plan_column_state')) and reset_attr_states == False:
             selected_attr_list = self.request.session['plan_column_state']['attr']
         # using default columns if got nothing from POST request or saved session
+        elif unfiltered:
+            selected_attr_list = [CONTRIB_STATE_EMPL, \
+                                  CONTRIB_LOCAL_EMPL, \
+                                  CONTRIB_LOCAL_GOVT, \
+                                  TOTAL_CONTRIB_STATE, \
+                                  TOT_BEN_PAYM, \
+                                  ADMIN_EXP, \
+                                  TOT_CASH_SEC, \
+                                  TOT_ACT_MEM]
         else:
-            selected_attr_list = [CONTRIB_STATE_EMPL,  \
-                                 CONTRIB_LOCAL_EMPL,  \
-                                 CONTRIB_LOCAL_GOVT,  \
-                                 TOTAL_CONTRIB_STATE, \
-                                 TOT_BEN_PAYM,        \
-                                 ADMIN_EXP,           \
-                                 TOT_CASH_SEC,        \
-                                 TOT_ACT_MEM]
-
-        plan_annual_objs = PlanAnnualAttribute.objects \
-            .select_related('plan_attribute') \
-            .select_related('plan_attribute__attribute_category') \
-            .select_related('plan_attribute__data_source') \
-            .filter(plan=plan)
+            #TODO: Check whether this is necessary. Right now this just ensures that *some* attributes are selected.
+            selected_attr_list = [_.plan_attribute_id for _ in plan_annual_objs]
 
         plan_annual_objs_filtered_attributes = plan_annual_objs.filter(plan_attribute_id__in=selected_attr_list)
 
@@ -144,14 +165,14 @@ class PlanDetailView(DetailView):
 
         full_attr_list = plan_annual_objs.values(
             'plan_attribute__id',
-            'plan_attribute__name',
+            plan_attribute_name_field,
             'plan_attribute__data_source__id',
             'plan_attribute__data_source__name',
             'plan_attribute__attribute_category__id',
             'plan_attribute__attribute_category__name'
         ).annotate(
             attribute_id=F('plan_attribute__id'),
-            attribute_name=F('plan_attribute__name'),
+            attribute_name=F(plan_attribute_name_field),
             data_source_id=F('plan_attribute__data_source__id'),
             data_source_name=F('plan_attribute__data_source__name'),
             category_id=F('plan_attribute__attribute_category__id'),
@@ -163,6 +184,7 @@ class PlanDetailView(DetailView):
                 output_field=BooleanField()
             )
         ).distinct().order_by('category_name', 'attribute_name')
+
         category_list = plan_annual_objs.values(
             'plan_attribute__attribute_category__id',
             'plan_attribute__attribute_category__name'
@@ -210,6 +232,7 @@ class PlanDetailView(DetailView):
         context['year_to'] = year_to
         context['year_range'] = range(1932, 2022)
         context['presentations_exports'] = presentations_exports
+        context['unfiltered'] = unfiltered
 
         context['plan_annual_data'] = json.dumps(list(plan_annual_data))
 

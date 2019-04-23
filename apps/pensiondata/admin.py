@@ -7,7 +7,8 @@ from django.db.models.query import QuerySet
 
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, DataSource, \
     PlanAnnualAttribute, AttributeCategory, \
-    GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup, PlanBenefitDesign, PlanInheritance,ReportingTable
+    GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup, PlanBenefitDesign, PlanInheritance,ReportingTable, \
+    PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames
 
 from .models import GovernmentAttrSummary
 from .tasks import generate_calculated_fields, generate_calculated_fields_null
@@ -18,6 +19,7 @@ from moderation.admin import ModerationAdmin
 from django.forms import TextInput, Textarea
 from django.db import models
 from django.shortcuts import redirect
+from django_extensions.admin import ForeignKeyAutocompleteAdmin
 
 from .mixins import ImportMixin
 
@@ -523,12 +525,40 @@ class ReportingTableAdmin( admin.ModelAdmin):
     #
     #     return redirect('/admin/%s/%s/reportingtable/' % self.get_model_info())
 
+class PlanAnnualMasterAttributeAdmin(admin.ModelAdmin):
+    raw_id_fields = ('plan',)
+
+    fields = ('year', 'attribute_value', 'plan', 'plan_attribute')
+    list_display = ('year', 'attribute_value', 'plan', 'plan_attribute')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'plan_attribute':
+            kwargs['queryset'] = PlanAttribute.objects.all().order_by('name')
+
+        return super(PlanAnnualMasterAttributeAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+class PlanAttributeMasterAdmin(admin.ModelAdmin):
+
+    list_display = ('master_attribute', 'plan_attribute', 'priority')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'master_attribute':
+            kwargs['queryset'] = PlanMasterAttributeNames.objects.all().order_by('name')
+
+        if db_field.name == 'plan_attribute':
+            kwargs['queryset'] = PlanAttribute.objects.all().order_by('name')
+
+        return super(PlanAttributeMasterAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 admin.site.register(PresentationExport)
 admin.site.register(ExportGroup)
 admin.site.register(PlanBenefitDesign, PlanBenefitDesignAdmin)
 admin.site.register(PlanInheritance, PlanInheritanceAdmin)
 admin.site.register(ReportingTable, ReportingTableAdmin)
+admin.site.register(PlanAnnualMasterAttribute, PlanAnnualMasterAttributeAdmin)
+admin.site.register(PlanMasterAttributeNames)
+admin.site.register(PlanAttributeMaster, PlanAttributeMasterAdmin)
 
 ###############################################################################
 # To register new model, you also need to add it to ADMIN_REORDER at settings.

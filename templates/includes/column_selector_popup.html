@@ -56,6 +56,15 @@
               </label>
               <br><br>
           {% endif %}
+          <ul class="list-group column-list attr-list" style="display: none;">
+              <li>
+                  <label>
+                      <input type="hidden" id="reset_attr_states" name="reset_attr_states" value="0">
+                      <input type="checkbox" id="unfiltered" name="unfiltered" {% if unfiltered %} checked {% endif %}>
+                      Unfiltered Data <i class="fa fa-refresh" aria-hidden="true"></i>
+                  </label>
+              </li>
+          </ul>
           <ul class="list-group column-list attr-list">
           {% for category in category_list %}
             <li class="category-level">
