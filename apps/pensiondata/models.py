@@ -960,6 +960,10 @@ class PensionChartData(models.Model):
     f1_value = models.DecimalField(decimal_places = 0, max_digits = 12)
     f2_header = models.CharField(max_length = 255, blank = True)
     f2_value = models.DecimalField(decimal_places = 0, max_digits = 12)
+    f3_header = models.CharField(max_length = 255, blank = True)
+    f3_value = models.DecimalField(decimal_places = 0, max_digits = 12)
+    f4_header = models.CharField(max_length = 255, blank = True)
+    f4_value = models.DecimalField(decimal_places = 0, max_digits = 12)
 
     @staticmethod
     def get(government_id):
@@ -973,7 +977,7 @@ class PensionChartData(models.Model):
                 "and plan.admin_gov_id = government.id " \
                 "and plan_attribute_id in (10885,10914,10984) " \
                 "and government.id='%s' order by 1,2\') " \
-                "AS ct(year varchar, f1 numeric, f2 numeric)"
+                "AS ct(year varchar, f1 numeric, f2 numeric, f3 numeric, f4 numeric)"
 
         cur = connection.cursor()
         cur.execute(query, [government_id])
@@ -994,6 +998,14 @@ class PensionChartData(models.Model):
             if len(headers) > 1:
                 item.f2_header = headers[1].name
                 item.f2_value = row['f2']
+
+            if len(headers) > 2:
+                item.f3_header = headers[1].name
+                item.f3_value = row['f3']
+
+            if len(headers) > 3:
+                item.f4_header = headers[1].name
+                item.f4_value = row['f4']
 
             results.append(item)
 
