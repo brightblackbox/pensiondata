@@ -443,7 +443,7 @@ def api_map_liabilities(request, state):
 
 def api_chart_contribs(request, government_id):
 
-    data = {'headers': {'f1': '', 'f2': ''}, 'values': [], 'success': True}
+    data = {'headers': {'f1': '', 'f2': '', 'f3': '', 'f4': ''}, 'values': [], 'success': True}
 
     rows = PensionChartData.get(government_id)
 
@@ -452,12 +452,18 @@ def api_chart_contribs(request, government_id):
 
     data['headers']['f1'] = rows[0].f1_header
     data['headers']['f2'] = rows[0].f2_header
+    data['headers']['f3'] = rows[0].f3_header
+    data['headers']['f4'] = rows[0].f4_header
+
 
     for row in  PensionChartData.get(government_id):
         data['values'].append({
             'year': row.year,
             'f1': row.f1_value,
-            'f2': row.f2_value
+            'f2': row.f2_value,
+            'f3': row.f3_value,
+            'f4': row.f4_value
+
         })
 
     return JsonResponse(data)
