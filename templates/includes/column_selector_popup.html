@@ -10,6 +10,7 @@
       <div class="clearfix">
         <!-- DataSource selector -->
         <div class="pull-left datasource-selector">
+        {% if unfiltered %}
           <h4>Data Sources</h4>
           <ul class="list-group column-list datasource-list">
           {% for ds in datasource_list %}
@@ -31,6 +32,7 @@
                 >{{ ds.name }}</label></li>
           {% endfor %}
           </ul>
+        {% endif %}
         </div>
 
         <!-- Attribute selector -->
@@ -58,11 +60,10 @@
           {% endif %}
           <ul class="list-group column-list attr-list">
               <li>
-                  <label>
-                      <input type="hidden" id="reset_attr_states" name="reset_attr_states" value="0">
-                      <input type="checkbox" id="unfiltered" name="unfiltered" {% if unfiltered %} checked {% endif %}>
-                      Unfiltered Data <i class="fa fa-refresh" aria-hidden="true"></i>
-                  </label>
+                  <input type="hidden" id="reset_attr_states" name="reset_attr_states" value="0">
+                  <label for="unfiltered1"><input type="radio" id="unfiltered1" name="unfiltered" value="off" {% if not unfiltered %}checked{% endif %}> Filtered Data <i class="fa fa-refresh" aria-hidden="true"></i></label>
+                  &nbsp;&nbsp;
+                  <label for="unfiltered2"><input type="radio" id="unfiltered2" name="unfiltered" value="on" {% if unfiltered %}checked{% endif %}> Unfiltered Data <i class="fa fa-refresh" aria-hidden="true"></i></label>
               </li>
           </ul>
           <ul class="list-group column-list attr-list">

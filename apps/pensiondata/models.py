@@ -602,7 +602,7 @@ class PlanAttributeMaster(models.Model):
     class Meta:
         managed = True
         db_table = 'plan_attribute_master'
-        verbose_name = 'Plan Attribute Master'
+        verbose_name = 'Plan Attribute to Master Mapping'
 
 
 ### THIS MODEL IS A WORK IN PROGRESS -- DO NOT USE FOR NOW
