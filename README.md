@@ -53,6 +53,10 @@ To deploy to heroku you will need the Heroku CLI (Toolbelt) - https://devcenter.
 
 To deploy the app push the web and celery containers to heroku - https://devcenter.heroku.com/articles/container-registry-and-runtime#pushing-multiple-images
 
+**IMPORTANT**: This project contains config files for multiple environments (local, staging, production). Before deploying to production you will need to copy the ```config.production.env``` over ```config.env```. 
+
+``` $ cp config.production.env config.env```
+
 ``` $ heroku login ```
 
 ``` $ heroku container:login ```
