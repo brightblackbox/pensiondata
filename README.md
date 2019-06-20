@@ -55,6 +55,8 @@ To deploy the app push the web and celery containers to heroku - https://devcent
 
 **IMPORTANT**: This project contains config files for multiple environments (local, staging, production). Before deploying to production you will need to copy the ```config.production.env``` over ```config.env```. 
 
+Docker must be running locally in order for the build step to succeed.
+
 ``` $ cp config.production.env config.env```
 
 ``` $ heroku login ```
