@@ -967,47 +967,39 @@ class PensionChartData(models.Model):
 
     @staticmethod
     def get(government_id):
-        # headers = Plan.objects.filter(admin_gov_id = government_id).exclude(name__contains = 'ASRS')
-        headers = Plan.objects.filter(admin_gov_id = government_id)
-
-        query = "select * from crosstab('select plan_annual_attribute.year, plan.name, " \
-                "cast(plan_annual_attribute.attribute_value as numeric) as employer_contribution " \
-                "from plan, plan_annual_attribute, government " \
-                "where plan.id = plan_annual_attribute.plan_id " \
+        query = "select distinct plan_annual_master_attribute.year, plan.display_name, " \
+                "cast(plan_annual_master_attribute.attribute_value as numeric) as employer_contribution " \
+                "from plan, plan_annual_master_attribute, government " \
+                "where plan.id = plan_annual_master_attribute.plan_id " \
                 "and plan.admin_gov_id = government.id " \
-                "and plan_attribute_id in (10885,10914,10984) " \
-                "and government.id='%s' order by 1,2\') " \
-                "AS ct(year varchar, f1 numeric, f2 numeric, f3 numeric, f4 numeric)"
+                "and master_attribute_id in (32,36) " \
+                "and government.id=%s " \
+                "and cast(plan_annual_master_attribute.attribute_value as numeric) <> 0 " \
+                "order by 1,2"
 
         cur = connection.cursor()
         cur.execute(query, [government_id])
-
-        columns = [c.name for c in cur.description]
-        rows = [dict(zip(columns, row)) for row in cur.fetchall()]
-
+        data = cur.fetchall()
         cur.close()
 
+        import pandas
+        df = pandas.DataFrame(data, columns = ['year', 'display_name', 'employer_contribution'])
+        pivoted = df.pivot(index = 'year', columns = 'display_name', values = 'employer_contribution')
+
+        # map employer names to an indexed field (f1, f2, etc)
+        header_map = {e:i+1 for i,e in enumerate(pivoted.keys())}
+
         results = []
-        for row in rows:
-            item = PensionChartData(
-                year = row['year'],
-                f1_header = headers[0].name,
-                f1_value = row['f1']
-            )
+        for year, values in pivoted.T.to_dict().items():
+            item = PensionChartData(year = year)
 
-            if len(headers) > 1:
-                item.f2_header = headers[1].name
-                item.f2_value = row['f2']
-
-            if len(headers) > 2:
-                item.f3_header = headers[1].name
-                item.f3_value = row['f3']
-
-            if len(headers) > 3:
-                item.f4_header = headers[1].name
-                item.f4_value = row['f4']
+            for name, contrib in values.items():
+                i = header_map[name]
+                setattr(item, 'f{}_header'.format(i), name)
+                setattr(item, 'f{}_value'.format(i), contrib)
 
             results.append(item)
 
         return results
+
 
