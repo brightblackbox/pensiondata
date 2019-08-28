@@ -58,10 +58,21 @@ services:
       - POSTGRES_PASSWORD=pgpass
       - POSTGRES_USER=pguser
       - POSTGRES_DB=pensiondata
-    ports:
-      - "5432:5432"
     volumes:
       - db-datavolume:/var/lib/postgresql/data
 
+  pg11:
+    image: postgres:11
+    environment:
+      - POSTGRES_PASSWORD=pgpass
+      - POSTGRES_USER=pguser
+      - POSTGRES_DB=pensiondata
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg11-datavolume:/var/lib/postgresql/data
+
+
 volumes:
   db-datavolume:
+  pg11-datavolume:
