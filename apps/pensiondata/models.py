@@ -793,6 +793,18 @@ class ReportingTable(models.Model):
     year = models.CharField(max_length=4)
 
 #@formatter:on
+class MapCharts(models.Model):
+    class Meta:
+        managed = True
+        db_table = 'map_charts'
+        verbose_name_plural = "Map Charts"
+
+    id = models.BigAutoField(primary_key = True)
+    title = models.CharField(max_length = 100)
+    stored_procedure = models.CharField(max_length = 50)
+    display_order = models.IntegerField(blank = False, null = False, default = 0)
+
+
 class PensionMapData(models.Model):
     class Meta:
         managed = False
@@ -985,6 +997,34 @@ class PensionChartData(models.Model):
         import pandas
         df = pandas.DataFrame(data, columns = ['year', 'display_name', 'employer_contribution'])
         pivoted = df.pivot(index = 'year', columns = 'display_name', values = 'employer_contribution')
+
+        # map employer names to an indexed field (f1, f2, etc)
+        header_map = {e:i+1 for i,e in enumerate(pivoted.keys())}
+
+        results = []
+        for year, values in pivoted.T.to_dict().items():
+            item = PensionChartData(year = year)
+
+            for name, contrib in values.items():
+                i = header_map[name]
+                setattr(item, 'f{}_header'.format(i), name)
+                setattr(item, 'f{}_value'.format(i), contrib)
+
+            results.append(item)
+
+        return results
+
+    @staticmethod
+    def get_named(stored_procedure, government_id):
+
+        cur = connection.cursor()
+        cur.callproc(stored_procedure, [government_id])
+        data = cur.fetchall()
+        cur.close()
+
+        import pandas
+        df = pandas.DataFrame(data, columns = ['plan_year', 'plan_name', 'plan_value'])
+        pivoted = df.pivot(index = 'plan_year', columns = 'plan_name', values = 'plan_value')
 
         # map employer names to an indexed field (f1, f2, etc)
         header_map = {e:i+1 for i,e in enumerate(pivoted.keys())}

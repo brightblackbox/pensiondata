@@ -47,7 +47,8 @@ ADMIN_REORDER = (
         'pensiondata.ReportingTable',
         'pensiondata.PlanAnnualMasterAttribute',
         'pensiondata.PlanMasterAttributeNames',
-        'pensiondata.PlanAttributeMaster'
+        'pensiondata.PlanAttributeMaster',
+        'pensiondata.MapCharts'
     )},
     {'app': 'sites', 'models': ('sites.Site',)},
 )

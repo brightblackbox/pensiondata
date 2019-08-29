@@ -21,7 +21,8 @@ from celery.result import AsyncResult
 
 from .models import Plan, PlanAnnualAttribute, AttributeCategory, PlanAttribute, DataSource, PlanAnnual, \
     Government, GovernmentAnnualAttribute, GovernmentAttribute, PresentationExport, ExportGroup, \
-    PensionMapData, PensionChartData, PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames
+    PensionMapData, PensionChartData, PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames, \
+    MapCharts
 
 from .tables import PlanTable
 from .signals import recalculate
@@ -457,6 +458,59 @@ def api_chart_contribs(request, government_id):
 
 
     for row in  PensionChartData.get(government_id):
+        data['values'].append({
+            'year': row.year,
+            'f1': row.f1_value,
+            'f2': row.f2_value,
+            'f3': row.f3_value,
+            'f4': row.f4_value
+
+        })
+
+    return JsonResponse(data)
+
+def api_chart_list(request):
+    """
+    Return an ordered list of all MapChart objects. This endpoint is intented to be called from the
+    WordPress Maps plugin in order to setup all possible chart tabs to be displayed on the front
+    end.
+
+    :param request:
+    :return:
+    """
+    data = {'charts': [], 'success': True}
+
+    results = MapCharts.objects.all().order_by('display_order')
+
+    for result in results:
+        data['charts'].append({
+            'title': result.title,
+            'query': result.stored_procedure.replace('chart_', ''),
+            'display_order': result.display_order
+        })
+
+    return JsonResponse(data)
+
+def api_chart_data(request, query, government_id):
+    from django.db import ProgrammingError
+    from django.http import Http404
+
+    data = {'headers': {'f1': '', 'f2': '', 'f3': '', 'f4': ''}, 'values': [], 'success': True}
+
+    try:
+        rows = PensionChartData.get_named(f'chart_{query}', government_id)
+    except ProgrammingError as e:
+        raise Http404('Query Not Found')
+
+    if rows == []:
+        return JsonResponse(data)
+
+    data['headers']['f1'] = rows[0].f1_header
+    data['headers']['f2'] = rows[0].f2_header
+    data['headers']['f3'] = rows[0].f3_header
+    data['headers']['f4'] = rows[0].f4_header
+
+    for row in PensionChartData.get(government_id):
         data['values'].append({
             'year': row.year,
             'f1': row.f1_value,

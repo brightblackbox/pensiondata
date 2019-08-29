@@ -8,7 +8,7 @@ from django.db.models.query import QuerySet
 from .models import Plan, Government, County, State, GovernmentType, PlanAttribute, DataSource, \
     PlanAnnualAttribute, AttributeCategory, \
     GovernmentAttribute, GovernmentAnnualAttribute, PresentationExport, ExportGroup, PlanBenefitDesign, PlanInheritance,ReportingTable, \
-    PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames
+    PlanAnnualMasterAttribute, PlanAttributeMaster, PlanMasterAttributeNames, MapCharts
 
 from .models import GovernmentAttrSummary
 from .tasks import generate_calculated_fields, generate_calculated_fields_null
@@ -524,6 +524,13 @@ class ReportingTableAdmin( admin.ModelAdmin):
     #     print('=+++++++++')
     #
     #     return redirect('/admin/%s/%s/reportingtable/' % self.get_model_info())
+
+class MapChartsAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'stored_procedure', 'display_order',)
+    list_display_links = ('id', 'title',)
+    ordering = ('display_order',)
+
+admin.site.register(MapCharts, MapChartsAdmin)
 
 class PlanAnnualMasterAttributeAdmin(admin.ModelAdmin):
     raw_id_fields = ('plan',)
