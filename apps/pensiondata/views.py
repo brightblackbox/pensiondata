@@ -510,7 +510,7 @@ def api_chart_data(request, query, government_id):
     data['headers']['f3'] = rows[0].f3_header
     data['headers']['f4'] = rows[0].f4_header
 
-    for row in PensionChartData.get(government_id):
+    for row in rows:
         data['values'].append({
             'year': row.year,
             'f1': row.f1_value,
