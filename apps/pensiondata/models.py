@@ -800,8 +800,10 @@ class MapCharts(models.Model):
         verbose_name_plural = "Map Charts"
 
     id = models.BigAutoField(primary_key = True)
-    title = models.CharField(max_length = 100)
-    stored_procedure = models.CharField(max_length = 50)
+    title = models.CharField(max_length = 100, blank = True)
+    header = models.CharField(max_length = 200, blank = True)
+    y_axis_label = models.CharField(max_length = 100, blank = True)
+    stored_procedure = models.CharField(max_length = 50, blank = True)
     display_order = models.IntegerField(blank = False, null = False, default = 0)
 
 
