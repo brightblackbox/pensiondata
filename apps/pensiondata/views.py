@@ -485,6 +485,8 @@ def api_chart_list(request):
     for result in results:
         data['charts'].append({
             'title': result.title,
+            'header': result.header,
+            'y_axis_label': result.y_axis_label,
             'query': result.stored_procedure.replace('chart_', ''),
             'display_order': result.display_order
         })
