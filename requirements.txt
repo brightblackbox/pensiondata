@@ -6,7 +6,7 @@ python-monkey-business==1.0.0
 pytz==2017.2
 six==1.11.0
 sqlparse==0.2.3
-ipython==6.2.1
+ipython==7.16.3
 
 django-modeladmin-reorder==0.2
 django-bootstrap3==9.0.0
